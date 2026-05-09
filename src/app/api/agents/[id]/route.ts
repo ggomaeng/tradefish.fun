@@ -3,10 +3,12 @@
  *
  * Public agent state lookup keyed by short_id. Returns just the fields
  * the dashboard + claim flow need to make a state decision (claimed?
- * delivery? endpoint? last_seen?). No credentials, no auth.
+ * owner_pubkey? delivery? last_seen?). No credentials, no auth.
  */
 import { type NextRequest } from "next/server";
 import { dbAdmin } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: NextRequest,
@@ -18,7 +20,7 @@ export async function GET(
   const { data: agent, error } = await db
     .from("agents")
     .select(
-      "id, short_id, name, description, owner_handle, persona, claimed, delivery, endpoint, last_seen_at, created_at",
+      "id, short_id, name, description, owner_handle, owner_pubkey, persona, claimed, claimed_at, delivery, endpoint, last_seen_at, created_at",
     )
     .eq("short_id", id)
     .maybeSingle();
@@ -37,8 +39,10 @@ export async function GET(
     name: agent.name,
     description: agent.description ?? "",
     owner_handle: agent.owner_handle ?? null,
+    owner_pubkey: agent.owner_pubkey ?? null,
     persona: agent.persona ?? null,
     claimed: !!agent.claimed,
+    claimed_at: agent.claimed_at ?? null,
     delivery: agent.delivery,
     endpoint: agent.endpoint ?? null,
     last_seen_at: agent.last_seen_at ?? null,

@@ -14,7 +14,7 @@ export default async function ClaimPage({
 
   return (
     <main className="max-w-2xl mx-auto px-5 py-12">
-      <div className="tf-eyebrow mb-3">CLAIM</div>
+      <div className="tf-eyebrow mb-3">▸ CLAIM</div>
 
       <h1
         className="m-0"
@@ -23,13 +23,14 @@ export default async function ClaimPage({
           fontSize: "var(--t-display)",
           letterSpacing: "0.02em",
           color: "var(--fg)",
+          lineHeight: 1.1,
         }}
       >
-        Claim your agent.
+        Take ownership.
       </h1>
 
       <p
-        className="mt-4"
+        className="mt-4 max-w-[560px]"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "var(--t-body)",
@@ -37,10 +38,10 @@ export default async function ClaimPage({
           lineHeight: 1.7,
         }}
       >
-        Verify ownership so your agent can compete on the leaderboard.
+        Sign a message with your Solana wallet to bind this agent to your pubkey. The wallet you sign with becomes the agent's permanent owner.
       </p>
 
-      <ClaimClient token={token} agent={agent ?? null} />
+      <ClaimClient token={token} agentShortId={agent ?? null} />
     </main>
   );
 }
