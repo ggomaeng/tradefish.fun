@@ -49,86 +49,206 @@ export function QueryComposer() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-panel p-5">
-      <div className="text-xs uppercase tracking-wide text-muted mb-3">Ask the swarm</div>
-
-      <div className="flex flex-wrap items-center gap-2 text-lg sm:text-xl font-medium">
-        <span className="text-muted">Should I</span>
-
-        <select
-          value={action}
-          disabled
-          className="bg-panel-2 border border-border rounded-md px-3 py-1.5 text-base"
-          aria-label="action"
-        >
-          {ACTIONS.map((a) => (
-            <option key={a.value} value={a.value}>{a.label}</option>
-          ))}
-        </select>
-
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setTokenOpen((v) => !v)}
-            className="bg-panel-2 border border-border rounded-md px-3 py-1.5 text-base flex items-center gap-2 min-w-[140px] justify-between"
-          >
-            {token ? (
-              <span className="font-mono text-accent">{token.symbol}</span>
-            ) : (
-              <span className="text-muted">pick a token</span>
-            )}
-            <span className="text-muted text-xs">⌄</span>
-          </button>
-
-          {tokenOpen && (
-            <div className="absolute mt-2 w-72 bg-panel-2 border border-border rounded-lg shadow-lg z-20 p-2">
-              <input
-                autoFocus
-                value={tokenQuery}
-                onChange={(e) => setTokenQuery(e.target.value)}
-                placeholder="search SOL, JUP, BONK…"
-                className="w-full bg-background border border-border rounded-md px-2 py-1.5 text-sm font-mono outline-none focus:border-accent"
-              />
-              <ul className="mt-2 max-h-64 overflow-auto">
-                {matches.length === 0 && (
-                  <li className="text-sm text-muted px-2 py-2">No supported tokens match.</li>
-                )}
-                {matches.map((t) => (
-                  <li key={t.mint}>
-                    <button
-                      type="button"
-                      className="w-full text-left flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-panel"
-                      onClick={() => {
-                        setToken(t);
-                        setTokenOpen(false);
-                        setTokenQuery("");
-                      }}
-                    >
-                      <span className="font-mono text-accent">{t.symbol}</span>
-                      <span className="text-xs text-muted truncate">{t.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+    <div className="tf-term">
+      <div className="tf-term-head">
+        <div className="flex items-center gap-3">
+          <div className="dots">
+            <span />
+            <span />
+            <span />
+          </div>
+          <span>QUERY · COMPOSER</span>
         </div>
-
-        <span className="text-muted">now?</span>
+        <span style={{ color: "var(--cyan)" }}>10 CREDITS</span>
       </div>
 
-      {error && <div className="mt-3 text-sm text-bad font-mono">⚠ {error}</div>}
+      <div className="p-5">
+        <div className="t-label" style={{ color: "var(--cyan)" }}>
+          ▸ ASK
+        </div>
 
-      <div className="mt-5 flex items-center justify-between">
-        <span className="text-xs text-muted font-mono">cost: 10 credits</span>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={submitting || !token}
-          className="bg-accent text-background px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition"
+        <div
+          className="mt-3 flex flex-wrap items-center gap-2"
+          style={{
+            fontFamily: "var(--font-pixel)",
+            fontSize: "var(--t-h2)",
+            letterSpacing: "0.02em",
+            color: "var(--fg)",
+          }}
         >
-          {submitting ? "Asking…" : "Ask the swarm →"}
-        </button>
+          <span style={{ color: "var(--fg-faint)" }}>SHOULD I</span>
+
+          <select
+            value={action}
+            disabled
+            aria-label="action"
+            style={{
+              background: "var(--bg-2)",
+              border: "1px solid var(--line-strong)",
+              borderRadius: "var(--r-0)",
+              padding: "6px 12px",
+              fontFamily: "var(--font-pixel)",
+              fontSize: "var(--t-h2)",
+              color: "var(--fg)",
+              outline: "none",
+            }}
+          >
+            {ACTIONS.map((a) => (
+              <option key={a.value} value={a.value}>
+                {a.label.toUpperCase()}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setTokenOpen((v) => !v)}
+              style={{
+                background: "var(--bg-2)",
+                border: "1px solid var(--line-strong)",
+                borderRadius: "var(--r-0)",
+                padding: "6px 12px",
+                fontFamily: "var(--font-pixel)",
+                fontSize: "var(--t-h2)",
+                color: token ? "var(--cyan)" : "var(--fg-faint)",
+                cursor: "pointer",
+                minWidth: 160,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
+              <span>{token ? `$${token.symbol}` : "PICK A TOKEN"}</span>
+              <span style={{ color: "var(--fg-faint)", fontSize: "var(--t-small)" }}>▾</span>
+            </button>
+
+            {tokenOpen && (
+              <div
+                className="absolute mt-2 z-20"
+                style={{
+                  width: 288,
+                  background: "var(--surface-deep)",
+                  border: "1px solid var(--line-strong)",
+                  borderRadius: "var(--r-0)",
+                  padding: 8,
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+                }}
+              >
+                <input
+                  autoFocus
+                  value={tokenQuery}
+                  onChange={(e) => setTokenQuery(e.target.value)}
+                  placeholder="search SOL, JUP, BONK…"
+                  style={{
+                    width: "100%",
+                    background: "var(--bg-1)",
+                    border: "1px solid var(--line)",
+                    borderRadius: "var(--r-0)",
+                    padding: "6px 10px",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "var(--t-small)",
+                    color: "var(--fg)",
+                    outline: "none",
+                  }}
+                />
+                <ul className="mt-2 max-h-64 overflow-auto" style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {matches.length === 0 && (
+                    <li
+                      className="px-2 py-2"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "var(--t-small)",
+                        color: "var(--fg-faint)",
+                      }}
+                    >
+                      No supported tokens match.
+                    </li>
+                  )}
+                  {matches.map((t) => (
+                    <li key={t.mint}>
+                      <button
+                        type="button"
+                        className="w-full text-left flex items-center justify-between gap-2"
+                        onClick={() => {
+                          setToken(t);
+                          setTokenOpen(false);
+                          setTokenQuery("");
+                        }}
+                        style={{
+                          background: "transparent",
+                          border: "none",
+                          padding: "8px 10px",
+                          cursor: "pointer",
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "var(--t-small)",
+                          color: "var(--fg-dim)",
+                          transition: "background var(--t-fast)",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-glass)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <span style={{ color: "var(--cyan)" }}>${t.symbol}</span>
+                        <span
+                          className="truncate"
+                          style={{ fontSize: "var(--t-mini)", color: "var(--fg-faint)" }}
+                        >
+                          {t.name}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <span style={{ color: "var(--fg-faint)" }}>NOW?</span>
+        </div>
+
+        {error && (
+          <div
+            className="mt-4"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--t-small)",
+              color: "var(--short)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            ⚠ {error}
+          </div>
+        )}
+
+        <div className="tf-hr mt-5" />
+
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--t-mini)",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--fg-faint)",
+            }}
+          >
+            COST <span style={{ color: "var(--fg)" }}>10 CREDITS</span> · SETTLES{" "}
+            <span style={{ color: "var(--fg)" }}>1H · 4H · 24H</span>
+          </span>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting || !token}
+            className="tf-cta"
+            style={{
+              opacity: submitting || !token ? 0.4 : 1,
+              cursor: submitting || !token ? "not-allowed" : "pointer",
+            }}
+          >
+            {submitting ? "ASKING…" : "OPEN ROUND"} <span style={{ opacity: 0.6 }}>→</span>
+          </button>
+        </div>
       </div>
     </div>
   );

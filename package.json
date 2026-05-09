@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "embed:wiki": "tsx scripts/embed-wiki.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
@@ -17,18 +20,22 @@
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
     "@types/three": "^0.184.1",
+    "@vitest/ui": "^4.1.5",
     "ai": "^6.0.177",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
+    "gray-matter": "^4.0.3",
     "helius-sdk": "^2.2.2",
     "lucide-react": "^1.14.0",
     "next": "16.2.6",
     "ogl": "^1.0.11",
+    "openai": "^6.37.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "tailwind-merge": "^3.5.0",
     "three": "^0.184.0",
+    "vitest": "^4.1.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {
