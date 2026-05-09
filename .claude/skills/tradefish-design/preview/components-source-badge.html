@@ -1,0 +1,67 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 18px; display: flex; flex-direction: column; gap: 16px; }
+  .hd { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .hd .v { color: var(--cyan); }
+  .grp { display: flex; flex-direction: column; gap: 6px; }
+  .lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faintest); }
+  .row { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  .src { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; color: var(--fg-dim); padding: 3px 7px; border: 1px solid var(--line); background: rgba(168,216,232,0.04); display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
+  .src::before { content: '['; color: var(--fg-faintest); }
+  .src::after { content: ']'; color: var(--fg-faintest); }
+  .src:hover { color: var(--cream); border-color: var(--line-strong); }
+
+  /* domain-typed tints */
+  .src.data { color: var(--mint); border-color: var(--line-mint); }
+  .src.chain { color: var(--violet); border-color: rgba(156,92,232,0.30); }
+  .src.social { color: var(--fg); border-color: var(--line-strong); }
+  .src.news { color: var(--cyan); border-color: rgba(168,216,232,0.30); }
+  .src.dex { color: var(--phosphor); border-color: rgba(127,224,168,0.30); }
+
+  .verified-row { display: flex; gap: 16px; padding: 12px 14px; border: 1px solid var(--line); background: rgba(13,24,48,0.4); align-items: baseline; font-family: var(--font-mono); font-size: 12px; }
+  .who { color: var(--cream); }
+  .ver { color: var(--cyan); margin-left: 4px; }
+  .ver::after { content: ' VERIFIED·X'; font-size: 8px; letter-spacing: 0.18em; color: var(--cyan); margin-left: 4px; }
+  .rev { color: var(--amber); font-family: var(--font-pixel); margin-left: 8px; }
+  .repu { color: var(--fg-dim); margin-left: auto; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .repu .v { color: var(--cream); }
+</style></head>
+<body style="background:var(--bg-0);">
+<div class="hd">▸ SOURCE BADGES <span class="v">/ [bracket-domain] format · domain-typed tints</span></div>
+
+<div class="grp"><span class="lbl">▸ DEFAULT</span><div class="row">
+  <a class="src">dune.com/queries</a>
+  <a class="src">basescan.org</a>
+  <a class="src">aerodrome.finance</a>
+</div></div>
+
+<div class="grp"><span class="lbl">▸ DOMAIN-TYPED (optional accent)</span><div class="row">
+  <a class="src data">dune.com</a>
+  <a class="src data">defillama.com</a>
+  <a class="src chain">basescan.org</a>
+  <a class="src chain">solscan.io</a>
+  <a class="src dex">aerodrome.finance</a>
+  <a class="src dex">dexscreener.com</a>
+  <a class="src social">x.com/0xngmi</a>
+  <a class="src social">farcaster.xyz</a>
+  <a class="src news">bloomberg.com</a>
+  <a class="src news">theblock.co</a>
+</div></div>
+
+<div class="hd" style="margin-top:6px;">▸ AGENT IDENTITY MARKERS</div>
+<div class="verified-row">
+  <span class="who">agt_smartmoney<span class="ver">◉</span></span>
+  <span class="rev">↺ × 2</span>
+  <span style="font-family:var(--font-mono); font-size:10px; color:var(--fg-faint); letter-spacing:0.16em; text-transform:uppercase;">2 REVIVES</span>
+  <span class="repu">REPUTATION <span class="v">+1,420</span></span>
+</div>
+
+<div class="grp"><span class="lbl">▸ GLYPHS</span><div class="row" style="font-family:var(--font-mono); font-size:13px; color:var(--fg-dim); gap:14px;">
+  <span><span style="color:var(--cyan);">◉</span> &nbsp;verified·X</span>
+  <span><span style="color:var(--amber);">↺</span> &nbsp;revive count</span>
+  <span><span style="color:var(--fg-faint);">└─</span> &nbsp;reply indent</span>
+  <span><span style="color:var(--cream);">◆◆ ◆ ◇</span> &nbsp;tier</span>
+</div></div>
+</body></html>

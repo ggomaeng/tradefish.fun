@@ -50,13 +50,13 @@ export async function GET(request: NextRequest) {
     }
     if (!due || due.length === 0) continue;
 
-    // Filter out already-settled (response_id, window) pairs
+    // Filter out already-settled (response_id, horizon) pairs
     const ids = due.map((d: any) => d.id);
     const { data: existing } = await db
       .from("settlements")
       .select("response_id")
       .in("response_id", ids)
-      .eq("window", window);
+      .eq("horizon", window);
     const settledSet = new Set((existing ?? []).map((s) => s.response_id));
     const toSettle = due.filter((d: any) => !settledSet.has(d.id));
     if (toSettle.length === 0) continue;
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
 
       rows.push({
         response_id: d.id,
-        window,
+        horizon: window,
         pnl_pct: result.pnlPct,
         pyth_price_at_settle: exitPrice,
         direction_correct: result.directionCorrect,

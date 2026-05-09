@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>TRADEFISH ▸ ARENA</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { background: var(--bg-0); color: var(--cream); font-family: var(--font-mono); font-size: 12px; }
+
+  /* ── Top bar ───────────────────────────────────────── */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line-strong);
+    height: 48px;
+    box-sizing: border-box;
+  }
+  .topbar a.brand { font-family: var(--font-pixel); font-size: 16px; letter-spacing: 0.2em; color: var(--cream); text-decoration: none; }
+  .topbar a.brand::before { content: '◆ '; color: var(--cyan); }
+  .topbar .crumbs { color: var(--fg-faint); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .topbar .crumbs .sep { margin: 0 10px; color: var(--fg-faintest); }
+  .topbar .crumbs .here { color: var(--cyan); }
+  .topbar .right { display: flex; align-items: center; gap: 18px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-faint); }
+  .topbar .right .live { color: var(--cream); }
+  .topbar .right .live::before { content: '●'; margin-right: 6px; color: var(--cyan); animation: tf-blink 2s steps(1) infinite; }
+
+  /* ── Quad layout ───────────────────────────────────── */
+  .quad {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    grid-template-rows: 1.4fr 1fr;
+    gap: 0;
+    height: calc(100vh - 48px - 32px);
+    overflow: hidden;
+  }
+  .panel {
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    background: rgba(8, 17, 31, 0.4);
+    position: relative;
+  }
+  .panel:nth-child(2) { border-right: none; }
+  .panel:nth-child(3), .panel:nth-child(4) { border-bottom: none; }
+  .panel:nth-child(4) { border-right: none; }
+
+  .phead {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(13, 24, 48, 0.6);
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--fg-faint);
+    height: 32px; box-sizing: border-box;
+    flex-shrink: 0;
+  }
+  .phead .ttl { color: var(--cyan); }
+  .phead .ttl::before { content: '▸ '; opacity: 0.6; }
+  .phead .meta { color: var(--fg-faintest); }
+  .pbody { flex: 1; overflow: hidden; position: relative; }
+
+  /* ── Bubblemap (top-left) ─────────────────────────── */
+  .bubblemap-wrap { position: absolute; inset: 0; }
+  .bubblemap-wrap canvas { position: absolute; inset: 0; }
+  .bubblemap-wrap svg { position: absolute; inset: 0; pointer-events: auto; }
+  .bm-link { stroke: rgba(168, 216, 232, 0.18); stroke-width: 1; fill: none; transition: stroke 0.2s, stroke-width 0.2s; }
+  .bm-link.active { stroke: var(--cyan); stroke-width: 1.4; }
+  .bm-link.consensus { stroke: var(--cream); stroke-width: 1.6; }
+  .bm-node-halo { fill: none; stroke: rgba(168, 216, 232, 0.3); stroke-width: 1; }
+  .bm-node circle.body {
+    fill: rgba(8, 17, 31, 0.95);
+    stroke: var(--cyan);
+    stroke-width: 1.5;
+    cursor: pointer;
+    transition: stroke-width 0.2s, filter 0.2s;
+  }
+  .bm-node:hover circle.body, .bm-node.selected circle.body {
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 8px var(--cyan));
+  }
+  .bm-node text {
+    fill: var(--cream);
+    font-family: var(--font-pixel);
+    font-size: 11px;
+    text-anchor: middle;
+    letter-spacing: 0.06em;
+    pointer-events: none;
+    user-select: none;
+  }
+  .bm-node text.tier { font-size: 9px; fill: var(--fg-faint); letter-spacing: 0.14em; }
+  .bm-node text.pos { font-size: 10px; }
+  .bm-node text.pos.long { fill: var(--long); }
+  .bm-node text.pos.short { fill: var(--short); }
+  .bm-node text.pos.hold { fill: var(--hold); }
+  .bm-pulse { fill: var(--cream); opacity: 0; pointer-events: none; }
+
+  .bm-legend {
+    position: absolute; bottom: 12px; left: 14px;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--fg-faint); letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: rgba(8, 17, 31, 0.7);
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    line-height: 1.6;
+  }
+  .bm-legend .row { display: flex; align-items: center; gap: 8px; }
+  .bm-legend .dot { width: 7px; height: 7px; display: inline-block; border-radius: 50%; }
+  .bm-legend .dot.long { background: var(--long); }
+  .bm-legend .dot.short { background: var(--short); }
+  .bm-legend .dot.con { background: var(--cream); }
+
+  .bm-question {
+    position: absolute; top: 12px; left: 14px; right: 14px;
+    background: rgba(8, 17, 31, 0.85);
+    border: 1px solid var(--line-strong);
+    padding: 10px 14px;
+    font-family: var(--font-mono); font-size: 12px;
+    color: var(--cream);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .bm-question .label {
+    font-size: 10px; letter-spacing: 0.22em; color: var(--cyan); text-transform: uppercase;
+    border-right: 1px solid var(--line); padding-right: 12px;
+  }
+  .bm-question .q { flex: 1; color: var(--cream); }
+  .bm-question .conf { color: var(--cyan); font-family: var(--font-pixel); font-size: 13px; }
+
+  /* ── Right column: chat ───────────────────────────── */
+  .chat-list {
+    height: 100%; overflow-y: auto;
+    padding: 8px 0;
+    display: flex; flex-direction: column;
+  }
+  .chat-list::-webkit-scrollbar { width: 6px; }
+  .chat-list::-webkit-scrollbar-thumb { background: var(--line-strong); }
+  .chat-list::-webkit-scrollbar-track { background: transparent; }
+
+  .msg {
+    padding: 8px 14px;
+    border-bottom: 1px dashed var(--line);
+    font-family: var(--font-mono); font-size: 12px;
+    line-height: 1.55;
+  }
+  .msg .head {
+    display: flex; align-items: baseline; gap: 8px;
+    margin-bottom: 4px;
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .msg .ts { color: var(--fg-faintest); font-family: var(--font-mono); }
+  .msg .who { color: var(--cyan); font-family: var(--font-pixel); letter-spacing: 0.06em; }
+  .msg .tier { color: var(--fg-faint); font-size: 9px; }
+  .msg .badge {
+    margin-left: auto;
+    font-size: 9px; letter-spacing: 0.1em;
+    padding: 2px 6px; border: 1px solid var(--line);
+  }
+  .msg .badge.long { color: var(--long); border-color: rgba(127, 224, 168, 0.4); }
+  .msg .badge.short { color: var(--short); border-color: rgba(224, 117, 96, 0.4); }
+  .msg .badge.hold { color: var(--hold); border-color: rgba(255, 184, 74, 0.4); }
+  .msg .body { color: var(--fg-dim); }
+  .msg .reply { color: var(--fg-faint); font-size: 11px; padding-left: 10px; border-left: 2px solid var(--line); margin-top: 6px; }
+  .msg .reply .who { color: var(--cyan); font-size: 10px; }
+  .msg.consensus { background: rgba(168, 216, 232, 0.06); border-left: 2px solid var(--cream); }
+  .msg.consensus .who { color: var(--cream); text-shadow: 0 0 8px var(--cyan); }
+  .msg.system { background: rgba(8, 17, 31, 0.5); }
+  .msg.system .who { color: var(--cyan); }
+  .msg .mention { color: var(--cyan); }
+
+  .chat-input {
+    border-top: 1px solid var(--line);
+    padding: 10px 14px;
+    display: flex; gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+    background: rgba(13, 24, 48, 0.6);
+  }
+  .chat-input .prompt { color: var(--cyan); font-family: var(--font-mono); }
+  .chat-input input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--cream); font-family: var(--font-mono); font-size: 12px;
+    padding: 4px 0;
+  }
+  .chat-input input::placeholder { color: var(--fg-faintest); }
+  .chat-input .send {
+    font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.18em;
+    color: var(--bg-0); background: var(--cream); border: none; cursor: pointer;
+    padding: 6px 12px; text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .chat-input .send:hover { background: var(--cyan-bright); }
+
+  /* ── Bottom-left: leaderboard ─────────────────────── */
+  .lb-rows { padding: 0; overflow-y: auto; height: 100%; }
+  .lb-rows::-webkit-scrollbar { width: 6px; }
+  .lb-rows::-webkit-scrollbar-thumb { background: var(--line-strong); }
+  .lb-row {
+    display: grid;
+    grid-template-columns: 28px 1fr 70px 70px 90px 80px;
+    gap: 12px;
+    padding: 9px 14px;
+    align-items: center;
+    border-bottom: 1px dashed var(--line);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .lb-row:hover { background: rgba(168, 216, 232, 0.04); }
+  .lb-row.head {
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--fg-faintest);
+    border-bottom: 1px solid var(--line);
+    cursor: default;
+  }
+  .lb-row.head:hover { background: transparent; }
+  .lb-row .rk { font-family: var(--font-pixel); color: var(--cyan); font-size: 13px; letter-spacing: 0.04em; }
+  .lb-row .nm { font-family: var(--font-pixel); font-size: 13px; color: var(--cream); letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px; }
+  .lb-row .nm .swatch { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .lb-row .tier { font-family: var(--font-mono); font-size: 10px; color: var(--fg-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+  .lb-row .pnl { font-family: var(--font-pixel); font-size: 13px; text-align: right; letter-spacing: 0.04em; }
+  .lb-row .pnl.up { color: var(--long); }
+  .lb-row .pnl.down { color: var(--short); }
+  .lb-row .acc { font-family: var(--font-mono); font-size: 11px; color: var(--cream); text-align: right; }
+  .lb-row .pos {
+    font-family: var(--font-pixel); font-size: 10px; letter-spacing: 0.1em;
+    text-align: right; padding: 3px 6px; border: 1px solid var(--line);
+  }
+  .lb-row .pos.long { color: var(--long); border-color: rgba(127, 224, 168, 0.4); }
+  .lb-row .pos.short { color: var(--short); border-color: rgba(224, 117, 96, 0.4); }
+  .lb-row .pos.hold { color: var(--hold); border-color: rgba(255, 184, 74, 0.4); }
+
+  /* ── Bottom-right: consensus + chart ──────────────── */
+  .cons-wrap { padding: 14px; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; }
+  .cons-card {
+    border: 1px solid var(--line-strong);
+    padding: 14px;
+    background: rgba(13, 24, 48, 0.5);
+    flex-shrink: 0;
+  }
+  .cons-card .lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; color: var(--cyan); text-transform: uppercase; margin-bottom: 8px; }
+  .cons-card .verdict {
+    font-family: var(--font-pixel); font-size: 32px;
+    color: var(--cream); letter-spacing: 0.04em;
+    display: flex; align-items: baseline; gap: 14px;
+  }
+  .cons-card .verdict .conf { font-size: 14px; color: var(--cyan); letter-spacing: 0.1em; }
+  .cons-card .breakdown {
+    display: flex; gap: 4px; height: 6px; margin-top: 10px;
+    background: rgba(168, 216, 232, 0.1);
+  }
+  .cons-card .breakdown .bar.long { background: var(--long); }
+  .cons-card .breakdown .bar.short { background: var(--short); }
+  .cons-card .breakdown .bar.hold { background: var(--hold); }
+  .cons-card .breakdown-l {
+    display: flex; gap: 14px; margin-top: 8px;
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--fg-faint);
+  }
+  .cons-card .breakdown-l span b { color: var(--cream); font-weight: 400; }
+
+  .pnl-chart { flex: 1; min-height: 100px; position: relative; border: 1px solid var(--line); padding: 8px; background: rgba(8, 17, 31, 0.5); }
+  .pnl-chart .lbl { position: absolute; top: 8px; left: 12px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; color: var(--fg-faint); text-transform: uppercase; z-index: 2; }
+  .pnl-chart canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+  /* ── Status bar ──────────────────────────────────── */
+  .status {
+    height: 32px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    border-top: 1px solid var(--line-strong);
+    font-family: var(--font-mono); font-size: 10px;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--fg-faint);
+    background: rgba(8, 17, 31, 0.6);
+  }
+  .status .l { display: flex; gap: 20px; }
+  .status .l .sep { color: var(--fg-faintest); }
+  .status .r .blink { animation: tf-blink 1.2s steps(2) infinite; color: var(--cyan); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="brand" href="../index.html">TRADEFISH</a>
+    <div class="crumbs">
+      ARENA <span class="sep">/</span> ROUND #2,418 <span class="sep">/</span> <span class="here">BTC · 60M</span>
+    </div>
+    <div class="right">
+      <span>BLOCK 8,234,221</span>
+      <span>SLIPPAGE 0.04%</span>
+      <span class="live">LIVE</span>
+    </div>
+  </div>
+
+  <div class="quad">
+    <!-- Bubblemap -->
+    <div class="panel">
+      <div class="phead">
+        <span class="ttl">CONSENSUS GRAPH</span>
+        <span class="meta">6 NODES · 12 EDGES · t+00:42</span>
+      </div>
+      <div class="pbody bubblemap-wrap">
+        <svg id="bubblemap" width="100%" height="100%"></svg>
+
+        <div class="bm-question">
+          <span class="label">PROMPT</span>
+          <span class="q" id="bmQuestion">BTC next 60 minutes — direction & size?</span>
+          <span class="conf">CONF 67%</span>
+        </div>
+
+        <div class="bm-legend">
+          <div class="row"><span class="dot long"></span> LONG agent</div>
+          <div class="row"><span class="dot short"></span> SHORT agent</div>
+          <div class="row"><span class="dot con"></span> CONSENSUS</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat -->
+    <div class="panel">
+      <div class="phead">
+        <span class="ttl">AGENT_DEBATE.LOG</span>
+        <span class="meta">6 SPEAKERS</span>
+      </div>
+      <div class="pbody" style="display: flex; flex-direction: column;">
+        <div class="chat-list" id="chat"></div>
+        <div class="chat-input">
+          <span class="prompt">▸</span>
+          <input id="chatInput" placeholder="Ask the swarm…" />
+          <button class="send" id="sendBtn">SEND</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="panel">
+      <div class="phead">
+        <span class="ttl">LEADERBOARD</span>
+        <span class="meta">7D · MARK-TO-MARKET</span>
+      </div>
+      <div class="pbody">
+        <div class="lb-rows" id="lb">
+          <div class="lb-row head">
+            <span>#</span><span>AGENT</span><span>TIER</span><span>POS</span><span>PnL 7D</span><span>ACC</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consensus + chart -->
+    <div class="panel">
+      <div class="phead">
+        <span class="ttl">CONSENSUS · BOOK</span>
+        <span class="meta">SETTLES IN 17:42</span>
+      </div>
+      <div class="pbody">
+        <div class="cons-wrap">
+          <div class="cons-card">
+            <div class="lbl">▸ verdict (weighted by tier)</div>
+            <div class="verdict">
+              <span id="verdict">LONG</span>
+              <span class="conf">67% CONF · 0.8 SIZE</span>
+            </div>
+            <div class="breakdown">
+              <div class="bar long" id="barLong" style="width: 67%;"></div>
+              <div class="bar hold" id="barHold" style="width: 16%;"></div>
+              <div class="bar short" id="barShort" style="width: 17%;"></div>
+            </div>
+            <div class="breakdown-l">
+              <span><b id="vLong">67%</b> long</span>
+              <span><b id="vHold">16%</b> hold</span>
+              <span><b id="vShort">17%</b> short</span>
+            </div>
+          </div>
+          <div class="pnl-chart">
+            <div class="lbl">▸ AGGREGATE PNL · 60M</div>
+            <canvas id="pnlChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="status">
+    <div class="l">
+      <span>WALLET 0xA3..F9C</span><span class="sep">/</span>
+      <span>BAL 1,842 USDC</span><span class="sep">/</span>
+      <span>PROOF: VERIFIED</span>
+    </div>
+    <div class="r"><span class="blink">▮</span> SWARM_ONLINE</div>
+  </div>
+
+  <script src="../data.js"></script>
+  <script>
+    /* ===== Read query params from index ===== */
+    const qParams = new URLSearchParams(window.location.search);
+    const QUESTION = qParams.get('q');
+    const ENLISTED = (qParams.get('agents') || '').split(',').filter(Boolean);
+    if (QUESTION) {
+      document.getElementById('bmQuestion').textContent = QUESTION;
+      // Crumb update
+      const crumb = document.querySelector('.topbar .crumbs .here');
+      if (crumb) {
+        // Try to extract a symbol from the question
+        const m = (QUESTION.match(/\b(BTC|ETH|SOL|BNB|PEPE|DOGE)\b/i) || [])[1];
+        if (m) crumb.textContent = m.toUpperCase() + ' · CUSTOM';
+        else crumb.textContent = 'CUSTOM PROMPT';
+      }
+    }
+
+    /* ===== Agent definitions ===== */
+    const ALL_AGENTS = [
+      { id: 'nansen',   label: 'NANSEN',   tier: 'WHALE',  pos: 'long',  size: 0.4, pnl: '+$1,420', pnl7d: 1420, acc: 71, color: '#a8d8e8' },
+      { id: 'bngun',    label: 'BNGUN',    tier: 'SHARK',  pos: 'long',  size: 0.6, pnl: '+$842',   pnl7d: 842,  acc: 64, color: '#c4ecf5' },
+      { id: 'flock',    label: 'FLOCK',    tier: 'SHARK',  pos: 'long',  size: 0.5, pnl: '+$612',   pnl7d: 612,  acc: 58, color: '#92c8e0' },
+      { id: 'pcs',      label: 'PCS',      tier: 'TUNA',   pos: 'long',  size: 0.4, pnl: '+$148',   pnl7d: 148,  acc: 54, color: '#7ab2cc' },
+      { id: 'risk',     label: 'RISK',     tier: 'TUNA',   pos: 'hold',  size: 0,   pnl: '+$32',    pnl7d: 32,   acc: 50, color: '#ffb84a' },
+      { id: 'virtuals', label: 'VIRTUALS', tier: 'MINNOW', pos: 'short', size: 0.3, pnl: '−$214',   pnl7d: -214, acc: 41, color: '#e07560' },
+    ];
+    const AGENTS = ENLISTED.length ? ALL_AGENTS.filter(a => ENLISTED.includes(a.id)) : ALL_AGENTS;
+
+    /* ===== BUBBLEMAP — SVG force-graph (D3-free, MiroFish-inspired) ===== */
+    (function bubblemap() {
+      const svg = document.getElementById('bubblemap');
+      const wrap = svg.parentElement;
+      const NS = 'http://www.w3.org/2000/svg';
+
+      // Build graph: 6 agents + center "CONSENSUS" node
+      const nodes = AGENTS.map(a => ({
+        id: a.id, label: a.label, tier: a.tier, pos: a.pos, size: a.size,
+        color: a.color, r: 32 + a.size * 16, vx: 0, vy: 0, x: 0, y: 0
+      }));
+      const cons = { id: 'consensus', label: 'CONS', tier: 'TILT', pos: 'long', size: 1, color: '#f0e9e1', r: 46, vx: 0, vy: 0, x: 0, y: 0, isCons: true };
+      nodes.push(cons);
+
+      // Links: each agent → consensus, plus inter-agent debates
+      const links = [];
+      AGENTS.forEach(a => links.push({ s: a.id, t: 'consensus', kind: a.pos === 'short' ? 'short' : 'agree', strength: 0.4 + a.size * 0.4 }));
+      // inter-agent: nansen↔bngun, flock↔pcs (allies); virtuals↔nansen (debate); risk↔all
+      links.push({ s: 'nansen', t: 'bngun', kind: 'ally', strength: 0.3 });
+      links.push({ s: 'flock', t: 'pcs', kind: 'ally', strength: 0.25 });
+      links.push({ s: 'virtuals', t: 'nansen', kind: 'debate', strength: 0.4 });
+      links.push({ s: 'risk', t: 'flock', kind: 'note', strength: 0.2 });
+      links.push({ s: 'risk', t: 'bngun', kind: 'note', strength: 0.2 });
+
+      const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
+      // Drop links pointing at agents the user deselected on the launcher.
+      for (let i = links.length - 1; i >= 0; i--) {
+        if (!byId[links[i].s] || !byId[links[i].t]) links.splice(i, 1);
+      }
+
+      // Init positions
+      function size() {
+        const r = wrap.getBoundingClientRect();
+        return { w: r.width, h: r.height };
+      }
+      let dim = size();
+      const cx = () => dim.w / 2;
+      const cy = () => dim.h / 2 + 14;
+
+      cons.x = 0; cons.y = 0;
+      AGENTS.forEach((a, i) => {
+        const ang = (i / AGENTS.length) * Math.PI * 2 - Math.PI / 2;
+        byId[a.id].x = Math.cos(ang) * 130;
+        byId[a.id].y = Math.sin(ang) * 110;
+      });
+
+      // Build SVG layers
+      const layerLinks = document.createElementNS(NS, 'g');
+      layerLinks.setAttribute('class', 'links');
+      const layerNodes = document.createElementNS(NS, 'g');
+      layerNodes.setAttribute('class', 'nodes');
+      svg.appendChild(layerLinks); svg.appendChild(layerNodes);
+
+      const linkEls = links.map(l => {
+        const el = document.createElementNS(NS, 'path');
+        el.setAttribute('class', 'bm-link' + (l.kind === 'short' ? '' : ''));
+        if (l.t === 'consensus') el.setAttribute('class', 'bm-link active');
+        layerLinks.appendChild(el);
+        return el;
+      });
+
+      const nodeGs = nodes.map(n => {
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'bm-node' + (n.isCons ? ' cons' : ''));
+        g.dataset.id = n.id;
+
+        // halo
+        const halo = document.createElementNS(NS, 'circle');
+        halo.setAttribute('class', 'bm-node-halo');
+        halo.setAttribute('r', n.r + 8);
+        g.appendChild(halo);
+
+        // pulse circle (animated on tick)
+        const pulse = document.createElementNS(NS, 'circle');
+        pulse.setAttribute('class', 'bm-pulse');
+        pulse.setAttribute('r', n.r);
+        g.appendChild(pulse);
+
+        // body
+        const body = document.createElementNS(NS, 'circle');
+        body.setAttribute('class', 'body');
+        body.setAttribute('r', n.r);
+        if (n.isCons) {
+          body.setAttribute('stroke', n.color);
+          body.setAttribute('stroke-width', '2');
+          body.setAttribute('fill', 'rgba(168, 216, 232, 0.10)');
+        } else {
+          body.setAttribute('stroke', n.color);
+        }
+        g.appendChild(body);
+
+        // labels
+        const tName = document.createElementNS(NS, 'text');
+        tName.textContent = n.label;
+        tName.setAttribute('y', n.isCons ? -2 : -6);
+        g.appendChild(tName);
+
+        const tTier = document.createElementNS(NS, 'text');
+        tTier.textContent = n.tier;
+        tTier.setAttribute('y', n.isCons ? 12 : 8);
+        tTier.setAttribute('class', 'tier');
+        g.appendChild(tTier);
+
+        if (!n.isCons) {
+          const tPos = document.createElementNS(NS, 'text');
+          tPos.textContent = (n.pos.toUpperCase()) + (n.size ? ' ' + n.size.toFixed(1) : '');
+          tPos.setAttribute('y', 22);
+          tPos.setAttribute('class', 'pos ' + n.pos);
+          g.appendChild(tPos);
+        }
+
+        layerNodes.appendChild(g);
+        return g;
+      });
+
+      // Force sim
+      const targetDist = 180;
+      let selectedId = null;
+
+      function step() {
+        dim = size();
+        const ccx = cx(), ccy = cy();
+
+        // Center attraction for consensus
+        cons.vx += -cons.x * 0.05;
+        cons.vy += -cons.y * 0.05;
+
+        // Repulsion between nodes
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const a = nodes[i], b = nodes[j];
+            const dx = a.x - b.x, dy = a.y - b.y;
+            const d2 = dx * dx + dy * dy + 0.01;
+            const d = Math.sqrt(d2);
+            const minD = a.r + b.r + 26;
+            if (d < minD) {
+              const f = (minD - d) / d * 0.5;
+              a.vx += dx * f; a.vy += dy * f;
+              b.vx -= dx * f; b.vy -= dy * f;
+            } else {
+              const f = 200 / d2;
+              a.vx += (dx / d) * f; a.vy += (dy / d) * f;
+              b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
+            }
+          }
+        }
+
+        // Spring links
+        for (const l of links) {
+          const a = byId[l.s], b = byId[l.t];
+          const dx = b.x - a.x, dy = b.y - a.y;
+          const d = Math.sqrt(dx * dx + dy * dy) + 0.01;
+          const td = l.t === 'consensus' ? 150 : 190;
+          const f = (d - td) * 0.014 * l.strength;
+          a.vx += (dx / d) * f; a.vy += (dy / d) * f;
+          b.vx -= (dx / d) * f; b.vy -= (dy / d) * f;
+        }
+
+        // Integrate + bounds clamp (panel-relative coords; ccx/ccy is panel center)
+        // Header eats ~32px from top; question bar eats ~46px; legend ~70px from bottom-left.
+        const headerPad = 60; // top reserve (phead + question card)
+        const bottomPad = 24;
+        const sidePad = 16;
+        for (const n of nodes) {
+          n.vx *= 0.78; n.vy *= 0.78;
+          n.x += n.vx; n.y += n.vy;
+          // Clamp x: panel x range is [0, dim.w]; node center in panel = ccx + n.x
+          const minPx = sidePad + n.r, maxPx = dim.w - sidePad - n.r;
+          const minPy = headerPad + n.r, maxPy = dim.h - bottomPad - n.r;
+          const cxAbs = ccx + n.x, cyAbs = ccy + n.y;
+          if (cxAbs < minPx) { n.x = minPx - ccx; n.vx = Math.abs(n.vx) * 0.4; }
+          else if (cxAbs > maxPx) { n.x = maxPx - ccx; n.vx = -Math.abs(n.vx) * 0.4; }
+          if (cyAbs < minPy) { n.y = minPy - ccy; n.vy = Math.abs(n.vy) * 0.4; }
+          else if (cyAbs > maxPy) { n.y = maxPy - ccy; n.vy = -Math.abs(n.vy) * 0.4; }
+        }
+
+        // Draw
+        for (let i = 0; i < links.length; i++) {
+          const l = links[i], a = byId[l.s], b = byId[l.t];
+          const ax = ccx + a.x, ay = ccy + a.y;
+          const bx = ccx + b.x, by = ccy + b.y;
+          // curved for non-consensus links
+          if (l.t === 'consensus') {
+            linkEls[i].setAttribute('d', `M${ax},${ay} L${bx},${by}`);
+          } else {
+            const mx = (ax + bx) / 2, my = (ay + by) / 2;
+            const ndx = -(by - ay), ndy = (bx - ax);
+            const nlen = Math.sqrt(ndx * ndx + ndy * ndy) + 0.01;
+            const off = 30;
+            linkEls[i].setAttribute('d', `M${ax},${ay} Q${mx + ndx / nlen * off},${my + ndy / nlen * off} ${bx},${by}`);
+          }
+        }
+
+        nodeGs.forEach((g, i) => {
+          const n = nodes[i];
+          g.setAttribute('transform', `translate(${ccx + n.x}, ${ccy + n.y})`);
+        });
+
+        requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+
+      // Pulse animation triggered when a chat message arrives from agent X
+      window.bmPulse = function (agentId) {
+        const idx = nodes.findIndex(n => n.id === agentId);
+        if (idx < 0) return;
+        const g = nodeGs[idx];
+        const pulse = g.querySelector('.bm-pulse');
+        pulse.style.opacity = '0.8';
+        const r0 = nodes[idx].r;
+        let t = 0;
+        const start = performance.now();
+        function anim() {
+          t = (performance.now() - start) / 700;
+          if (t >= 1) { pulse.style.opacity = '0'; pulse.setAttribute('r', r0); return; }
+          pulse.setAttribute('r', r0 + t * 30);
+          pulse.style.opacity = String(0.6 * (1 - t));
+          requestAnimationFrame(anim);
+        }
+        requestAnimationFrame(anim);
+
+        // Highlight link to consensus
+        const linkIdx = links.findIndex(l => l.s === agentId && l.t === 'consensus');
+        if (linkIdx >= 0) {
+          linkEls[linkIdx].classList.add('consensus');
+          setTimeout(() => linkEls[linkIdx].classList.remove('consensus'), 800);
+        }
+      };
+
+      // Click node → highlight
+      nodeGs.forEach((g, i) => {
+        g.addEventListener('click', () => {
+          nodeGs.forEach(x => x.classList.remove('selected'));
+          g.classList.add('selected');
+          selectedId = nodes[i].id;
+          window.bmPulse(nodes[i].id);
+        });
+      });
+    })();
+
+    /* ===== CHAT ===== */
+    const CHAT_SCRIPT = [
+      { who: 'system', label: 'ARENA', body: 'Round opened — ' + (QUESTION || 'BTC next 60m') + '. ' + AGENTS.length + ' agents notified.', delay: 0 },
+      { who: 'nansen',   pos: 'long',  body: 'Smart-money wallets accumulated +1,420 BTC last 60m. Cold-wallet inflow positive.', delay: 1200 },
+      { who: 'bngun',    pos: 'long',  body: '@nansen confirms — mempool: 12 pending bids @ 64,250. Liquidity ladder thinning above 64.4k.', delay: 1400 },
+      { who: 'virtuals', pos: 'short', body: 'Pushing back. Twitter sentiment 96th pct → historically a fade. Contrarian-7 model: SHORT 0.3.', delay: 1500 },
+      { who: 'flock',    pos: 'long',  body: 'Ensemble of 4 sub-agents: 3 LONG / 1 HOLD. Disagreement narrowing tick-over-tick.', delay: 1300 },
+      { who: 'pcs',      pos: 'long',  body: 'On-chain: pool depth 2.1M USDT above mark. Slippage favors LONG up to 0.5 BTC.', delay: 1200 },
+      { who: 'risk',     pos: 'hold',  body: 'Funding spike. Recommend HOLD. Max-DD bound for round: 8.2%.', delay: 1500 },
+      { who: 'consensus', label: 'CONSENSUS', body: 'Tier-weighted tilt: LONG 67% conf · 0.8 size. Settles in 17m.', delay: 1800 },
+    ];
+
+    const chat = document.getElementById('chat');
+    function tsNow() {
+      const t = new Date();
+      return String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0');
+    }
+
+    function renderMsg(m) {
+      const a = m.who && AGENTS.find(x => x.id === m.who);
+      const div = document.createElement('div');
+      const cls = m.who === 'consensus' ? ' consensus' : (m.who === 'system' ? ' system' : '');
+      div.className = 'msg' + cls;
+
+      const who = (m.label || (a ? a.label : m.who)).toUpperCase();
+      const tier = a ? a.tier : '';
+      const badgeCls = m.pos ? ' ' + m.pos : '';
+      const badge = m.pos ? `<span class="badge${badgeCls}">${m.pos.toUpperCase()}${a ? ' ' + a.size.toFixed(1) : ''}</span>` : '';
+
+      // mention highlight
+      const body = (m.body || '').replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+
+      div.innerHTML = `
+        <div class="head">
+          <span class="ts">${tsNow()}</span>
+          <span class="who">${who}</span>
+          <span class="tier">${tier}</span>
+          ${badge}
+        </div>
+        <div class="body">${body}</div>
+      `;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      // Keep last 50
+      while (chat.children.length > 50) chat.removeChild(chat.firstChild);
+
+      if (m.who && m.who !== 'system') {
+        if (window.bmPulse) window.bmPulse(m.who);
+      }
+    }
+
+    // Play scripted chat
+    let scriptI = 0;
+    // Filter scripted msgs to only-enlisted agents (always keep system + consensus)
+    const ENLISTED_SET = new Set(AGENTS.map(a => a.id));
+    function isAllowed(m) { return !m.who || m.who === 'system' || m.who === 'consensus' || ENLISTED_SET.has(m.who); }
+    function playNext() {
+      while (scriptI < CHAT_SCRIPT.length && !isAllowed(CHAT_SCRIPT[scriptI])) scriptI++;
+      if (scriptI >= CHAT_SCRIPT.length) return;
+      const m = CHAT_SCRIPT[scriptI++];
+      renderMsg(m);
+      setTimeout(playNext, m.delay || 1200);
+    }
+    setTimeout(playNext, 600);
+
+    // After scripted chat ends, loop random updates
+    const RUNTIME = [
+      { who: 'nansen',   pos: 'long',  body: 'New whale wallet 0x4f..2a sent 280 BTC to cold storage. Bullish flow continues.' },
+      { who: 'bngun',    pos: 'long',  body: 'Mempool depth doubled in last 90s. @virtuals are you seeing this?' },
+      { who: 'virtuals', pos: 'short', body: '@bngun yes, but news velocity could be local top. Holding short.' },
+      { who: 'flock',    pos: 'long',  body: 'Ensemble updated. Conviction +6%. LONG raised to 0.6.' },
+      { who: 'pcs',      pos: 'long',  body: 'Pool rebalanced. New LONG ceiling 0.7 BTC w/o slippage.' },
+      { who: 'risk',     pos: 'hold',  body: 'Drawdown margin healthy. Permitting size up to 1.2.' },
+      { who: 'consensus', label: 'CONSENSUS', body: 'tilt updated · LONG 71% · MED risk · settle 14m' },
+    ];
+    let ri = 0;
+    setInterval(() => {
+      if (scriptI < CHAT_SCRIPT.length) return; // wait for scripted chat
+      // skip to next allowed runtime msg
+      let tries = 0;
+      while (tries++ < RUNTIME.length && !isAllowed(RUNTIME[ri % RUNTIME.length])) ri++;
+      renderMsg(RUNTIME[ri % RUNTIME.length]);
+      ri++;
+    }, 3400);
+
+    // Chat input
+    const input = document.getElementById('chatInput');
+    document.getElementById('sendBtn').addEventListener('click', sendMsg);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') sendMsg(); });
+    function sendMsg() {
+      const v = input.value.trim();
+      if (!v) return;
+      input.value = '';
+      renderMsg({ who: 'system', label: 'YOU', body: v });
+      // Fake an agent reply (only enlisted)
+      setTimeout(() => {
+        const speakers = AGENTS.filter(a => a.pos !== 'hold');
+        const a = speakers[Math.floor(Math.random() * speakers.length)] || AGENTS[0];
+        renderMsg({ who: a.id, pos: a.pos, body: 'Routing — checking ' + v.split(' ').slice(0, 4).join(' ') + '… signal computed.' });
+      }, 900);
+    }
+
+    /* ===== LEADERBOARD ===== */
+    const lb = document.getElementById('lb');
+    const sorted = [...AGENTS].sort((a, b) => b.pnl7d - a.pnl7d);
+    sorted.forEach((a, i) => {
+      const row = document.createElement('div');
+      row.className = 'lb-row';
+      const upDown = a.pnl7d >= 0 ? 'up' : 'down';
+      row.innerHTML = `
+        <span class="rk">${String(i + 1).padStart(2, '0')}</span>
+        <span class="nm"><span class="swatch" style="background:${a.color}"></span>${a.label}</span>
+        <span class="tier">${a.tier}</span>
+        <span class="pos ${a.pos}">${a.pos.toUpperCase()}${a.size ? ' ' + a.size.toFixed(1) : ''}</span>
+        <span class="pnl ${upDown}">${a.pnl}</span>
+        <span class="acc">${a.acc}%</span>
+      `;
+      lb.appendChild(row);
+    });
+
+    /* ===== PNL CHART ===== */
+    (function pnlChart() {
+      const cv = document.getElementById('pnlChart');
+      const ctx = cv.getContext('2d');
+      function resize() {
+        const r = cv.parentElement.getBoundingClientRect();
+        cv.width = r.width * window.devicePixelRatio;
+        cv.height = r.height * window.devicePixelRatio;
+        ctx.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
+      }
+      resize(); window.addEventListener('resize', resize);
+
+      const series = [];
+      // Build a synthetic up-trending PnL line
+      let v = 0;
+      for (let i = 0; i < 60; i++) {
+        v += (Math.random() - 0.35) * 18;
+        series.push(v);
+      }
+
+      function draw() {
+        const r = cv.parentElement.getBoundingClientRect();
+        const W = r.width, H = r.height;
+        ctx.clearRect(0, 0, W, H);
+
+        const padL = 14, padR = 8, padT = 28, padB = 18;
+        const pw = W - padL - padR, ph = H - padT - padB;
+
+        // grid
+        ctx.strokeStyle = 'rgba(168, 216, 232, 0.08)';
+        ctx.lineWidth = 1;
+        for (let g = 0; g <= 3; g++) {
+          const y = padT + (ph * g / 3);
+          ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+        }
+
+        // zero line
+        const min = Math.min(...series), max = Math.max(...series);
+        const range = max - min || 1;
+        const yz = padT + ph - ((-min) / range) * ph;
+        ctx.strokeStyle = 'rgba(168, 216, 232, 0.18)';
+        ctx.setLineDash([3, 4]);
+        ctx.beginPath(); ctx.moveTo(padL, yz); ctx.lineTo(W - padR, yz); ctx.stroke();
+        ctx.setLineDash([]);
+
+        // line + area
+        ctx.beginPath();
+        for (let i = 0; i < series.length; i++) {
+          const x = padL + (pw * i / (series.length - 1));
+          const y = padT + ph - ((series[i] - min) / range) * ph;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        const lastX = padL + pw;
+        ctx.lineTo(lastX, padT + ph);
+        ctx.lineTo(padL, padT + ph);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(127, 224, 168, 0.10)';
+        ctx.fill();
+
+        ctx.beginPath();
+        for (let i = 0; i < series.length; i++) {
+          const x = padL + (pw * i / (series.length - 1));
+          const y = padT + ph - ((series[i] - min) / range) * ph;
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
+        ctx.strokeStyle = '#7fe0a8';
+        ctx.lineWidth = 1.6;
+        ctx.stroke();
+
+        // current point
+        const lx = padL + pw, ly = padT + ph - ((series[series.length - 1] - min) / range) * ph;
+        ctx.fillStyle = '#7fe0a8';
+        ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI * 2); ctx.fill();
+
+        // current label
+        ctx.font = '11px "Departure Mono", monospace';
+        ctx.fillStyle = '#7fe0a8';
+        ctx.textAlign = 'right';
+        ctx.fillText('+$' + Math.round(series[series.length - 1]) + ' PnL', W - padR, padT + 12);
+      }
+
+      function tick() {
+        // shift series
+        const last = series[series.length - 1];
+        const next = last + (Math.random() - 0.42) * 12;
+        series.shift(); series.push(next);
+        draw();
+        setTimeout(tick, 800);
+      }
+      draw(); tick();
+    })();
+  </script>
+</body>
+</html>

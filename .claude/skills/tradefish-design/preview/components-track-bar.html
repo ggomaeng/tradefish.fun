@@ -1,0 +1,72 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .hd { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .hd .v { color: var(--cyan); }
+
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 150px; gap: 14px; align-items: center; }
+  .bar-row .lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .bar-row .lbl .num { color: var(--fg-faintest); margin-left: 4px; }
+  .bar-row .val { font-family: var(--font-pixel); font-size: 12px; letter-spacing: 0.04em; color: var(--cream); text-align: right; }
+  .bar-row .val .l { color: var(--long); }
+  .bar-row .val .s { color: var(--short); }
+  .bar-row .val .h { color: var(--hold); }
+
+  .track { height: 22px; border: 1px solid var(--line); position: relative; background: var(--surface-glass); display: flex; }
+  .track .seg { height: 100%; }
+  .track .seg.long { background: var(--long); }
+  .track .seg.hold { background: var(--hold); }
+  .track .seg.short { background: var(--short); }
+  .track .threshold { position: absolute; top: -4px; bottom: -4px; left: 60%; width: 1px; background: var(--cyan); opacity: 0.7; }
+  .track .threshold::after { content: '60% ▸'; position: absolute; top: -14px; left: 4px; font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.18em; color: var(--cyan); }
+  .track.thin { height: 8px; }
+  .track.thin .seg.long { background: rgba(127,224,168,0.55); }
+  .track.thin .seg.short { background: rgba(224,117,96,0.55); }
+  .track.thin .seg.hold { background: rgba(255,184,74,0.45); }
+  .track.expo { height: 8px; }
+
+  .firing { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid rgba(168,216,232,0.32); background: rgba(168,216,232,0.04); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); margin-top: 4px; }
+  .firing .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .firing .v { color: var(--cyan); }
+  .firing .clk { margin-left: auto; color: var(--cream); font-family: var(--font-pixel); }
+</style></head>
+<body style="background:var(--bg-0);">
+<div class="hd">▸ 3-TRACK UP/DOWN BAR <span class="v">/ raw vote · pnl-weighted · notional · 60% fire threshold</span></div>
+
+<div class="bar-row">
+  <span class="lbl">▸ RAW VOTE <span class="num">12 agents</span></span>
+  <div class="track">
+    <div class="seg long" style="width: 58%"></div>
+    <div class="seg hold" style="width: 17%"></div>
+    <div class="seg short" style="width: 25%"></div>
+    <div class="threshold"></div>
+  </div>
+  <span class="val"><span class="l">L 58%</span> · <span class="h">H 17%</span> · <span class="s">S 25%</span></span>
+</div>
+<div class="bar-row">
+  <span class="lbl">▸ PNL-WEIGHTED <span class="num">bracket × conf</span></span>
+  <div class="track thin">
+    <div class="seg long" style="width: 67%"></div>
+    <div class="seg hold" style="width: 14%"></div>
+    <div class="seg short" style="width: 19%"></div>
+  </div>
+  <span class="val"><span class="l">LONG · 67%</span></span>
+</div>
+<div class="bar-row">
+  <span class="lbl">▸ NOTIONAL <span class="num">$ exposure</span></span>
+  <div class="track expo">
+    <div class="seg long" style="width: 71%"></div>
+    <div class="seg short" style="width: 29%"></div>
+  </div>
+  <span class="val"><span class="l">+$4,820</span> · <span class="s">-$1,940</span></span>
+</div>
+
+<div class="firing">
+  <span class="pulse"></span>
+  <span>MID-ROUND CHECK AT <span class="v">50% · t-32s</span></span>
+  <span>·</span>
+  <span>NEEDS <span class="v">+2pp</span> TO FIRE LONG</span>
+  <span class="clk">02:18</span>
+</div>
+</body></html>

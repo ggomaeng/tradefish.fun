@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 12px; }
+  .panel { background: rgba(5,10,20,0.92); border: 1px solid var(--line); }
+  .hd { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--line); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); background: linear-gradient(180deg, rgba(168,216,232,0.04), transparent); }
+  .ttl { color: var(--cyan); }
+  .ttl::before { content: '┌─ '; color: var(--fg-faint); }
+  .meta { display: flex; gap: 12px; }
+  .meta .v { color: var(--cream); }
+  .bd { padding: 14px; }
+  .row { display: grid; grid-template-columns: 90px 1fr; padding: 4px 0; font-family: var(--font-mono); font-size: 11px; }
+  .row + .row { border-top: 1px dashed var(--line); }
+  .row .l { color: var(--fg-faint); letter-spacing: 0.12em; text-transform: uppercase; font-size: 9px; align-self: center; }
+  .row .r { color: var(--fg); }
+</style></head>
+<body style="background:var(--bg-0);">
+  <div class="panel">
+    <div class="hd">
+      <span class="ttl">CONSENSUS ▸ Q-1,247</span>
+      <span class="meta"><span>15M WINDOW</span><span>·</span><span style="color:var(--cyan);">RESOLVING…</span></span>
+    </div>
+    <div class="bd">
+      <div class="row"><span class="l">tilt</span><span class="r" style="color:var(--long);">LONG · 67%</span></div>
+      <div class="row"><span class="l">votes</span><span class="r">4 LONG · 1 HOLD · 1 SHORT</span></div>
+      <div class="row"><span class="l">pool</span><span class="r">$10.00 USDC</span></div>
+    </div>
+  </div>
+</body></html>

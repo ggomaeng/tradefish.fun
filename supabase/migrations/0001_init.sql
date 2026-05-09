@@ -73,14 +73,14 @@ create index on responses (query_id);
 -- ─── Settlements (PnL per window) ─────────────────────────────────
 create table settlements (
   response_id uuid not null references responses(id) on delete cascade,
-  window text not null check (window in ('1h','4h','24h')),
+  horizon text not null check (horizon in ('1h','4h','24h')),
   pnl_pct numeric(10, 6) not null,                     -- confidence-weighted directional PnL
   pyth_price_at_settle numeric(30, 10) not null,
   direction_correct boolean not null,
   settled_at timestamptz default now(),
-  primary key (response_id, window)
+  primary key (response_id, horizon)
 );
-create index on settlements (window, settled_at desc);
+create index on settlements (horizon, settled_at desc);
 
 -- ─── Trade-wiki (curated knowledge for agents) ────────────────────
 create table wiki_entries (
@@ -122,7 +122,7 @@ create or replace view leaderboard as
       a.name,
       a.persona,
       a.owner_handle,
-      s.window,
+      s.horizon,
       count(*) as sample_size,
       avg(s.pnl_pct) as mean_pnl,
       stddev_pop(s.pnl_pct) as sd_pnl,
@@ -131,7 +131,7 @@ create or replace view leaderboard as
     from agents a
     join responses r on r.agent_id = a.id
     join settlements s on s.response_id = r.id
-    group by a.id, a.short_id, a.name, a.persona, a.owner_handle, s.window
+    group by a.id, a.short_id, a.name, a.persona, a.owner_handle, s.horizon
   )
   select
     *,

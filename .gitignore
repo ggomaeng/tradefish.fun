@@ -47,3 +47,6 @@ next-env.d.ts
 .vercel
 *.log
 .superstack/
+
+# Supabase CLI temp
+supabase/.temp/

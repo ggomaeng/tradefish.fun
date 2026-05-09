@@ -1,0 +1,29 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
+  .cell { padding: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; align-items: center; min-height: 70px; justify-content: center; }
+  .cell .glyph { font-family: var(--font-mono); font-size: 18px; color: var(--cream); letter-spacing: 0.08em; }
+  .cell .name { font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-faint); }
+</style></head>
+<body style="background:var(--bg-0);">
+<div class="grid">
+  <div class="cell"><span class="glyph" style="color:var(--magenta);">◆◆◆</span><span class="name">legend</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--cyan);">◆◆</span><span class="name">whale</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--amber);">◆</span><span class="name">gold</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--spec-3);">◇</span><span class="name">silver</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--violet);">◇</span><span class="name">bronze</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--cyan); animation: tf-blink 2s steps(1) infinite;">●</span><span class="name">live</span></div>
+  <div class="cell"><span class="glyph">▸</span><span class="name">lead</span></div>
+  <div class="cell"><span class="glyph">·</span><span class="name">sep</span></div>
+  <div class="cell"><span class="glyph">→</span><span class="name">arrow</span></div>
+  <div class="cell"><span class="glyph">┌─</span><span class="name">frame</span></div>
+  <div class="cell"><span class="glyph">└─</span><span class="name">frame</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--long);">▲</span><span class="name">tick up</span></div>
+  <div class="cell"><span class="glyph" style="color:var(--short);">▼</span><span class="name">tick dn</span></div>
+  <div class="cell"><span class="glyph">↵</span><span class="name">enter</span></div>
+  <div class="cell"><span class="glyph">$</span><span class="name">prompt</span></div>
+  <div class="cell"><span class="glyph">◯</span><span class="name">idle</span></div>
+</div>
+</body></html>

@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 18px; background: var(--bg-0); display: flex; flex-direction: column; gap: 16px; }
+  .head { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .head .v { color: var(--spec-4); }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chip {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    background: var(--bg-1);
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .chip .lhs { display: flex; align-items: center; gap: 10px; }
+  .chip .glyph {
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-pixel); font-size: 13px; font-weight: 700;
+    border: 1px solid currentColor;
+  }
+  .chip .name { color: var(--fg); letter-spacing: 0.04em; }
+  .chip .role { color: var(--fg-faintest); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; }
+
+  .c-sol      { color: var(--c-solana); border-color: var(--line); }
+  .c-jup      { color: var(--c-jupiter); }
+  .c-helius   { color: var(--c-helius); }
+  .c-dex      { color: var(--c-dexscreener); }
+  .c-rug      { color: var(--c-rugcheck); }
+  .c-phantom  { color: var(--c-phantom); }
+  .c-agent    { color: var(--c-agentkit); }
+  .c-snew     { color: var(--spec-3); }
+</style></head>
+<body>
+  <div class="head">▸ SOLANA ECOSYSTEM CHIPS <span class="v">/ tools mapped to spectrum stops, never to vendor brand</span></div>
+  <div class="grid">
+    <div class="chip c-sol"><div class="lhs"><span class="glyph">◇</span><span class="name">Solana</span></div><span class="role">CHAIN</span></div>
+    <div class="chip c-jup"><div class="lhs"><span class="glyph">J</span><span class="name">Jupiter</span></div><span class="role">DEX · ROUTING</span></div>
+    <div class="chip c-helius"><div class="lhs"><span class="glyph">H</span><span class="name">Helius</span></div><span class="role">RPC · WHALES</span></div>
+    <div class="chip c-dex"><div class="lhs"><span class="glyph">D</span><span class="name">DexScreener</span></div><span class="role">CHARTS · VOL</span></div>
+    <div class="chip c-rug"><div class="lhs"><span class="glyph">!</span><span class="name">RugCheck</span></div><span class="role">RISK</span></div>
+    <div class="chip c-phantom"><div class="lhs"><span class="glyph">P</span><span class="name">Phantom</span></div><span class="role">WALLET</span></div>
+    <div class="chip c-agent"><div class="lhs"><span class="glyph">⌬</span><span class="name">Agent Kit</span></div><span class="role">SDK</span></div>
+    <div class="chip c-snew"><div class="lhs"><span class="glyph">▸</span><span class="name">solana.new</span></div><span class="role">SCAFFOLD</span></div>
+  </div>
+</body></html>

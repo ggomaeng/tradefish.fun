@@ -1,0 +1,73 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 22px; background: var(--bg-0); display: flex; flex-direction: column; gap: 24px; }
+  .head { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .head .v { color: var(--spec-4); }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+
+  .demo {
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    height: 120px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    padding: 16px;
+  }
+  .demo .lbl { position: absolute; top: 8px; left: 10px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faintest); }
+  .demo .meta { position: absolute; bottom: 8px; right: 10px; font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.14em; color: var(--fg-faintest); }
+
+  .num { font-family: var(--font-pixel); font-size: 30px; letter-spacing: 0.04em; }
+  .pill {
+    padding: 6px 14px;
+    border: 1px solid currentColor;
+    font-family: var(--font-pixel);
+    font-size: 13px; letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .g-cyan    { color: var(--cyan); }
+  .g-cyan .num { box-shadow: var(--glow-cyan); }
+  .g-magenta { color: var(--magenta); }
+  .g-magenta .num { text-shadow: 0 0 14px var(--short-glow); }
+  .g-mint    { color: var(--mint); }
+  .g-mint .num { text-shadow: 0 0 14px var(--long-glow); }
+
+  .halo-cyan    { box-shadow: var(--halo-cyan); }
+  .halo-magenta { box-shadow: var(--halo-magenta); }
+  .halo-mint    { box-shadow: var(--halo-mint); }
+
+  .bloom-pill-cyan    { color: var(--cyan);    box-shadow: var(--bloom-cyan); }
+  .bloom-pill-magenta { color: var(--magenta); box-shadow: var(--bloom-magenta); }
+  .bloom-pill-mint    { color: var(--mint);    box-shadow: var(--bloom-mint); }
+</style></head>
+<body>
+
+  <div>
+    <div class="head" style="margin-bottom:10px;">▸ GLOW · INLINE <span class="v">/ text-shadow on numbers — for PnL, prices, conf</span></div>
+    <div class="row">
+      <div class="demo g-cyan"><span class="lbl">--glow-cyan / live</span><span class="num">+$184.20</span><span class="meta">--cyan</span></div>
+      <div class="demo g-magenta"><span class="lbl">--short-glow</span><span class="num">−$112.40</span><span class="meta">--magenta</span></div>
+      <div class="demo g-mint"><span class="lbl">--long-glow</span><span class="num">+27.4%</span><span class="meta">--mint</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="head" style="margin-bottom:10px;">▸ HALO · CARD <span class="v">/ box-shadow on panel — for active card / hover</span></div>
+    <div class="row">
+      <div class="demo halo-cyan" style="border-color: var(--line-cyan);"><span class="lbl">--halo-cyan</span><span class="pill" style="color:var(--cyan)">ACTIVE</span><span class="meta">card hover</span></div>
+      <div class="demo halo-magenta" style="border-color: var(--line-magenta);"><span class="lbl">--halo-magenta</span><span class="pill" style="color:var(--magenta)">ALERT</span><span class="meta">risk surface</span></div>
+      <div class="demo halo-mint" style="border-color: var(--line-mint);"><span class="lbl">--halo-mint</span><span class="pill" style="color:var(--mint)">SETTLED</span><span class="meta">done state</span></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="head" style="margin-bottom:10px;">▸ BLOOM · CTA <span class="v">/ multi-stop shadow for the one hero element per surface</span></div>
+    <div class="row">
+      <div class="demo"><span class="lbl">--bloom-cyan</span><span class="pill bloom-pill-cyan">PLUG IN</span><span class="meta">primary CTA</span></div>
+      <div class="demo"><span class="lbl">--bloom-magenta</span><span class="pill bloom-pill-magenta">SHORT @ $0.083</span><span class="meta">decisive call</span></div>
+      <div class="demo"><span class="lbl">--bloom-mint</span><span class="pill bloom-pill-mint">+184% MoM</span><span class="meta">hero stat</span></div>
+    </div>
+  </div>
+
+</body></html>

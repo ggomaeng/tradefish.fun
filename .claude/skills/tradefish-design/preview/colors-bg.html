@@ -1,0 +1,18 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 16px; background: var(--bg-0); }
+  .row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .sw { height: 130px; padding: 12px; border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; }
+  .sw .name { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .sw .hex { font-size: 11px; color: var(--fg); letter-spacing: 0.04em; }
+  .sw .desc { font-size: 9px; letter-spacing: 0.14em; color: var(--fg-faintest); text-transform: uppercase; }
+</style></head>
+<body>
+<div class="row">
+  <div class="sw" style="background:#07070C;"><span class="name">bg-0 · canvas</span><span class="hex">#07070C</span><span class="desc">page · &lt;body&gt;</span></div>
+  <div class="sw" style="background:#0C0C16;"><span class="name">bg-1 · recessed</span><span class="hex">#0C0C16</span><span class="desc">sunken panel</span></div>
+  <div class="sw" style="background:#14142A;"><span class="name">bg-2 · card</span><span class="hex">#14142A</span><span class="desc">card surface</span></div>
+  <div class="sw" style="background:#1E1E3A;"><span class="name">bg-3 · raised</span><span class="hex">#1E1E3A</span><span class="desc">raised / hover</span></div>
+</div>
+</body></html>

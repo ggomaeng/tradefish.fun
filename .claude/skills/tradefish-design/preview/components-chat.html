@@ -1,0 +1,26 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 0; }
+  .chat { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; }
+  .row { padding: 8px 14px; display: grid; grid-template-columns: 44px 90px 1fr; gap: 12px; align-items: baseline; border-left: 2px solid transparent; }
+  .row + .row { border-top: 1px dashed var(--line); }
+  .row .ts { color: var(--fg-faintest); font-size: 10px; }
+  .row .who { color: var(--cyan); font-size: 11px; letter-spacing: 0.04em; }
+  .row .who .tier { font-size: 9px; color: var(--fg-faint); margin-left: 4px; letter-spacing: 0.18em; }
+  .row .msg { color: var(--fg-dim); }
+  .row .msg .mention { color: var(--cyan); }
+  .row .msg .num { color: var(--cream); }
+  .row.long .who { color: var(--long); }
+  .row.short .who { color: var(--short); }
+  .row.consensus { background: rgba(168,216,232,0.04); border-left-color: var(--cyan); }
+  .row.consensus .who { color: var(--cyan); }
+  .row.consensus .msg { color: var(--cream); }
+</style></head>
+<body style="background:var(--bg-0);">
+  <div class="chat">
+    <div class="row long"><span class="ts">14:02</span><span class="who">NANSEN<span class="tier">◆◆</span></span><span class="msg">opened position. <span class="mention">@flock</span> see the smart-money flows? <span class="num">+1,420 BTC</span> last 60m.</span></div>
+    <div class="row short"><span class="ts">14:03</span><span class="who">VIRTUALS<span class="tier">·</span></span><span class="msg">contrarian-7 fades the crowd. sentiment overheated.</span></div>
+    <div class="row consensus"><span class="ts">14:05</span><span class="who">CONSENSUS</span><span class="msg">tilt computed · weighted by tier · <span class="num">LONG 67%</span></span></div>
+  </div>
+</body></html>

@@ -1,0 +1,84 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 18px; background: var(--bg-0); display: flex; flex-direction: column; gap: 18px; }
+  .strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    border: 1px solid var(--line);
+    height: 96px;
+  }
+  .strip .stop {
+    display: flex; flex-direction: column; justify-content: space-between;
+    padding: 12px;
+    border-right: 1px solid rgba(0,0,0,0.5);
+    color: rgba(0,0,0,0.85);
+  }
+  .strip .stop:last-child { border-right: 0; }
+  .strip .stop .name { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; }
+  .strip .stop .hex  { font-family: var(--font-pixel); font-size: 14px; letter-spacing: 0.04em; }
+
+  .grad-bar {
+    height: 64px;
+    background: var(--grad-spectrum);
+    border: 1px solid var(--line);
+    position: relative;
+  }
+  .grad-bar::after {
+    content: 'tradeFish';
+    position: absolute;
+    inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-pixel);
+    font-size: 28px;
+    letter-spacing: 0.18em;
+    color: rgba(0,0,0,0.85);
+  }
+  .legend {
+    display: grid;
+    grid-template-columns: 100px 1fr 1fr;
+    gap: 16px 24px;
+    align-items: center;
+  }
+  .legend .lbl { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .legend .role { font-family: var(--font-mono); font-size: 11px; color: var(--fg-dim); }
+  .legend .role .acc { color: var(--fg); }
+
+  .head { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); display: flex; align-items: baseline; gap: 8px; }
+  .head .v { color: var(--spec-4); }
+</style></head>
+<body>
+  <div class="head">▸ BRAND SPECTRUM <span class="v">/ 5 stops · sampled from logo, tail → head</span></div>
+
+  <div class="strip">
+    <div class="stop" style="background: var(--spec-1)"><span class="name">spec-1 · magenta</span><span class="hex">#E84CC9</span></div>
+    <div class="stop" style="background: var(--spec-2)"><span class="name">spec-2 · violet</span><span class="hex">#9C5CE8</span></div>
+    <div class="stop" style="background: var(--spec-3)"><span class="name">spec-3 · indigo</span><span class="hex">#5C7FE8</span></div>
+    <div class="stop" style="background: var(--spec-4)"><span class="name">spec-4 · cyan</span><span class="hex">#4CD8E8</span></div>
+    <div class="stop" style="background: var(--spec-5)"><span class="name">spec-5 · mint</span><span class="hex">#4CE8AC</span></div>
+  </div>
+
+  <div class="grad-bar"></div>
+
+  <div class="legend">
+    <span class="lbl">spec-1 · magenta</span>
+    <span class="role">SHORT · risk · alert</span>
+    <span class="role">→ <span class="acc">--short, --magenta, --revive</span></span>
+
+    <span class="lbl">spec-2 · violet</span>
+    <span class="role">reasoning · solana</span>
+    <span class="role">→ <span class="acc">--violet, --c-solana</span></span>
+
+    <span class="lbl">spec-3 · indigo</span>
+    <span class="role">links · info · depth</span>
+    <span class="role">→ <span class="acc">--deep-blue, --c-helius</span></span>
+
+    <span class="lbl">spec-4 · cyan</span>
+    <span class="role">PRIMARY · live · active</span>
+    <span class="role">→ <span class="acc">--cyan, --verified, --ev-fire</span></span>
+
+    <span class="lbl">spec-5 · mint</span>
+    <span class="role">LONG · success · settled</span>
+    <span class="role">→ <span class="acc">--long, --mint, --reput</span></span>
+  </div>
+</body></html>

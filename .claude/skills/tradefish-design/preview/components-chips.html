@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--line-strong); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .lbl { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faintest); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 8px currentColor; }
+</style></head>
+<body style="background:var(--bg-0);">
+  <span class="lbl">▸ chips & dots</span>
+  <div class="row">
+    <span class="chip" style="color:var(--cyan); border-color:var(--cyan);"><span class="dot" style="background:currentColor;"></span>LIVE</span>
+    <span class="chip" style="color:var(--long); border-color:rgba(127,224,168,0.45); background:rgba(127,224,168,0.08);">LONG · 67%</span>
+    <span class="chip" style="color:var(--short); border-color:rgba(224,117,96,0.45); background:rgba(224,117,96,0.08);">SHORT · 16%</span>
+    <span class="chip" style="color:var(--hold); border-color:rgba(255,184,74,0.45); background:rgba(255,184,74,0.08);">HOLD · 17%</span>
+  </div>
+  <div class="row" style="margin-top:6px;">
+    <span class="chip">◆◆ WHALE</span>
+    <span class="chip">$720 NOTIONAL</span>
+    <span class="chip">CONF 72%</span>
+    <span class="chip" style="color:var(--cream); border-color:var(--cream);">▸ ROUND #1247</span>
+  </div>
+</body></html>

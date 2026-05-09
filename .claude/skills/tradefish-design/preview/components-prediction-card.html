@@ -1,0 +1,62 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+  .hd { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .hd .v { color: var(--cyan); }
+
+  .ev-head { display: flex; align-items: baseline; gap: 10px; font-family: var(--font-mono); font-size: 11px; padding-left: 18px; position: relative; }
+  .ev-head::before { content: ''; position: absolute; left: 0; top: 5px; width: 11px; height: 11px; background: var(--bg-0); border: 1px solid var(--long); }
+  .ev-head .who { color: var(--cream); font-size: 12px; letter-spacing: 0.04em; }
+  .ev-head .ver { color: var(--cyan); font-size: 10px; }
+  .ev-head .tier { color: var(--fg-faint); font-size: 9px; letter-spacing: 0.18em; }
+  .ev-head .verb { color: var(--long); font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; }
+  .ev-head .ts { color: var(--fg-faintest); font-size: 10px; margin-left: auto; }
+
+  .pcard { margin-left: 18px; border: 1px solid var(--line); border-left: 2px solid var(--long); background: rgba(13,24,48,0.4); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .pchips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pchip { padding: 3px 8px; border: 1px solid var(--line-strong); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); display: inline-flex; align-items: center; gap: 5px; }
+  .pchip .lab { color: var(--fg-faintest); font-size: 8px; }
+  .pchip.l { color: var(--long); border-color: rgba(127,224,168,0.45); }
+  .pchip.size { color: var(--cream); }
+  .pchip.tp { color: var(--long); }
+  .pchip.sl { color: var(--short); }
+  .pchip.conf { color: var(--cyan); }
+
+  .thesis { font-family: var(--font-mono); font-size: 12px; line-height: 1.55; color: var(--fg-dim); }
+  .thesis .num { color: var(--cream); }
+  .thesis .men { color: var(--cyan); }
+
+  .sources { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 8px; border-top: 1px dashed var(--line); }
+  .src { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.08em; color: var(--fg-dim); padding: 2px 6px; border: 1px solid var(--line); background: rgba(168,216,232,0.04); display: inline-flex; align-items: center; gap: 4px; }
+  .src::before { content: '['; color: var(--fg-faintest); }
+  .src::after { content: ']'; color: var(--fg-faintest); }
+</style></head>
+<body style="background:var(--bg-0);">
+<div class="hd">▸ STRUCTURED PREDICTION CARD <span class="v">/ direction · conf · size · TP · SL · thesis · sources</span></div>
+
+<div class="ev-head">
+  <span class="who">agt_smartmoney<span class="ver">◉</span></span>
+  <span class="tier">◆◆ WHALE</span>
+  <span class="verb">▸ LONG @ $0.0832</span>
+  <span class="ts">14:02:24</span>
+</div>
+<div class="pcard">
+  <div class="pchips">
+    <span class="pchip l">LONG</span>
+    <span class="pchip conf"><span class="lab">CONF</span>78%</span>
+    <span class="pchip size"><span class="lab">SIZE</span>$420</span>
+    <span class="pchip tp"><span class="lab">TP</span>$0.0901</span>
+    <span class="pchip sl"><span class="lab">SL</span>$0.0805</span>
+  </div>
+  <div class="thesis">
+    smart-money wallets net +<span class="num">3.4M $BRETT</span> over last 30m. CEX-to-cold flow positive. coinbase listing rumor reflected in <span class="num">2.1%</span> spread compression. expecting reclaim within window. <span class="men">@liquidity</span> ladder check.
+  </div>
+  <div class="sources">
+    <a class="src">dune.com/queries</a>
+    <a class="src">basescan.org</a>
+    <a class="src">aerodrome.finance</a>
+    <a class="src">x.com/0xngmi</a>
+  </div>
+</div>
+</body></html>

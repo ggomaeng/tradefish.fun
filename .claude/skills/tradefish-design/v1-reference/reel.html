@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>TradeFish — Hero Reel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body { background: #000; overflow: hidden; }
+  .reel-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .scene-root { position: absolute; inset: 0; }
+  .home-link { position: fixed; top: 16px; left: 16px; z-index: 999; font-family: var(--font-mono); font-size: 11px; color: var(--fg-faint); text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 6px; background: rgba(8, 16, 28, 0.7); }
+  .home-link:hover { color: var(--cyan); border-color: var(--cyan); }
+</style>
+</head>
+<body>
+  <a class="home-link" href="../index.html">← TradeFish</a>
+  <div id="root" style="position:fixed;inset:0;"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script src="../data.js"></script>
+  <script src="../swarm.js"></script>
+  <script type="text/babel" src="../animations.jsx"></script>
+  <script type="text/babel" src="reel-scenes.jsx"></script>
+
+  <script type="text/babel">
+    const TF = window.TF;
+    const { Stage, Sprite, TextSprite, RectSprite, useTime, useSprite, Easing, interpolate, animate } = window;
+
+    function Reel() {
+      const stageW = 1920, stageH = 1080;
+      // Scene timeline (seconds)
+      // 0..6   problem
+      // 6..14  question
+      // 14..28 agents enter, predictions land
+      // 28..40 consensus assembled
+      // 40..52 settle (price moves)
+      // 52..62 leaderboard reshuffle
+      // 62..72 fee distribution
+      // 72..90 6→60→600→60,000 finale
+      const DUR = 90;
+
+      return (
+        <Stage width={stageW} height={stageH} duration={DUR} background="#04090f" persistKey="tf-reel">
+          <ReelStage />
+        </Stage>
+      );
+    }
+
+    function ReelStage() {
+      const time = useTime();
+      // Update screen-label every second for commentable timestamps
+      React.useEffect(() => {
+        const root = document.getElementById('root');
+        if (root) root.setAttribute('data-screen-label', `${Math.floor(time)}s`);
+      }, [Math.floor(time)]);
+
+      return (
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          {/* Continuous swarm canvas underneath all scenes */}
+          <SwarmLayer time={time} />
+          {/* Hairline grid */}
+          <div className="tf-grid-bg" style={{ position: 'absolute', inset: 0 }}></div>
+
+          <Sprite start={0} end={6}><SceneProblem /></Sprite>
+          <Sprite start={6} end={14}><SceneQuestion /></Sprite>
+          <Sprite start={14} end={28}><SceneAgents /></Sprite>
+          <Sprite start={28} end={40}><SceneConsensus /></Sprite>
+          <Sprite start={40} end={52}><SceneSettle /></Sprite>
+          <Sprite start={52} end={62}><SceneLeaderboard /></Sprite>
+          <Sprite start={62} end={72}><SceneFees /></Sprite>
+          <Sprite start={72} end={90}><SceneFinale /></Sprite>
+
+          {/* Vignette + chrome */}
+          <div className="tf-vignette" style={{ position: 'absolute', inset: 0 }}></div>
+          <ReelChrome />
+          <ReelCaption />
+        </div>
+      );
+    }
+
+    function ReelChrome() {
+      const time = useTime();
+      return (
+        <>
+          <div style={{ position: 'absolute', top: 32, left: 40, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 24, height: 24, borderRadius: 5, background: 'radial-gradient(circle at 30% 30%, oklch(86% 0.18 200), oklch(60% 0.20 240))', boxShadow: '0 0 14px rgba(120, 200, 255, 0.4)' }}></div>
+            <span style={{ fontWeight: 600, fontSize: 18, letterSpacing: '-0.02em' }}>TradeFish</span>
+          </div>
+          <div style={{ position: 'absolute', top: 32, right: 40, display: 'flex', gap: 18, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--fg-faint)', letterSpacing: '0.12em' }}>
+            <span><span className="tf-dot" style={{ display: 'inline-block', marginRight: 6 }}></span>ARENA #042</span>
+            <span>BASE · L2</span>
+            <span style={{ color: 'var(--cyan)' }}>{String(Math.floor(time)).padStart(2, '0')}:{String(Math.floor((time % 1) * 60)).padStart(2, '0')}</span>
+          </div>
+        </>
+      );
+    }
+
+    function ReelCaption() {
+      const time = useTime();
+      const captions = [
+        { t: 0,  end: 6,  text: 'Trading agents make claims without consequences.' },
+        { t: 6,  end: 14, text: 'TradeFish: every answer becomes a paper trade.' },
+        { t: 14, end: 28, text: 'Six verified agents enter positions.' },
+        { t: 28, end: 40, text: 'Consensus weighted by past PnL.' },
+        { t: 40, end: 52, text: 'The market moves. PnL is real.' },
+        { t: 52, end: 62, text: 'Reputation reshuffles.' },
+        { t: 62, end: 72, text: 'Fee pool distributes — only winners earn.' },
+        { t: 72, end: 90, text: 'What if it wasn\u2019t 6 agents… but 60,000?' },
+      ];
+      const cap = captions.find(c => time >= c.t && time < c.end);
+      if (!cap) return null;
+      const local = time - cap.t;
+      const dur = cap.end - cap.t;
+      const fade = Math.min(1, local / 0.5) * Math.min(1, (dur - local) / 0.6);
+      return (
+        <div style={{
+          position: 'absolute', bottom: 56, left: '50%', transform: 'translateX(-50%)',
+          opacity: fade, fontSize: 22, color: 'var(--fg-dim)', letterSpacing: '-0.005em',
+          fontWeight: 400, textAlign: 'center', maxWidth: 1100,
+        }}>
+          {cap.text}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Reel />);
+  </script>
+</body>
+</html>

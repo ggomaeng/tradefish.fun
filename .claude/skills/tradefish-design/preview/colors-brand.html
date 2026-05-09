@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 16px; background: var(--bg-0); display: flex; flex-direction: column; gap: 12px; }
+  .grp .hd { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg-faint); margin-bottom: 8px; }
+  .grp .hd .v { color: var(--spec-4); }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .sw { height: 92px; padding: 10px 12px; border: 1px solid var(--line); display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-1); position: relative; }
+  .sw .chip { width: 24px; height: 24px; }
+  .sw .name { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .sw .hex { font-size: 11px; color: var(--fg); letter-spacing: 0.04em; }
+  .sw .desc { font-size: 9px; letter-spacing: 0.14em; color: var(--fg-faintest); text-transform: uppercase; }
+</style></head>
+<body>
+<div class="grp">
+  <div class="hd">▸ CYAN <span class="v">/ primary · live · active</span></div>
+  <div class="row">
+    <div class="sw"><span class="name">cyan · spec-4</span><div class="chip" style="background:var(--spec-4)"></div><span class="hex">#4CD8E8</span><span class="desc">primary CTA · live</span></div>
+    <div class="sw"><span class="name">cyan-bright</span><div class="chip" style="background:var(--spec-4-soft)"></div><span class="hex">#8DE8F0</span><span class="desc">hover · headline glow</span></div>
+    <div class="sw"><span class="name">cyan-dim</span><div class="chip" style="background:var(--spec-4-dim)"></div><span class="hex">#246870</span><span class="desc">tracks · dim labels</span></div>
+  </div>
+</div>
+<div class="grp">
+  <div class="hd">▸ MAGENTA <span class="v">/ short · risk · alert</span></div>
+  <div class="row">
+    <div class="sw"><span class="name">magenta · spec-1</span><div class="chip" style="background:var(--spec-1)"></div><span class="hex">#E84CC9</span><span class="desc">SHORT · alert · revive</span></div>
+    <div class="sw"><span class="name">magenta-bright</span><div class="chip" style="background:var(--spec-1-soft)"></div><span class="hex">#F490DC</span><span class="desc">hover · soft glow</span></div>
+    <div class="sw"><span class="name">magenta-dim</span><div class="chip" style="background:var(--spec-1-dim)"></div><span class="hex">#6E2865</span><span class="desc">tracks · disabled</span></div>
+  </div>
+</div>
+<div class="grp">
+  <div class="hd">▸ MINT <span class="v">/ long · success · settled</span></div>
+  <div class="row">
+    <div class="sw"><span class="name">mint · spec-5</span><div class="chip" style="background:var(--spec-5)"></div><span class="hex">#4CE8AC</span><span class="desc">LONG · PnL · settled</span></div>
+    <div class="sw"><span class="name">mint-bright</span><div class="chip" style="background:var(--spec-5-soft)"></div><span class="hex">#8DEEC2</span><span class="desc">hover · highlight</span></div>
+    <div class="sw"><span class="name">mint-dim</span><div class="chip" style="background:var(--spec-5-dim)"></div><span class="hex">#247052</span><span class="desc">muted positive</span></div>
+  </div>
+</div>
+<div class="grp">
+  <div class="hd">▸ VIOLET <span class="v">/ reasoning · solana · thesis depth</span></div>
+  <div class="row">
+    <div class="sw"><span class="name">violet · spec-2</span><div class="chip" style="background:var(--spec-2)"></div><span class="hex">#9C5CE8</span><span class="desc">sol chain · reasoning</span></div>
+    <div class="sw"><span class="name">violet-bright</span><div class="chip" style="background:var(--spec-2-soft)"></div><span class="hex">#BF95F0</span><span class="desc">hover</span></div>
+    <div class="sw"><span class="name">violet-dim</span><div class="chip" style="background:var(--spec-2-dim)"></div><span class="hex">#4D2C70</span><span class="desc">muted reasoning</span></div>
+  </div>
+</div>
+</body></html>

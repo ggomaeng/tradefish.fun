@@ -7,8 +7,16 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 export default async function OG() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
-  const logoSrc = `${baseUrl}/logo.png`;
+  // Colocated assets — bundled at build time, no runtime network fetch needed.
+  const [fontData, logoBuf] = await Promise.all([
+    fetch(new URL("./DepartureMono-Regular.otf", import.meta.url)).then((r) => r.arrayBuffer()),
+    fetch(new URL("./logo-og.png", import.meta.url)).then((r) => r.arrayBuffer()),
+  ]);
+  const logoSrc = `data:image/png;base64,${Buffer.from(logoBuf).toString("base64")}`;
+  const fonts = [
+    { name: "Departure Mono", data: fontData, weight: 400 as const, style: "normal" as const },
+  ];
+  const fontFamily = "Departure Mono";
 
   return new ImageResponse(
     (
@@ -18,15 +26,16 @@ export default async function OG() {
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          padding: "72px 80px",
+          justifyContent: "space-between",
+          padding: "64px 72px",
           background:
             "radial-gradient(ellipse at top right, rgba(217,107,170,0.18), transparent 55%), radial-gradient(ellipse at bottom left, rgba(168,216,232,0.18), transparent 55%), #050a14",
-          fontFamily: "ui-monospace, SF Mono, Menlo, monospace",
+          fontFamily,
           color: "#f0e9e1",
           position: "relative",
         }}
       >
-        {/* Subtle grid */}
+        {/* Subtle dot lattice */}
         <div
           style={{
             position: "absolute",
@@ -48,73 +57,63 @@ export default async function OG() {
         >
           <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={logoSrc} alt="" width={64} height={64} style={{ borderRadius: 12 }} />
+            <img src={logoSrc} alt="" width={56} height={56} style={{ borderRadius: 10 }} />
             <span style={{ fontSize: 22, letterSpacing: "0.22em" }}>TRADEFISH</span>
           </div>
-          <span style={{ fontSize: 16, letterSpacing: "0.22em", color: "#a8d8e8" }}>
-            ▣ SOLANA SWARM
+          <span style={{ fontSize: 15, letterSpacing: "0.22em", color: "#a8d8e8" }}>
+            ► SOLANA SWARM
           </span>
         </div>
 
-        {/* Headline */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            marginTop: 80,
-            zIndex: 1,
-          }}
-        >
+        {/* Hero */}
+        <div style={{ display: "flex", flexDirection: "column", zIndex: 1 }}>
           <span
             style={{
-              fontSize: 16,
+              fontSize: 15,
               letterSpacing: "0.32em",
               color: "#6a7a8a",
               marginBottom: 24,
             }}
           >
-            ▸ JOIN THE WAITLIST · FREE CREDITS AT LAUNCH
+            ► JOIN THE WAITLIST · FREE CREDITS AT LAUNCH
           </span>
           <span
             style={{
-              fontSize: 88,
-              lineHeight: 0.95,
-              letterSpacing: "0.02em",
+              fontSize: 80,
+              lineHeight: 1,
+              letterSpacing: 0,
               color: "#f0e9e1",
               display: "flex",
               flexDirection: "column",
             }}
           >
-            <span>DON'T BUILD</span>
+            <span>DON&apos;T BUILD</span>
             <span>ONE BOT.</span>
             <span style={{ color: "#a8d8e8" }}>JOIN THE SWARM.</span>
           </span>
         </div>
 
-        {/* Subhead */}
+        {/* Footer */}
         <div
           style={{
             display: "flex",
-            position: "absolute",
-            bottom: 72,
-            left: 80,
-            right: 80,
             justifyContent: "space-between",
             alignItems: "flex-end",
+            gap: 32,
             zIndex: 1,
           }}
         >
           <span
             style={{
-              fontSize: 22,
+              fontSize: 20,
               lineHeight: 1.4,
               color: "#a8b8c8",
-              maxWidth: 720,
+              maxWidth: 760,
               display: "flex",
             }}
           >
-            Plug in your trading agent. Every answer becomes a paper trade,
-            scored by PnL. Solana-native, Pyth-settled.
+            Plug in your trading agent. Every answer becomes a paper trade, scored by PnL.
+            Solana-native, Pyth-settled.
           </span>
           <span style={{ fontSize: 18, letterSpacing: "0.22em", color: "#a8d8e8" }}>
             tradefish.fun
@@ -122,6 +121,6 @@ export default async function OG() {
         </div>
       </div>
     ),
-    { ...size }
+    { ...size, fonts }
   );
 }

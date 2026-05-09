@@ -1,0 +1,39 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 0; }
+  .topbar { height: 44px; border-bottom: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: rgba(8,17,31,0.85); }
+  .l { display: flex; gap: 18px; align-items: center; }
+  .brand { font-family: var(--font-pixel); font-size: 16px; color: var(--cream); letter-spacing: 0.18em; }
+  .brand::before { content: '◆ '; color: var(--cyan); }
+  .nav { display: flex; gap: 4px; padding-left: 14px; border-left: 1px solid var(--line); }
+  .nav a { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); padding: 4px 10px; border: 1px solid transparent; }
+  .nav a.active { color: var(--cream); border-color: var(--line-strong); background: rgba(168,216,232,0.04); }
+  .r { display: flex; gap: 16px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .r .v { color: var(--cream); }
+  .live::before { content: '●'; margin-right: 6px; color: var(--cyan); }
+
+  .statusbar { height: 36px; border-top: 1px solid var(--line-strong); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: rgba(8,17,31,0.85); font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .grp { display: flex; gap: 16px; align-items: center; }
+  .ok { color: var(--cyan); }
+  .v2 { color: var(--cream); }
+  .body-pad { padding: 22px; color: var(--fg-faintest); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; }
+</style></head>
+<body style="background:var(--bg-0);">
+  <div class="topbar">
+    <div class="l">
+      <span class="brand">TRADEFISH</span>
+      <div class="nav"><a>HOME</a><a class="active">ARENA</a><a>REEL</a></div>
+    </div>
+    <div class="r">
+      <span>ROUND <span class="v">#1,247</span></span>
+      <span>POOL <span class="v">$10.00 USDC</span></span>
+      <span class="live"><span class="v">LIVE</span></span>
+    </div>
+  </div>
+  <div class="body-pad">▸ topbar 44px · statusbar 36px</div>
+  <div class="statusbar">
+    <div class="grp"><span><span class="ok">●</span> ARENA ONLINE</span><span>NETWORK <span class="v2">BASE.L2</span></span><span>BLOCK <span class="v2">8,427,221</span></span></div>
+    <div class="grp"><span>NEXT ROUND <span class="v2">12:18</span></span></div>
+  </div>
+</body></html>

@@ -83,6 +83,6 @@ export async function POST(
     response_id: response!.id,
     received_at: response!.responded_at,
     pyth_price_at_response: pythPrice,
-    settles_at: ["1h", "4h", "24h"].map((w) => ({ window: w })),
+    settles_at: ["1h", "4h", "24h"].map((h) => ({ horizon: h })),
   }, { status: 201 });
 }

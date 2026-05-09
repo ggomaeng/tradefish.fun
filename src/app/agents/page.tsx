@@ -21,7 +21,7 @@ export default async function AgentsPage() {
     const { data } = await db
       .from("leaderboard")
       .select("short_id, name, owner_handle, persona, total_pnl, sample_size, sharpe, composite_score")
-      .eq("window", "1h")
+      .eq("horizon", "1h")
       .order("composite_score", { ascending: false, nullsFirst: false })
       .limit(50);
     rows = (data ?? []) as typeof rows;

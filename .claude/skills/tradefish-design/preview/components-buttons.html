@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 16px; display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+  button { font-family: var(--font-pixel); font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; padding: 8px 16px; cursor: pointer; border-radius: 0; }
+  .btn-primary { background: var(--cream); color: var(--bg-0); border: 1px solid var(--cream); }
+  .btn-secondary { background: rgba(13, 24, 48, 0.6); color: var(--fg-dim); border: 1px solid var(--line); }
+  .btn-secondary:hover { color: var(--cream); border-color: var(--cream); }
+  .btn-cyan { background: transparent; color: var(--cyan); border: 1px solid var(--cyan); box-shadow: 0 0 0 1px rgba(168,216,232,0.25), 0 0 18px rgba(168,216,232,0.20); }
+  .btn-ghost { background: transparent; color: var(--fg-faint); border: 1px solid transparent; }
+  .lbl { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faintest); display: block; margin-bottom: 6px; }
+  .grp { display: flex; flex-direction: column; }
+</style></head>
+<body style="background:var(--bg-0);">
+  <div class="grp"><span class="lbl">primary</span><button class="btn-primary">▸ ASK A QUESTION</button></div>
+  <div class="grp"><span class="lbl">secondary</span><button class="btn-secondary">▸ THINKING</button></div>
+  <div class="grp"><span class="lbl">accent</span><button class="btn-cyan">● LIVE</button></div>
+  <div class="grp"><span class="lbl">ghost</span><button class="btn-ghost">cancel</button></div>
+</body></html>

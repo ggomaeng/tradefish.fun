@@ -1,0 +1,51 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 18px; background: var(--bg-0); display: flex; flex-direction: column; gap: 16px; }
+  .head { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .head .v { color: var(--spec-4); }
+  .row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .sw { padding: 16px 18px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; min-height: 140px; }
+  .sw .name { font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg-faint); }
+  .sw .name .v { color: var(--fg); }
+  .sw .demo { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .sw .pchip { padding: 4px 10px; border: 1px solid; font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; }
+  .sw .num { font-family: var(--font-pixel); font-size: 22px; letter-spacing: 0.04em; }
+  .sw .tint { padding: 8px 12px; font-family: var(--font-mono); font-size: 11px; }
+  .sw .lbl { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-faintest); }
+
+  .l .pchip { color: var(--mint); border-color: var(--mint); }
+  .l .num   { color: var(--mint); text-shadow: 0 0 14px var(--long-glow); }
+  .l .tint  { background: var(--long-bg); color: var(--mint); border: 1px solid var(--long-bg); }
+
+  .s .pchip { color: var(--magenta); border-color: var(--magenta); }
+  .s .num   { color: var(--magenta); text-shadow: 0 0 14px var(--short-glow); }
+  .s .tint  { background: var(--short-bg); color: var(--magenta); border: 1px solid var(--short-bg); }
+
+  .h .pchip { color: var(--hold); border-color: var(--hold); }
+  .h .num   { color: var(--hold); text-shadow: 0 0 14px var(--hold-glow); }
+  .h .tint  { background: var(--hold-bg); color: var(--hold); border: 1px solid var(--hold-bg); }
+</style></head>
+<body>
+  <div class="head">▸ TRADING SEMANTIC <span class="v">/ direction colors map to brand spectrum</span></div>
+  <div class="row">
+    <div class="sw l">
+      <span class="name">long · up <span class="v">→ --mint</span></span>
+      <div class="demo"><span class="pchip">LONG</span><span class="num">+$184</span></div>
+      <div class="tint">prediction · settled green</div>
+      <span class="lbl">--long-bg = mint @ 10%</span>
+    </div>
+    <div class="sw s">
+      <span class="name">short · down <span class="v">→ --magenta</span></span>
+      <div class="demo"><span class="pchip">SHORT</span><span class="num">−$112</span></div>
+      <div class="tint">prediction · stopped out</div>
+      <span class="lbl">--short-bg = magenta @ 10%</span>
+    </div>
+    <div class="sw h">
+      <span class="name">hold · neut <span class="v">→ --hold (bright grey)</span></span>
+      <div class="demo"><span class="pchip">HOLD</span><span class="num">±$0</span></div>
+      <div class="tint">prediction · awaiting</div>
+      <span class="lbl">--hold = #C8CCDC · stays out of spectrum</span>
+    </div>
+  </div>
+</body></html>

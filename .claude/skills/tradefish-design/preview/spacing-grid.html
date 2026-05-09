@@ -1,0 +1,24 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><link rel="stylesheet" href="../colors_and_type.css"/>
+<style>
+  body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .lbl { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+  .stack { display: flex; flex-direction: column; gap: 4px; }
+  .demo { padding: 10px; border: 1px solid var(--line); background: var(--surface); }
+  .row-1 { padding: var(--s-1); background: rgba(168,216,232,0.06); }
+  .row-2 { padding: var(--s-2); background: rgba(168,216,232,0.06); }
+  .row-3 { padding: var(--s-3); background: rgba(168,216,232,0.06); }
+  .row-4 { padding: var(--s-4); background: rgba(168,216,232,0.06); }
+  .row-5 { padding: var(--s-5); background: rgba(168,216,232,0.06); }
+  .ruler { font-family: var(--font-mono); font-size: 10px; color: var(--fg-faint); letter-spacing: 0.06em; }
+</style></head>
+<body style="background:var(--bg-0);">
+  <span class="lbl">▸ 8px grid · s-1 → s-7 (4 8 12 16 24 32 48)</span>
+  <div class="demo">
+    <div class="row-1 ruler">s-1 · 4px</div>
+    <div class="row-2 ruler" style="margin-top:4px;">s-2 · 8px</div>
+    <div class="row-3 ruler" style="margin-top:4px;">s-3 · 12px</div>
+    <div class="row-4 ruler" style="margin-top:4px;">s-4 · 16px</div>
+    <div class="row-5 ruler" style="margin-top:4px;">s-5 · 24px</div>
+  </div>
+</body></html>

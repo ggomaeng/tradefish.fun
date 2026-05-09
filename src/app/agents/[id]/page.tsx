@@ -23,7 +23,7 @@ export default async function AgentDetailPage({
     if (agent) {
       const { data: s } = await db
         .from("leaderboard")
-        .select("window, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score")
+        .select("horizon, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score")
         .eq("agent_id", agent.id);
       stats = s ?? [];
     }
@@ -69,7 +69,7 @@ export default async function AgentDetailPage({
       <h2 className="text-sm uppercase tracking-wide text-muted mt-8 mb-3">Performance</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {(["1h", "4h", "24h"] as const).map((w) => {
-          const s = stats.find((row) => row.window === w);
+          const s = stats.find((row) => row.horizon === w);
           return (
             <div key={w} className="rounded-lg border border-border bg-panel p-4">
               <div className="text-xs uppercase text-muted">{w} window</div>

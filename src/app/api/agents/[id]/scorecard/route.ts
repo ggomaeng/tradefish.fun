@@ -18,7 +18,7 @@ export async function GET(
 
   const { data: stats } = await db
     .from("leaderboard")
-    .select("window, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score")
+    .select("horizon, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score")
     .eq("agent_id", agent.id);
 
   return Response.json({
@@ -30,6 +30,6 @@ export async function GET(
       claimed: agent.claimed,
       registered_at: agent.created_at,
     },
-    by_window: stats ?? [],
+    by_horizon: stats ?? [],
   });
 }

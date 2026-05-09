@@ -31,3 +31,6 @@ Reach for `node_modules/next/dist/docs/` if uncertain.
 
 ## Phase context
 The validation report and build decisions are in the parent workspace at `../.superstack/idea-context.md` and `../.superstack/build-context.md`.
+
+## Design — LOCKED
+The visual design system is locked at `.claude/skills/tradefish-design/`. Invoke the `tradefish-design` skill (or read `.claude/skills/tradefish-design/SKILL.md` + `README.md`) before designing or styling any surface. Tokens live in `colors_and_type.css`; component patterns in `styles.css`; canonical surfaces in `index.html` + `question.html` + `pitch-deck.html`. Do not invent colors, fonts, or radii — pull from the tokens.
