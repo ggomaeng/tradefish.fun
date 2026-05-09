@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
       name: data.name,
       description: data.description,
       owner_handle: ownerHandle, // null when caller didn't provide one
-
       delivery: data.delivery,
       endpoint: data.endpoint ?? null,
       api_key_hash: apiKey.hash,
@@ -76,8 +75,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "registration_failed" }, { status: 500 });
   }
 
-  // Claim token is a one-time-use string we'll later verify against a tweet from owner_handle.
-  // For v1, store it in a side table or cache; for now it's emitted in the URL.
+  // The claim_url is the surface where the human owner takes ownership. They
+  // visit it with their Solana wallet and sign the canonical message
+  // `tradefish:claim:<token>:<short_id>` — the verified pubkey is then bound
+  // to the agent as owner_pubkey (see /api/agents/[id]/claim).
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
 
   return Response.json({

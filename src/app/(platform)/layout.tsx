@@ -20,6 +20,7 @@ const NAV_LINKS: { label: string; href: string }[] = [
   { label: "ARENA", href: "/arena" },
   { label: "ASK", href: "/ask" },
   { label: "AGENTS", href: "/agents" },
+  { label: "REGISTER", href: "/agents/register" },
   { label: "DOCS", href: "/docs" },
 ];
 

@@ -1,33 +1,74 @@
 import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
+import { OwnerControls } from "./OwnerControls";
 
 export const dynamic = "force-dynamic";
 
+type AgentRow = {
+  id: string;
+  short_id: string;
+  name: string;
+  owner_handle: string | null;
+  owner_pubkey: string | null;
+  persona: string | null;
+  claimed: boolean;
+  created_at: string;
+  delivery: "webhook" | "poll";
+  endpoint: string | null;
+  last_seen_at: string | null;
+};
+
+type StatRow = {
+  horizon: string;
+  sample_size: number | null;
+  mean_pnl: number | null;
+  win_rate: number | null;
+  total_pnl: number | null;
+  sharpe: number | null;
+  composite_score: number | null;
+};
+
+function truncatePubkey(pk: string, head = 4, tail = 4): string {
+  if (pk.length <= head + tail + 1) return pk;
+  return `${pk.slice(0, head)}…${pk.slice(-tail)}`;
+}
+
 export default async function AgentDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ just_registered?: string; just_claimed?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const justRegistered = sp.just_registered === "1";
+  const justClaimed = sp.just_claimed === "1";
 
-  let agent: any = null;
-  let stats: any[] = [];
+  let agent: AgentRow | null = null;
+  let stats: StatRow[] = [];
   try {
     const db = dbAdmin();
     const { data: a } = await db
       .from("agents")
-      .select("id, short_id, name, owner_handle, persona, claimed, created_at, delivery, last_seen_at")
+      .select(
+        "id, short_id, name, owner_handle, owner_pubkey, persona, claimed, created_at, delivery, endpoint, last_seen_at",
+      )
       .eq("short_id", id)
       .maybeSingle();
-    agent = a;
+    agent = (a ?? null) as AgentRow | null;
     if (agent) {
       const { data: s } = await db
         .from("leaderboard")
-        .select("horizon, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score")
+        .select(
+          "horizon, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score",
+        )
         .eq("agent_id", agent.id);
-      stats = s ?? [];
+      stats = (s ?? []) as StatRow[];
     }
-  } catch {}
+  } catch {
+    // soft-fail to not_found
+  }
 
   if (!agent) {
     return (
@@ -43,11 +84,11 @@ export default async function AgentDetailPage({
               <span>404 · AGENT NOT FOUND</span>
             </div>
           </div>
-          <div className="tf-term-body" style={{ padding: "32px 20px", textAlign: "center" }}>
-            <div
-              className="t-label"
-              style={{ color: "var(--fg-faint)" }}
-            >
+          <div
+            className="tf-term-body"
+            style={{ padding: "32px 20px", textAlign: "center" }}
+          >
+            <div className="t-label" style={{ color: "var(--fg-faint)" }}>
               ▸ NO AGENT WITH ID "{id}"
             </div>
             <Link
@@ -63,8 +104,37 @@ export default async function AgentDetailPage({
     );
   }
 
+  // Owner display: prefer pubkey when present, fallback to handle.
+  const ownerDisplay = agent.owner_pubkey
+    ? truncatePubkey(agent.owner_pubkey, 6, 6)
+    : agent.owner_handle ?? null;
+  const ownerLabel = agent.owner_pubkey ? "PUBKEY" : "HANDLE";
+
   return (
     <main className="max-w-3xl mx-auto px-5 py-12">
+      {(justRegistered || justClaimed) && (
+        <div
+          className="tf-card p-3 mb-4"
+          style={{
+            borderColor: "var(--line-mint)",
+            background: "rgba(45, 212, 191, 0.06)",
+          }}
+        >
+          <div
+            className="t-label"
+            style={{
+              color: "var(--mint)",
+              fontFamily: "var(--font-pixel)",
+              letterSpacing: "0.06em",
+            }}
+          >
+            {justClaimed
+              ? "✓ AGENT CLAIMED — bound to your wallet."
+              : "✓ AGENT REGISTERED — share the claim_url to take ownership."}
+          </div>
+        </div>
+      )}
+
       <div className="tf-card p-6" style={{ borderColor: "var(--line-strong)" }}>
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
@@ -103,7 +173,22 @@ export default async function AgentDetailPage({
                 color: "var(--fg-dim)",
               }}
             >
-              {agent.owner_handle || (
+              {ownerDisplay ? (
+                <>
+                  <span
+                    style={{
+                      color: "var(--fg-faint)",
+                      letterSpacing: "0.16em",
+                      textTransform: "uppercase",
+                      fontSize: "var(--t-mini)",
+                      marginRight: 8,
+                    }}
+                  >
+                    {ownerLabel}
+                  </span>
+                  <span style={{ color: "var(--fg)" }}>{ownerDisplay}</span>
+                </>
+              ) : (
                 <span style={{ color: "var(--fg-faintest)" }}>unclaimed</span>
               )}
               <span className="ml-3">
@@ -113,7 +198,9 @@ export default async function AgentDetailPage({
                     padding: "1px 6px",
                     fontSize: "var(--t-micro)",
                     color: agent.claimed ? "var(--mint)" : "var(--magenta)",
-                    borderColor: agent.claimed ? "var(--line-mint)" : "var(--line-magenta)",
+                    borderColor: agent.claimed
+                      ? "var(--line-mint)"
+                      : "var(--line-magenta)",
                   }}
                 >
                   {agent.claimed ? "VERIFIED" : "UNCLAIMED"}
@@ -162,6 +249,17 @@ export default async function AgentDetailPage({
           </div>
         </div>
       </div>
+
+      <OwnerControls
+        agent={{
+          short_id: agent.short_id,
+          name: agent.name,
+          owner_pubkey: agent.owner_pubkey,
+          delivery: agent.delivery,
+          endpoint: agent.endpoint,
+          last_seen_at: agent.last_seen_at,
+        }}
+      />
 
       <div className="t-label mt-10 mb-3" style={{ color: "var(--cyan)" }}>
         ▸ PERFORMANCE
