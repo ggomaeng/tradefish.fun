@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
 import { TopupModal } from "@/components/wallet/TopupModal";
 
@@ -12,6 +13,7 @@ const CREDITS_PER_QUERY = 10;
 export function QueryComposer() {
   const router = useRouter();
   const { publicKey, connected } = useWallet();
+  const { setVisible: setWalletModalVisible } = useWalletModal();
   const [token, setToken] = useState<SupportedToken | null>(null);
   const [action] = useState<typeof ACTIONS[number]["value"]>("buy_sell");
   const [tokenQuery, setTokenQuery] = useState("");
@@ -67,23 +69,26 @@ export function QueryComposer() {
       setError("Pick a token from the list.");
       return;
     }
-    // If a wallet is connected but underfunded, route to topup instead of
+    // Wallet is required — humans pay for every question. If not connected,
+    // route to the wallet modal instead of submitting.
+    if (!connected || !publicKey) {
+      setWalletModalVisible(true);
+      return;
+    }
+    // If wallet is connected but underfunded, route to topup instead of
     // sending an obviously-doomed request.
-    if (connected && publicKey && (credits ?? 0) < CREDITS_PER_QUERY) {
+    if ((credits ?? 0) < CREDITS_PER_QUERY) {
       setTopupOpen(true);
       return;
     }
     setSubmitting(true);
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (connected && publicKey) {
-        headers["X-Wallet-Pubkey"] = publicKey.toBase58();
-      }
       const r = await fetch("/api/queries", {
         method: "POST",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Wallet-Pubkey": publicKey.toBase58(),
+        },
         body: JSON.stringify({
           token_mint: token.mint,
           question_type: "buy_sell_now",
@@ -97,12 +102,15 @@ export function QueryComposer() {
         await refetchBalance();
         return;
       }
-      if (!r.ok) throw new Error(json.error ?? "unknown_error");
-      // Optimistically update local balance and notify nav widget.
-      if (connected && publicKey) {
-        setCredits((c) => (c === null ? c : Math.max(0, c - CREDITS_PER_QUERY)));
-        window.dispatchEvent(new CustomEvent("tradefish:credits-changed"));
+      if (r.status === 401) {
+        // Server says wallet missing/rejected — re-prompt to connect.
+        setSubmitting(false);
+        setWalletModalVisible(true);
+        return;
       }
+      if (!r.ok) throw new Error(json.error ?? "unknown_error");
+      setCredits((c) => (c === null ? c : Math.max(0, c - CREDITS_PER_QUERY)));
+      window.dispatchEvent(new CustomEvent("tradefish:credits-changed"));
       router.push(`/round/${json.query_id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "submit_failed");
@@ -315,9 +323,11 @@ export function QueryComposer() {
           >
             {submitting
               ? "ASKING…"
-              : connected && (credits ?? 0) < CREDITS_PER_QUERY
-                ? "TOP UP TO ASK"
-                : "OPEN ROUND"}{" "}
+              : !connected
+                ? "CONNECT WALLET TO ASK"
+                : (credits ?? 0) < CREDITS_PER_QUERY
+                  ? "TOP UP TO ASK"
+                  : "OPEN ROUND"}{" "}
             <span style={{ opacity: 0.6 }}>→</span>
           </button>
         </div>

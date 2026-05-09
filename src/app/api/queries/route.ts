@@ -2,23 +2,21 @@
  * POST /api/queries — asker submits a question.
  * Body: { token_mint, question_type, asker_id? }
  *
- * Auth modes (mutually compatible):
- *   - Wallet path: client passes header X-Wallet-Pubkey. Server debits 10
- *     credits atomically from wallet_credits before opening the round.
- *   - Anon path:   no header — round is opened without credit charge
- *     (preserves the demo flow + agent self-test).
- *   - Legacy:      `asker_id` body field still drives the credits_balance
- *     ledger if present.
+ * Auth: a Solana wallet pubkey in `X-Wallet-Pubkey` header is REQUIRED.
+ * The wallet must hold ≥ 10 credits (top up via /api/credits/topup).
+ * Anonymous asks are intentionally not supported — every question is paid.
  *
  * Side effects:
- *   1. Validate token is in supported_tokens
- *   2. Atomic credit debit (wallet OR legacy asker)
- *   3. Snapshot Pyth price as the round's reference
- *   4. Insert into queries
- *   5. Fan out to webhook agents (best-effort, async)
+ *   1. Validate wallet pubkey shape
+ *   2. Validate token is in supported_tokens
+ *   3. Atomic 10-credit debit on wallet_credits (race-safe via `gte`)
+ *   4. Snapshot Pyth price as the round's reference (refunds on failure)
+ *   5. Insert into queries (refunds on failure)
+ *   6. Fan out to webhook agents (best-effort, async)
  */
 import { type NextRequest } from "next/server";
 import { z } from "zod";
+import bs58 from "bs58";
 import { dbAdmin } from "@/lib/db";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { shortId } from "@/lib/utils";
@@ -32,13 +30,35 @@ const Schema = z.object({
   asker_id: z.string().optional(),
 });
 
+function isValidSolanaPubkey(s: string): boolean {
+  try {
+    return bs58.decode(s).length === 32;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
+  // 1. Wallet auth required — humans pay for every question.
+  const walletPubkey = request.headers.get("x-wallet-pubkey")?.trim() || null;
+  if (!walletPubkey) {
+    return Response.json(
+      { error: "wallet_required", message: "Connect a Solana wallet to ask a question." },
+      { status: 401 },
+    );
+  }
+  if (!isValidSolanaPubkey(walletPubkey)) {
+    return Response.json(
+      { error: "invalid_wallet_pubkey" },
+      { status: 400 },
+    );
+  }
+
   const parsed = Schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return Response.json({ error: "validation_failed", issues: parsed.error.issues }, { status: 400 });
   }
   const { token_mint, question_type, asker_id } = parsed.data;
-  const walletPubkey = request.headers.get("x-wallet-pubkey")?.trim() || null;
 
   const db = dbAdmin();
 
@@ -53,58 +73,43 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "unsupported_token" }, { status: 400 });
   }
 
-  // 2a. Wallet credit gating + atomic debit. We do this BEFORE the Pyth call
-  //     so a failed oracle doesn't burn credits. The atomicity guard is the
-  //     `where credits >= N` clause on the update — concurrent queries on
-  //     the same wallet can't both succeed.
-  if (walletPubkey) {
-    const { data: walletRow } = await db
-      .from("wallet_credits")
-      .select("credits")
-      .eq("wallet_pubkey", walletPubkey)
-      .maybeSingle();
-    const balance = walletRow?.credits ?? 0;
-    if (balance < CREDITS_PER_QUERY) {
-      return Response.json(
-        {
-          error: "insufficient_credits",
-          needed: CREDITS_PER_QUERY,
-          balance,
-        },
-        { status: 402 },
-      );
-    }
-    const newBalance = balance - CREDITS_PER_QUERY;
-    const { data: updated, error: debitErr } = await db
-      .from("wallet_credits")
-      .update({
-        credits: newBalance,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("wallet_pubkey", walletPubkey)
-      .gte("credits", CREDITS_PER_QUERY) // race-safety: still has enough
-      .select("credits")
-      .maybeSingle();
-    if (debitErr || !updated) {
-      // Either the wallet vanished (impossible above) or another query
-      // beat us to the credits. Treat as 402.
-      return Response.json(
-        { error: "insufficient_credits_race", needed: CREDITS_PER_QUERY },
-        { status: 402 },
-      );
-    }
+  // 3. Wallet credit gating + atomic debit. We do this BEFORE the Pyth call
+  //    so a failed oracle doesn't burn credits. The atomicity guard is the
+  //    `where credits >= N` clause on the update — concurrent queries on
+  //    the same wallet can't both succeed.
+  const { data: walletRow } = await db
+    .from("wallet_credits")
+    .select("credits")
+    .eq("wallet_pubkey", walletPubkey)
+    .maybeSingle();
+  const balance = walletRow?.credits ?? 0;
+  if (balance < CREDITS_PER_QUERY) {
+    return Response.json(
+      {
+        error: "insufficient_credits",
+        needed: CREDITS_PER_QUERY,
+        balance,
+      },
+      { status: 402 },
+    );
   }
-
-  // 2b. Legacy ledger path (Privy / asker_id) — preserved for existing flows.
-  if (asker_id) {
-    const { data: bal } = await db
-      .from("credits_balance")
-      .select("balance")
-      .eq("user_id", asker_id)
-      .maybeSingle();
-    if (!bal || bal.balance < CREDITS_PER_QUERY) {
-      return Response.json({ error: "insufficient_credits", required: CREDITS_PER_QUERY }, { status: 402 });
-    }
+  const newBalance = balance - CREDITS_PER_QUERY;
+  const { data: updated, error: debitErr } = await db
+    .from("wallet_credits")
+    .update({
+      credits: newBalance,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("wallet_pubkey", walletPubkey)
+    .gte("credits", CREDITS_PER_QUERY) // race-safety: still has enough
+    .select("credits")
+    .maybeSingle();
+  if (debitErr || !updated) {
+    // Another query beat us to the credits.
+    return Response.json(
+      { error: "insufficient_credits_race", needed: CREDITS_PER_QUERY },
+      { status: 402 },
+    );
   }
 
   // 3. Snapshot Pyth price as round reference
