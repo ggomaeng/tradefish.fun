@@ -1,26 +1,124 @@
 @import "tailwindcss";
 
+/* ── Foundation tokens ─────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Cool-black ocean */
+  --bg-0: #050a14;
+  --bg-1: #08111f;
+  --bg-2: #0d1830;
+  --bg-3: #162540;
+
+  /* Surfaces over bg-0 */
+  --surface: rgba(13, 24, 48, 0.78);
+  --surface-2: rgba(22, 37, 64, 0.85);
+  --surface-glass: rgba(168, 216, 232, 0.04);
+  --surface-deep: rgba(4, 8, 16, 0.92);
+
+  /* Hairlines (cyan-tinted) */
+  --line: rgba(168, 216, 232, 0.14);
+  --line-strong: rgba(168, 216, 232, 0.32);
+  --line-bright: rgba(168, 216, 232, 0.55);
+
+  /* Foreground */
+  --fg: #f0e9e1;
+  --fg-dim: #a8b8c8;
+  --fg-faint: #6a7a8a;
+  --fg-faintest: #3a4858;
+  --cream: #f0e9e1;
+
+  /* Accent — scarce */
+  --cyan: #a8d8e8;
+  --cyan-bright: #c4ecf5;
+  --cyan-dim: #6a9bb5;
+
+  /* Brand secondary (logo gradient — magenta/pink) */
+  --magenta: #d96baa;
+  --magenta-bright: #ff8acb;
+
+  /* Trading semantic */
+  --long: #7fe0a8;
+  --short: #e07560;
+  --hold: #ffb84a;
+
+  /* Type stack — Departure Mono */
+  --font-mono: var(--font-departure), "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", "Menlo", monospace;
+  --font-pixel: var(--font-departure), "VT323", ui-monospace, monospace;
+  --font-sans: var(--font-departure), ui-monospace, monospace;
+
+  /* Motion */
+  --t-fast: 150ms;
+  --t-med: 280ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-0);
+  --color-foreground: var(--fg);
+  --color-cyan: var(--cyan);
+  --color-cream: var(--cream);
+  --color-magenta: var(--magenta);
+  --font-sans: var(--font-mono);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-0);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-feature-settings: "tnum", "zero";
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+::selection { background: rgba(168, 216, 232, 0.35); color: var(--bg-0); }
+
+/* ── Hero canvas + rays positioning (used by landing page) ── */
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ── Animations ─────────────────────────────────────────────── */
+@keyframes tf-blink { 0%,49%{opacity:1} 50%,100%{opacity:0.2} }
+@keyframes tf-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+@keyframes tf-pulse-cyan {
+  0%,100% { box-shadow: 0 0 0 0 rgba(168,216,232,0); }
+  50%     { box-shadow: 0 0 0 4px rgba(168,216,232,0.18); }
+}
+@keyframes tf-shine {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes tf-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tf-fade-up { animation: tf-fade-up 600ms var(--ease-out) both; }
+.tf-pulse-cyan { animation: tf-pulse-cyan 2.4s ease-in-out infinite; }
+
+.tf-shine-text {
+  background: linear-gradient(
+    90deg,
+    var(--cream) 0%,
+    var(--cream) 40%,
+    var(--cyan-bright) 50%,
+    var(--cream) 60%,
+    var(--cream) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tf-shine 5s linear infinite;
 }

@@ -1,0 +1,16 @@
+{
+  "name": "tradefish-agent-claude-momentum",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "@types/node": "^20"
+  }
+}
