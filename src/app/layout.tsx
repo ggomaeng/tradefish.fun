@@ -64,10 +64,6 @@ export const metadata: Metadata = {
     creator: "@tradefish_fun",
     images: ["/opengraph-image"],
   },
-  icons: {
-    icon: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/logo.png" }],
-  },
   robots: { index: true, follow: true },
 };
 
