@@ -1,10 +1,19 @@
 /**
  * POST /api/queries — asker submits a question.
  * Body: { token_mint, question_type, asker_id? }
+ *
+ * Auth modes (mutually compatible):
+ *   - Wallet path: client passes header X-Wallet-Pubkey. Server debits 10
+ *     credits atomically from wallet_credits before opening the round.
+ *   - Anon path:   no header — round is opened without credit charge
+ *     (preserves the demo flow + agent self-test).
+ *   - Legacy:      `asker_id` body field still drives the credits_balance
+ *     ledger if present.
+ *
  * Side effects:
  *   1. Validate token is in supported_tokens
- *   2. Snapshot Pyth price as the round's reference
- *   3. Debit credits (if asker_id provided)
+ *   2. Atomic credit debit (wallet OR legacy asker)
+ *   3. Snapshot Pyth price as the round's reference
  *   4. Insert into queries
  *   5. Fan out to webhook agents (best-effort, async)
  */
@@ -29,6 +38,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "validation_failed", issues: parsed.error.issues }, { status: 400 });
   }
   const { token_mint, question_type, asker_id } = parsed.data;
+  const walletPubkey = request.headers.get("x-wallet-pubkey")?.trim() || null;
 
   const db = dbAdmin();
 
@@ -43,7 +53,49 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "unsupported_token" }, { status: 400 });
   }
 
-  // 2. Check credits if asker is identified
+  // 2a. Wallet credit gating + atomic debit. We do this BEFORE the Pyth call
+  //     so a failed oracle doesn't burn credits. The atomicity guard is the
+  //     `where credits >= N` clause on the update — concurrent queries on
+  //     the same wallet can't both succeed.
+  if (walletPubkey) {
+    const { data: walletRow } = await db
+      .from("wallet_credits")
+      .select("credits")
+      .eq("wallet_pubkey", walletPubkey)
+      .maybeSingle();
+    const balance = walletRow?.credits ?? 0;
+    if (balance < CREDITS_PER_QUERY) {
+      return Response.json(
+        {
+          error: "insufficient_credits",
+          needed: CREDITS_PER_QUERY,
+          balance,
+        },
+        { status: 402 },
+      );
+    }
+    const newBalance = balance - CREDITS_PER_QUERY;
+    const { data: updated, error: debitErr } = await db
+      .from("wallet_credits")
+      .update({
+        credits: newBalance,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("wallet_pubkey", walletPubkey)
+      .gte("credits", CREDITS_PER_QUERY) // race-safety: still has enough
+      .select("credits")
+      .maybeSingle();
+    if (debitErr || !updated) {
+      // Either the wallet vanished (impossible above) or another query
+      // beat us to the credits. Treat as 402.
+      return Response.json(
+        { error: "insufficient_credits_race", needed: CREDITS_PER_QUERY },
+        { status: 402 },
+      );
+    }
+  }
+
+  // 2b. Legacy ledger path (Privy / asker_id) — preserved for existing flows.
   if (asker_id) {
     const { data: bal } = await db
       .from("credits_balance")
@@ -58,6 +110,7 @@ export async function POST(request: NextRequest) {
   // 3. Snapshot Pyth price as round reference
   const pythPrice = await getPythPrice(token.pyth_feed_id);
   if (pythPrice === null) {
+    await refundWalletCredits(walletPubkey);
     return Response.json({ error: "oracle_unavailable" }, { status: 503 });
   }
 
@@ -81,6 +134,7 @@ export async function POST(request: NextRequest) {
 
   if (error || !query) {
     console.error("[queries] insert failed:", error);
+    await refundWalletCredits(walletPubkey);
     return Response.json({ error: "create_failed" }, { status: 500 });
   }
 
@@ -104,6 +158,32 @@ export async function POST(request: NextRequest) {
     deadline_at: query.deadline_at,
     pyth_price_at_ask: pythPrice,
   }, { status: 201 });
+}
+
+/**
+ * Refund credits previously debited from a wallet when a downstream step
+ * (oracle, insert) fails after the debit has happened. Best-effort — logs
+ * on failure but never throws to the caller. No-op when wallet is null.
+ */
+async function refundWalletCredits(walletPubkey: string | null) {
+  if (!walletPubkey) return;
+  const db = dbAdmin();
+  const { data: row } = await db
+    .from("wallet_credits")
+    .select("credits")
+    .eq("wallet_pubkey", walletPubkey)
+    .maybeSingle();
+  if (!row) return;
+  const { error } = await db
+    .from("wallet_credits")
+    .update({
+      credits: row.credits + CREDITS_PER_QUERY,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("wallet_pubkey", walletPubkey);
+  if (error) {
+    console.error("[queries] refund failed:", error);
+  }
 }
 
 async function dispatchToWebhookAgents(

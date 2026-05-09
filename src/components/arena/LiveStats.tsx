@@ -1,30 +1,29 @@
 /**
- * LiveStats — 2x2 grid of headline arena metrics.
+ * LiveStats — 2x2 grid of headline arena metrics (REAL data).
  *
- * v2 port of v1's LiveStats (was Base + /api/stats polling at 5s; v1
- * source: ~/Projects/TradeFish/src/components/LiveStats.tsx). Stripped
- * Base-chain references, swapped 4th cell from "USDC fee settlement"
- * to "PYTH settlement" (matches our oracle), and ported markup to v2
- * tokens (.tf-card chrome with bordered cells).
+ * Async server component. Pulls live counts from Supabase via dbAdmin().
+ * Revalidates every 10s — gives a "live-ish" feel without re-rendering
+ * the whole page tree.
  *
- * Realtime wiring lives on a parallel agent. For now this is a pure
- * server component with mock numbers — replace `STATS` with a server
- * fetch / Realtime subscription when the data layer lands.
+ * Cells:
+ *   1. verified agents     = count(agents where claimed = true)
+ *   2. paper trades · 24h  = count(responses where responded_at > now-24h)
+ *   3. aggregate pnl       = sum(weighted_pnl over settlements in last 24h)
+ *      (mint if ≥ 0, magenta if < 0)
+ *   4. PYTH settlement     = static cyan accent (oracle name)
+ *
+ * Failures fall back to 0 / —.
  */
+
+import { dbAdmin } from "@/lib/db";
+
+export const revalidate = 10;
 
 interface StatCell {
   v: string;
   l: string;
-  /** Optional accent — applies a v2 spectrum color to the value. */
   accent?: "long" | "short" | "cyan" | "violet";
 }
-
-const STATS: StatCell[] = [
-  { v: "12", l: "verified agents" },
-  { v: "2,400", l: "paper trades · 24h" },
-  { v: "+$1,042", l: "aggregate pnl", accent: "long" },
-  { v: "PYTH", l: "settlement", accent: "cyan" },
-];
 
 function accentColor(a: StatCell["accent"]): string {
   switch (a) {
@@ -41,7 +40,93 @@ function accentColor(a: StatCell["accent"]): string {
   }
 }
 
-export function LiveStats() {
+function formatCount(n: number): string {
+  return new Intl.NumberFormat("en-US").format(n);
+}
+
+function formatPnl(n: number): string {
+  const sign = n >= 0 ? "+" : "−";
+  const abs = Math.abs(n);
+  // weighted_pnl is in pnl_pct units (e.g. 1.42 = +1.42%) once multiplied by
+  // confidence — display as percent for the headline cell.
+  return `${sign}${abs.toFixed(2)}%`;
+}
+
+async function loadStats(): Promise<StatCell[]> {
+  const fallback: StatCell[] = [
+    { v: "0", l: "verified agents" },
+    { v: "0", l: "paper trades · 24h" },
+    { v: "—", l: "aggregate pnl", accent: "long" },
+    { v: "PYTH", l: "settlement", accent: "cyan" },
+  ];
+
+  try {
+    const sb = dbAdmin();
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+
+    // (1) verified agents — count where claimed = true.
+    const verifiedPromise = sb
+      .from("agents")
+      .select("id", { count: "exact", head: true })
+      .eq("claimed", true);
+
+    // (2) paper trades 24h — count responses in the last 24h.
+    const tradesPromise = sb
+      .from("responses")
+      .select("id", { count: "exact", head: true })
+      .gt("responded_at", since);
+
+    // (3) aggregate weighted pnl — pull settlements in the last 24h with
+    //     their response confidence, sum (pnl_pct * confidence).
+    const pnlPromise = sb
+      .from("settlements")
+      .select("pnl_pct, responses(confidence)")
+      .gt("settled_at", since);
+
+    const [verifiedRes, tradesRes, pnlRes] = await Promise.all([
+      verifiedPromise,
+      tradesPromise,
+      pnlPromise,
+    ]);
+
+    const verified = verifiedRes.count ?? 0;
+    const trades = tradesRes.count ?? 0;
+
+    type PnlRow = {
+      pnl_pct: number | string;
+      responses:
+        | { confidence: number | string }
+        | { confidence: number | string }[]
+        | null;
+    };
+    const pnlRows = (pnlRes.data ?? []) as PnlRow[];
+    const aggregate = pnlRows.reduce((acc: number, row) => {
+      const pnl = Number(row.pnl_pct);
+      const conf = Array.isArray(row.responses)
+        ? Number(row.responses[0]?.confidence ?? 0)
+        : Number(row.responses?.confidence ?? 0);
+      if (Number.isNaN(pnl) || Number.isNaN(conf)) return acc;
+      return acc + pnl * conf;
+    }, 0);
+
+    return [
+      { v: formatCount(verified), l: "verified agents" },
+      { v: formatCount(trades), l: "paper trades · 24h" },
+      {
+        v: pnlRows.length === 0 ? "—" : formatPnl(aggregate),
+        l: "aggregate pnl",
+        accent: aggregate >= 0 ? "long" : "short",
+      },
+      { v: "PYTH", l: "settlement", accent: "cyan" },
+    ];
+  } catch {
+    return fallback;
+  }
+}
+
+export async function LiveStats() {
+  const stats = await loadStats();
+
   return (
     <div className="tf-card" style={{ height: "100%" }}>
       <div className="tf-term-head" style={{ borderBottom: "1px solid var(--line)" }}>
@@ -55,7 +140,7 @@ export function LiveStats() {
           gridTemplateRows: "1fr 1fr",
         }}
       >
-        {STATS.map((s, i) => {
+        {stats.map((s, i) => {
           const col = i % 2;
           const row = Math.floor(i / 2);
           return (
@@ -78,6 +163,7 @@ export function LiveStats() {
                   letterSpacing: "0.02em",
                   color: accentColor(s.accent),
                   lineHeight: 1.1,
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
                 {s.v}

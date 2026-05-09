@@ -1,19 +1,57 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
+import { TopupModal } from "@/components/wallet/TopupModal";
 
 const ACTIONS = [{ value: "buy_sell", label: "buy or sell" }] as const;
+const CREDITS_PER_QUERY = 10;
 
 export function QueryComposer() {
   const router = useRouter();
+  const { publicKey, connected } = useWallet();
   const [token, setToken] = useState<SupportedToken | null>(null);
   const [action] = useState<typeof ACTIONS[number]["value"]>("buy_sell");
   const [tokenQuery, setTokenQuery] = useState("");
   const [tokenOpen, setTokenOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [credits, setCredits] = useState<number | null>(null);
+  const [topupOpen, setTopupOpen] = useState(false);
+
+  const refetchBalance = useCallback(async () => {
+    if (!publicKey) {
+      setCredits(null);
+      return;
+    }
+    try {
+      const r = await fetch(
+        `/api/credits/balance?wallet=${publicKey.toBase58()}`,
+        { cache: "no-store" },
+      );
+      if (!r.ok) return;
+      const json = (await r.json()) as { credits?: number };
+      setCredits(typeof json.credits === "number" ? json.credits : 0);
+    } catch {
+      // composer balance is a hint; don't crash on transient errors
+    }
+  }, [publicKey]);
+
+  useEffect(() => {
+    void refetchBalance();
+  }, [refetchBalance]);
+
+  // Listen for cross-component balance hints (e.g. nav widget topup).
+  useEffect(() => {
+    function onHint() {
+      void refetchBalance();
+    }
+    window.addEventListener("tradefish:credits-changed", onHint);
+    return () =>
+      window.removeEventListener("tradefish:credits-changed", onHint);
+  }, [refetchBalance]);
 
   const matches = useMemo(() => {
     const q = tokenQuery.trim().toLowerCase();
@@ -29,18 +67,42 @@ export function QueryComposer() {
       setError("Pick a token from the list.");
       return;
     }
+    // If a wallet is connected but underfunded, route to topup instead of
+    // sending an obviously-doomed request.
+    if (connected && publicKey && (credits ?? 0) < CREDITS_PER_QUERY) {
+      setTopupOpen(true);
+      return;
+    }
     setSubmitting(true);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (connected && publicKey) {
+        headers["X-Wallet-Pubkey"] = publicKey.toBase58();
+      }
       const r = await fetch("/api/queries", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           token_mint: token.mint,
           question_type: "buy_sell_now",
         }),
       });
       const json = await r.json();
+      if (r.status === 402) {
+        // Server says we don't have enough — open topup modal instead of error.
+        setSubmitting(false);
+        setTopupOpen(true);
+        await refetchBalance();
+        return;
+      }
       if (!r.ok) throw new Error(json.error ?? "unknown_error");
+      // Optimistically update local balance and notify nav widget.
+      if (connected && publicKey) {
+        setCredits((c) => (c === null ? c : Math.max(0, c - CREDITS_PER_QUERY)));
+        window.dispatchEvent(new CustomEvent("tradefish:credits-changed"));
+      }
       router.push(`/round/${json.query_id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "submit_failed");
@@ -49,6 +111,7 @@ export function QueryComposer() {
   }
 
   return (
+    <>
     <div className="tf-term">
       <div className="tf-term-head">
         <div className="flex items-center gap-3">
@@ -59,7 +122,11 @@ export function QueryComposer() {
           </div>
           <span>QUERY · COMPOSER</span>
         </div>
-        <span style={{ color: "var(--cyan)" }}>10 CREDITS</span>
+        <span style={{ color: "var(--cyan)" }}>
+          {connected && credits !== null
+            ? `BALANCE ${credits} CR · COST 10`
+            : "10 CREDITS"}
+        </span>
       </div>
 
       <div className="p-5">
@@ -246,10 +313,27 @@ export function QueryComposer() {
               cursor: submitting || !token ? "not-allowed" : "pointer",
             }}
           >
-            {submitting ? "ASKING…" : "OPEN ROUND"} <span style={{ opacity: 0.6 }}>→</span>
+            {submitting
+              ? "ASKING…"
+              : connected && (credits ?? 0) < CREDITS_PER_QUERY
+                ? "TOP UP TO ASK"
+                : "OPEN ROUND"}{" "}
+            <span style={{ opacity: 0.6 }}>→</span>
           </button>
         </div>
       </div>
     </div>
+    <TopupModal
+      open={topupOpen}
+      onClose={() => {
+        setTopupOpen(false);
+        void refetchBalance();
+      }}
+      onSuccess={(c) => {
+        setCredits(c);
+        window.dispatchEvent(new CustomEvent("tradefish:credits-changed"));
+      }}
+    />
+    </>
   );
 }

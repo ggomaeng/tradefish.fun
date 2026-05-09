@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { SolanaProvider } from "@/components/wallet/SolanaProvider";
+import { WalletWidget } from "@/components/wallet/WalletWidget";
 
 /**
  * Shared layout for the post-waitlist platform routes.
  *
  * The root layout (src/app/layout.tsx) owns waitlist metadata and the
  * Departure Mono localFont setup — this layout inherits both and adds
- * the platform-wide top nav. Route groups (parens) don't affect URLs,
- * so /arena, /ask, /agents, /round, /docs, /claim still resolve at the
- * same paths they did before the move.
+ * the platform-wide top nav + the Solana wallet provider so any client
+ * component under (platform)/* can call useWallet() / useConnection().
+ * Route groups (parens) don't affect URLs, so /arena, /ask, /agents,
+ * /round, /docs, /claim still resolve at the same paths they did before.
  *
  * Visual reference: .claude/skills/tradefish-design/index.html (.nav block).
  */
@@ -24,7 +27,7 @@ export default function PlatformLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <>
+    <SolanaProvider>
       <nav
         style={{
           position: "fixed",
@@ -86,6 +89,7 @@ export default function PlatformLayout({
               {link.label}
             </Link>
           ))}
+          <WalletWidget />
           <Link
             href="/ask"
             style={{
@@ -106,6 +110,6 @@ export default function PlatformLayout({
       <div style={{ height: "70px" }} aria-hidden="true" />
 
       {children}
-    </>
+    </SolanaProvider>
   );
 }

@@ -1,122 +1,97 @@
+"use client";
+
 /**
- * LiveActivity — scrolling event feed for the arena.
+ * LiveActivity — scrolling event feed for the arena (REAL data).
  *
- * v2 port of v1's LiveActivity (was Base-chain + /api/state polling at
- * 2s; v1 source: ~/Projects/TradeFish/src/components/LiveActivity.tsx).
- * Stripped Base references, swapped tickers to Solana (BONK / JUP / SOL
- * / WIF / PYTH), and ported markup to v2 design tokens (.tf-term /
- * .tf-term-head / .tf-dir-* / var(--long|short|hold|cyan)).
- *
- * Realtime wiring lives on a parallel agent (Canvas.tsx). For now this
- * is a pure server component with mock rows — replace `MOCK_ROWS` with
- * a Realtime subscription when the data layer lands.
+ * v2 port of v1's LiveActivity — now wired to Supabase Realtime via
+ * `useArenaActivity()`. Renders predict / settle / claim events. Markup
+ * + visual chrome unchanged from the prior mock version (.tf-term /
+ * .tf-term-head / .tf-dir-* / spectrum tokens) so the design system
+ * stays locked.
  */
+
+import { useEffect, useState } from "react";
+import { useArenaActivity, relativeTime, type ActivityEvent } from "@/lib/realtime/activity";
 
 interface ActivityRow {
   key: string;
   ts: string;
   who: string;
-  /** Marker glyph: ✓ predict / ▸ comment / ◉ settle / ＋ join. */
   marker: "✓" | "▸" | "◉" | "＋";
   msg: string;
   pos: string;
   posCls: "long" | "short" | "hold" | "";
   pnl: string;
   pnlCls: "up" | "down" | "";
+  rawTs: string;
 }
 
-const MOCK_ROWS: ActivityRow[] = [
-  {
-    key: "r1",
-    ts: "14:02",
-    who: "OPENCLAW",
-    marker: "✓",
-    msg: "LONG BONK · open position",
-    pos: "LONG $250",
-    posCls: "long",
-    pnl: "—",
-    pnlCls: "",
-  },
-  {
-    key: "r2",
-    ts: "14:01",
-    who: "HERMES",
-    marker: "✓",
-    msg: "SHORT JUP · open position",
-    pos: "SHORT $180",
-    posCls: "short",
-    pnl: "—",
-    pnlCls: "",
-  },
-  {
-    key: "r3",
-    ts: "14:00",
-    who: "ROUND",
-    marker: "▸",
-    msg: "opened on BONK @ $0.0000241",
-    pos: "—",
-    posCls: "",
-    pnl: "",
-    pnlCls: "",
-  },
-  {
-    key: "r4",
-    ts: "13:58",
-    who: "CLAUDE-T",
-    marker: "✓",
-    msg: "HOLD SOL · sit out",
-    pos: "HOLD",
-    posCls: "hold",
-    pnl: "—",
-    pnlCls: "",
-  },
-  {
-    key: "r5",
-    ts: "13:55",
-    who: "ROUND",
-    marker: "◉",
-    msg: "settled on WIF @ $1.84",
-    pos: "—",
-    posCls: "",
-    pnl: "+$42",
-    pnlCls: "up",
-  },
-  {
-    key: "r6",
-    ts: "13:54",
-    who: "VOLT",
-    marker: "✓",
-    msg: "LONG PYTH · open position",
-    pos: "LONG $420",
-    posCls: "long",
-    pnl: "+$118",
-    pnlCls: "up",
-  },
-  {
-    key: "r7",
-    ts: "13:51",
-    who: "DELTA-9",
-    marker: "✓",
-    msg: "SHORT BONK · open position",
-    pos: "SHORT $90",
-    posCls: "short",
-    pnl: "−$12",
-    pnlCls: "down",
-  },
-  {
-    key: "r8",
-    ts: "13:48",
-    who: "NEW",
+function dirToCls(d: "buy" | "sell" | "hold"): "long" | "short" | "hold" {
+  return d === "buy" ? "long" : d === "sell" ? "short" : "hold";
+}
+function dirToLabel(d: "buy" | "sell" | "hold"): string {
+  return d === "buy" ? "LONG" : d === "sell" ? "SHORT" : "HOLD";
+}
+
+function eventToRow(e: ActivityEvent, i: number): ActivityRow {
+  const tsRel = relativeTime(e.ts);
+  if (e.kind === "predict") {
+    return {
+      key: `p-${i}-${e.ts}-${e.who}`,
+      ts: tsRel,
+      who: e.who.toUpperCase(),
+      marker: "✓",
+      msg: `${dirToLabel(e.dir)} ${e.token} · conf ${(e.conf * 100).toFixed(0)}%`,
+      pos: dirToLabel(e.dir),
+      posCls: dirToCls(e.dir),
+      pnl: "—",
+      pnlCls: "",
+      rawTs: e.ts,
+    };
+  }
+  if (e.kind === "settle") {
+    const sign = e.pnl >= 0 ? "+" : "−";
+    const abs = Math.abs(e.pnl).toFixed(2);
+    return {
+      key: `s-${i}-${e.ts}-${e.who}`,
+      ts: tsRel,
+      who: e.who.toUpperCase(),
+      marker: "◉",
+      msg: `settled ${dirToLabel(e.dir)} ${e.token} @ ${e.horizon}`,
+      pos: dirToLabel(e.dir),
+      posCls: dirToCls(e.dir),
+      pnl: `${sign}${abs}%`,
+      pnlCls: e.pnl >= 0 ? "up" : "down",
+      rawTs: e.ts,
+    };
+  }
+  return {
+    key: `c-${i}-${e.ts}-${e.who}`,
+    ts: tsRel,
+    who: e.who.toUpperCase(),
     marker: "＋",
-    msg: "AURA-04 registered",
+    msg: `agent claimed`,
     pos: "JOIN",
     posCls: "",
     pnl: "",
     pnlCls: "",
-  },
-];
+    rawTs: e.ts,
+  };
+}
 
 export function LiveActivity() {
+  const { events, loading } = useArenaActivity();
+  // Re-render every 10s so relative timestamps tick without subscribing
+  // to a 1s timer (which would be wasteful).
+  const [, setNow] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setNow((n) => n + 1), 10_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const rows = events.map(eventToRow);
+  const empty = !loading && rows.length === 0;
+
   return (
     <div className="tf-term">
       <div className="tf-term-head">
@@ -126,7 +101,7 @@ export function LiveActivity() {
           </span>
           ACTIVITY · LIVE FEED
         </span>
-        <span className="tf-live">t+00:00</span>
+        <span className="tf-live">{loading ? "syncing…" : "LIVE"}</span>
       </div>
       <div
         className="tf-term-body"
@@ -134,87 +109,118 @@ export function LiveActivity() {
         aria-atomic="false"
         style={{ padding: 0 }}
       >
-        <div role="table">
-          {MOCK_ROWS.map((row, i) => (
-            <div
-              key={row.key}
-              role="row"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "56px 18px 110px 1fr 110px 80px",
-                gap: "10px",
-                padding: "10px 16px",
-                borderTop: i === 0 ? "none" : "1px dashed var(--line)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "var(--t-small)",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ color: "var(--fg-faint)" }}>{row.ts}</span>
-              <span
-                aria-hidden="true"
+        {empty ? (
+          <div
+            style={{
+              padding: "32px 16px",
+              textAlign: "center",
+              fontFamily: "var(--font-mono)",
+              fontSize: "var(--t-small)",
+              color: "var(--fg-faint)",
+              fontVariantNumeric: "tabular-nums",
+            }}
+          >
+            ▸ NO ACTIVITY — open a round at /ask
+          </div>
+        ) : (
+          <div role="table">
+            {rows.map((row, i) => (
+              <div
+                key={row.key}
+                role="row"
                 style={{
-                  color:
-                    row.marker === "◉"
-                      ? "var(--mint)"
-                      : row.marker === "▸"
-                        ? "var(--cyan)"
-                        : row.marker === "＋"
-                          ? "var(--violet)"
-                          : "var(--fg-dim)",
+                  display: "grid",
+                  gridTemplateColumns: "64px 18px 110px 1fr 110px 80px",
+                  gap: "10px",
+                  padding: "10px 16px",
+                  borderTop: i === 0 ? "none" : "1px dashed var(--line)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "var(--t-small)",
+                  alignItems: "center",
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
-                {row.marker}
-              </span>
-              <span
-                style={{
-                  color: "var(--fg)",
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {row.who}
-              </span>
-              <span style={{ color: "var(--fg-dim)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {row.msg}
-              </span>
-              <span
-                className={
-                  row.posCls === "long"
-                    ? "tf-dir-long"
-                    : row.posCls === "short"
-                      ? "tf-dir-short"
-                      : row.posCls === "hold"
-                        ? "tf-dir-hold"
-                        : ""
-                }
-                style={{
-                  fontFamily: "var(--font-pixel)",
-                  letterSpacing: "0.16em",
-                  textAlign: "right",
-                }}
-              >
-                {row.pos}
-              </span>
-              <span
-                style={{
-                  color:
-                    row.pnlCls === "up"
-                      ? "var(--long)"
-                      : row.pnlCls === "down"
-                        ? "var(--short)"
-                        : "var(--fg-faint)",
-                  textAlign: "right",
-                }}
-              >
-                {row.pnl || "—"}
-              </span>
-            </div>
-          ))}
-        </div>
+                <span style={{ color: "var(--fg-faint)" }}>{row.ts}</span>
+                <span
+                  aria-hidden="true"
+                  style={{
+                    color:
+                      row.marker === "◉"
+                        ? "var(--mint)"
+                        : row.marker === "▸"
+                          ? "var(--cyan)"
+                          : row.marker === "＋"
+                            ? "var(--violet)"
+                            : "var(--fg-dim)",
+                  }}
+                >
+                  {row.marker}
+                </span>
+                <span
+                  style={{
+                    color: "var(--fg)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {row.who}
+                </span>
+                <span
+                  style={{
+                    color: "var(--fg-dim)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {row.msg}
+                </span>
+                <span
+                  className={
+                    row.posCls === "long"
+                      ? "tf-dir-long"
+                      : row.posCls === "short"
+                        ? "tf-dir-short"
+                        : row.posCls === "hold"
+                          ? "tf-dir-hold"
+                          : ""
+                  }
+                  style={{
+                    fontFamily: "var(--font-pixel)",
+                    letterSpacing: "0.16em",
+                    textAlign: "right",
+                    color:
+                      row.posCls === "long"
+                        ? "var(--long)"
+                        : row.posCls === "short"
+                          ? "var(--short)"
+                          : row.posCls === "hold"
+                            ? "var(--hold)"
+                            : "var(--fg-faint)",
+                  }}
+                >
+                  {row.pos}
+                </span>
+                <span
+                  style={{
+                    color:
+                      row.pnlCls === "up"
+                        ? "var(--long)"
+                        : row.pnlCls === "down"
+                          ? "var(--short)"
+                          : "var(--fg-faint)",
+                    textAlign: "right",
+                  }}
+                >
+                  {row.pnl || "—"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

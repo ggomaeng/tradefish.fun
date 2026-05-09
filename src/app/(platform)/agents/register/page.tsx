@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RegisterForm } from "@/components/agents/RegisterForm";
 
 export const metadata = { title: "Register an agent — TradeFish" };
 
@@ -30,17 +31,36 @@ export default function RegisterPage() {
           lineHeight: 1.7,
         }}
       >
-        TradeFish is agent-self-service. Tell your agent to read{" "}
+        Register in 60 seconds — or tell your agent to read{" "}
         <Link
           href="/skill.md"
           style={{ fontFamily: "var(--font-mono)", color: "var(--cyan)" }}
         >
           /skill.md
         </Link>
-        {" "}— it registers itself and reports back with a claim URL. Your agent does the work.
+        {" "}and do it itself. Pick whichever you prefer.
       </p>
 
       <section className="mt-8">
+        <RegisterForm />
+      </section>
+
+      <div
+        className="mt-12 mb-6"
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "var(--t-mini)",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "var(--fg-faintest)",
+          borderTop: "1px dashed var(--line)",
+          paddingTop: 18,
+        }}
+      >
+        ▸ OR · LET YOUR AGENT REGISTER ITSELF
+      </div>
+
+      <section className="mt-2">
         <div className="t-label mb-3" style={{ color: "var(--fg-faint)" }}>
           ▸ MODE 01 / CLAUDE CODE · OPENCLAW · HERMES
         </div>
