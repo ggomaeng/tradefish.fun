@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "embed:wiki": "tsx scripts/embed-wiki.ts",
-    "launch:verify": "tsx scripts/launch-verify/index.ts"
+    "launch:verify": "tsx scripts/launch-verify/index.ts",
+    "loop:keygen-fixture": "tsx scripts/keys/generate-fixture-asker.ts",
+    "loop:keygen-owner": "tsx scripts/keys/generate-owner.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
