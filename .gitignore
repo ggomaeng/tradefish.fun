@@ -59,3 +59,4 @@ supabase/.temp/
 # Local-only secrets the loop generates (keypairs, etc.)
 secrets/*
 !secrets/.kept
+.qa/
