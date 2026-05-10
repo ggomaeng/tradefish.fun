@@ -1,20 +1,5 @@
 "use client";
 
-/**
- * TopupModal — buys credits by sending SOL on devnet.
- *
- * Flow:
- *   1. Build a SystemProgram.transfer (10_000_000 lamports → TREASURY).
- *   2. wallet.sendTransaction(tx, connection) — adapter signs + sends.
- *   3. connection.confirmTransaction with the latest blockhash strategy.
- *   4. POST /api/credits/topup { signature, wallet_pubkey } — server re-fetches
- *      the tx and verifies destination + lamports before crediting.
- *   5. Surface the new balance and an explorer link.
- *
- * This component is the user-visible monetization rail — keep it boring,
- * deterministic, and obvious about what it's doing.
- */
-
 import { useCallback, useEffect, useState } from "react";
 import {
   Connection,
@@ -25,8 +10,13 @@ import {
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
 const TREASURY_PUBKEY = process.env.NEXT_PUBLIC_TRADEFISH_TREASURY ?? "";
-const LAMPORTS_PER_TOPUP = 10_000_000; // 0.01 SOL
-const CREDITS_PER_TOPUP = 10;
+
+const AMOUNTS: { sol: number; lamports: number; credits: number; label: string }[] = [
+  { sol: 0.01, lamports: 10_000_000,  credits: 10,  label: "" },
+  { sol: 0.05, lamports: 50_000_000,  credits: 50,  label: "most picked" },
+  { sol: 0.10, lamports: 100_000_000, credits: 100, label: "" },
+];
+const NETWORK_FEE_SOL = 0.00001;
 
 type Phase =
   | { kind: "idle" }
@@ -57,11 +47,16 @@ export function TopupModal({
   const { connection } = useConnection();
   const { publicKey, sendTransaction, connected } = useWallet();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  const [selectedIdx, setSelectedIdx] = useState(1); // default: 0.05 SOL
 
-  // Reset state when the modal closes.
   useEffect(() => {
-    if (!open) setPhase({ kind: "idle" });
+    if (!open) {
+      setPhase({ kind: "idle" });
+      setSelectedIdx(1);
+    }
   }, [open]);
+
+  const selected = AMOUNTS[selectedIdx];
 
   const handleTopup = useCallback(async () => {
     if (!connected || !publicKey) {
@@ -96,11 +91,10 @@ export function TopupModal({
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: treasury,
-          lamports: LAMPORTS_PER_TOPUP,
+          lamports: selected.lamports,
         }),
       );
 
-      // sendTransaction = sign + send via the connected adapter (Phantom/Solflare).
       signature = await sendTransaction(tx, connection as Connection);
       setPhase({ kind: "confirming", signature });
 
@@ -116,11 +110,9 @@ export function TopupModal({
 
       setPhase({ kind: "verifying", signature });
 
-      // Server-side verification + credit grant. Retry once if the RPC node
-      // hasn't seen the tx yet (404 is the "not found yet" signal).
       const result = await postTopupWithRetry(signature, publicKey.toBase58());
       const newCredits =
-        typeof result.credits === "number" ? result.credits : CREDITS_PER_TOPUP;
+        typeof result.credits === "number" ? result.credits : selected.credits;
 
       setPhase({ kind: "success", signature, credits: newCredits });
       onSuccess?.(newCredits);
@@ -128,13 +120,10 @@ export function TopupModal({
       const message = err instanceof Error ? err.message : "Unknown error";
       setPhase({ kind: "error", message, signature: signature || undefined });
     }
-  }, [connected, publicKey, connection, sendTransaction, onSuccess]);
+  }, [connected, publicKey, connection, sendTransaction, onSuccess, selected]);
 
   if (!open) return null;
 
-  const treasuryDisplay = TREASURY_PUBKEY
-    ? truncate(TREASURY_PUBKEY, 6, 6)
-    : "(unset)";
   const busy =
     phase.kind === "signing" ||
     phase.kind === "confirming" ||
@@ -144,14 +133,14 @@ export function TopupModal({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Top up credits"
+      aria-label="Top up SOL"
       onClick={onClose}
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0, 0, 4, 0.78)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        background: "rgba(10,10,11,0.65)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         zIndex: 1000,
         display: "flex",
         alignItems: "center",
@@ -160,192 +149,170 @@ export function TopupModal({
       }}
     >
       <div
-        className="tf-term"
         onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 480 }}
+        style={{
+          width: "100%",
+          maxWidth: 440,
+          background: "var(--bg-1)",
+          border: "1px solid var(--bd-2)",
+          borderRadius: "var(--r-4)",
+          overflow: "hidden",
+          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+        }}
       >
-        <div className="tf-term-head">
-          <div className="flex items-center gap-3">
-            <div className="dots">
-              <span />
-              <span />
-              <span />
+        {/* Head */}
+        <div style={{ padding: "22px 24px 14px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <h3 className="t-h3" style={{ margin: 0, fontSize: 18 }}>Top up SOL</h3>
+            <div style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
+              Sent to TradeFish treasury · spent on rounds
             </div>
-            <span>TOP UP · 0.01 SOL → 10 CREDITS</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="close"
+            aria-label="Close"
             style={{
               background: "transparent",
               border: "none",
-              color: "var(--fg-faint)",
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.18em",
+              color: "var(--fg-3)",
+              fontSize: 20,
+              lineHeight: 1,
               cursor: "pointer",
             }}
           >
-            ESC ✕
+            ×
           </button>
         </div>
 
-        <div className="p-5" style={{ fontFamily: "var(--font-mono)" }}>
-          <div
-            style={{
-              fontSize: "var(--t-small)",
-              color: "var(--fg-dim)",
-              lineHeight: 1.7,
-            }}
-          >
-            Send <span style={{ color: "var(--cyan)" }}>0.01 SOL</span> on{" "}
-            <span style={{ color: "var(--fg)" }}>devnet</span> to the TradeFish
-            treasury. We verify the transaction on-chain, then credit your
-            wallet with{" "}
-            <span style={{ color: "var(--cyan)" }}>10 credits</span> — enough
-            for one <span style={{ color: "var(--fg)" }}>buy/sell</span> round.
+        {/* Amount picker */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "0 24px 20px" }}>
+          {AMOUNTS.map((amt, i) => {
+            const sel = i === selectedIdx;
+            return (
+              <button
+                key={amt.sol}
+                type="button"
+                onClick={() => setSelectedIdx(i)}
+                disabled={busy}
+                style={{
+                  padding: "16px 12px",
+                  textAlign: "center",
+                  background: sel ? "rgba(94,234,240,0.04)" : "var(--bg-2)",
+                  border: `1px solid ${sel ? "var(--cyan)" : "var(--bd-1)"}`,
+                  borderRadius: "var(--r-3)",
+                  cursor: busy ? "not-allowed" : "pointer",
+                  color: "var(--fg)",
+                  transition: "all 120ms",
+                }}
+              >
+                <div className="num" style={{ fontSize: 18, fontWeight: 500 }}>{amt.sol} SOL</div>
+                <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>
+                  {amt.credits} credits{amt.label ? ` · ${amt.label}` : ""}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Rows */}
+        <div style={{ padding: "8px 24px", borderTop: "1px solid var(--bd-1)" }}>
+          <div style={rowStyle}>
+            <span style={{ color: "var(--fg-3)" }}>Amount</span>
+            <span className="num">{selected.sol.toFixed(5)} SOL</span>
           </div>
-
-          <div className="tf-hr" />
-
-          <dl
-            style={{
-              display: "grid",
-              gridTemplateColumns: "auto 1fr",
-              gap: "6px 16px",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              margin: 0,
-            }}
-          >
-            <dt style={{ color: "var(--fg-faint)" }}>Network</dt>
-            <dd style={{ color: "var(--fg)", margin: 0 }}>Solana · devnet</dd>
-            <dt style={{ color: "var(--fg-faint)" }}>Treasury</dt>
-            <dd style={{ color: "var(--fg)", margin: 0 }}>{treasuryDisplay}</dd>
-            <dt style={{ color: "var(--fg-faint)" }}>Amount</dt>
-            <dd style={{ color: "var(--fg)", margin: 0 }}>0.01 SOL</dd>
-            <dt style={{ color: "var(--fg-faint)" }}>You receive</dt>
-            <dd style={{ color: "var(--cyan)", margin: 0 }}>10 credits</dd>
-          </dl>
-
-          <div className="tf-hr" />
-
-          <div
-            style={{
-              fontSize: "var(--t-small)",
-              minHeight: 22,
-              color: "var(--fg-dim)",
-            }}
-          >
-            <PhaseStatus phase={phase} />
+          <div style={rowStyle}>
+            <span style={{ color: "var(--fg-3)" }}>Network fee</span>
+            <span className="num">≈ {NETWORK_FEE_SOL} SOL</span>
           </div>
+          <div style={rowStyle}>
+            <span style={{ color: "var(--fg-3)" }}>Credits granted</span>
+            <span className="num" style={{ color: "var(--cyan)" }}>+ {selected.credits}</span>
+          </div>
+          <div style={{ ...rowStyle, borderTop: "1px solid var(--bd-1)", marginTop: 4, fontWeight: 500, color: "var(--fg)", paddingTop: 14 }}>
+            <span>Total</span>
+            <span className="num">{(selected.sol + NETWORK_FEE_SOL).toFixed(5)} SOL</span>
+          </div>
+        </div>
 
-          <div
-            className="mt-5 flex items-center justify-between gap-3"
-            style={{ flexWrap: "wrap" }}
+        {/* Status line */}
+        <div style={{ padding: "6px 24px 12px", fontSize: 12, minHeight: 22, color: "var(--fg-2)" }}>
+          <PhaseStatus phase={phase} />
+        </div>
+
+        {/* Foot */}
+        <div style={{ padding: "16px 24px", background: "var(--bg-2)", borderTop: "1px solid var(--bd-1)", display: "flex", gap: 8 }}>
+          <button
+            type="button"
+            onClick={onClose}
+            className="btn btn-ghost"
+            style={{ flex: 1, justifyContent: "center", padding: 10 }}
+            disabled={busy}
           >
+            Cancel
+          </button>
+          {phase.kind === "success" ? (
             <button
               type="button"
               onClick={onClose}
-              className="tf-cta-ghost"
-              disabled={busy}
-              style={{
-                opacity: busy ? 0.4 : 1,
-                cursor: busy ? "not-allowed" : "pointer",
-              }}
+              className="btn btn-primary"
+              style={{ flex: 2, justifyContent: "center", padding: 10 }}
             >
-              CANCEL
+              Done →
             </button>
-            {phase.kind === "success" ? (
-              <button type="button" className="tf-cta" onClick={onClose}>
-                DONE <span style={{ opacity: 0.6 }}>→</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="tf-cta"
-                onClick={handleTopup}
-                disabled={busy || !connected}
-                style={{
-                  opacity: busy || !connected ? 0.4 : 1,
-                  cursor: busy || !connected ? "not-allowed" : "pointer",
-                }}
-              >
-                {phaseLabel(phase)} <span style={{ opacity: 0.6 }}>→</span>
-              </button>
-            )}
-          </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleTopup}
+              className="btn btn-primary"
+              style={{ flex: 2, justifyContent: "center", padding: 10 }}
+              disabled={busy || !connected}
+            >
+              ◆ {phaseLabel(phase)}
+            </button>
+          )}
         </div>
       </div>
     </div>
   );
 }
 
+const rowStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  padding: "10px 0",
+  fontSize: 13,
+};
+
 function phaseLabel(phase: Phase): string {
   switch (phase.kind) {
-    case "signing":
-      return "SIGNING…";
-    case "confirming":
-      return "CONFIRMING…";
-    case "verifying":
-      return "VERIFYING…";
-    case "error":
-      return "RETRY";
-    default:
-      return "▸ SIGN & SEND";
+    case "signing":    return "Signing…";
+    case "confirming": return "Confirming…";
+    case "verifying":  return "Verifying…";
+    case "error":      return "Retry";
+    default:           return "Sign & send";
   }
 }
 
 function PhaseStatus({ phase }: { phase: Phase }) {
   if (phase.kind === "idle") {
     return (
-      <span style={{ color: "var(--fg-faint)" }}>
-        ▸ Ready. Devnet faucet:{" "}
-        <a
-          href="https://faucet.solana.com"
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--cyan)" }}
-        >
+      <span style={{ color: "var(--fg-3)" }}>
+        Devnet faucet:{" "}
+        <a href="https://faucet.solana.com" target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
           faucet.solana.com
         </a>
       </span>
     );
   }
   if (phase.kind === "signing") {
-    return (
-      <span style={{ color: "var(--fg-dim)" }}>
-        ▸ Confirm the transaction in your wallet…
-      </span>
-    );
+    return <span>Confirm the transaction in your wallet…</span>;
   }
-  if (phase.kind === "confirming") {
+  if (phase.kind === "confirming" || phase.kind === "verifying") {
     return (
-      <span style={{ color: "var(--fg-dim)" }}>
-        ▸ Waiting for cluster confirmation…{" "}
-        <a
-          href={explorerUrl(phase.signature)}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--cyan)" }}
-        >
-          {truncate(phase.signature, 6, 6)}
-        </a>
-      </span>
-    );
-  }
-  if (phase.kind === "verifying") {
-    return (
-      <span style={{ color: "var(--fg-dim)" }}>
-        ▸ Server is verifying the transfer…{" "}
-        <a
-          href={explorerUrl(phase.signature)}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--cyan)" }}
-        >
+      <span>
+        {phase.kind === "confirming" ? "Waiting for cluster…" : "Verifying transfer…"}{" "}
+        <a href={explorerUrl(phase.signature)} target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
           {truncate(phase.signature, 6, 6)}
         </a>
       </span>
@@ -353,33 +320,21 @@ function PhaseStatus({ phase }: { phase: Phase }) {
   }
   if (phase.kind === "success") {
     return (
-      <span style={{ color: "var(--mint, #4CE8AC)" }}>
+      <span style={{ color: "var(--up)" }}>
         ✓ Credited. Balance: {phase.credits} cr ·{" "}
-        <a
-          href={explorerUrl(phase.signature)}
-          target="_blank"
-          rel="noreferrer"
-          style={{ color: "var(--cyan)" }}
-        >
+        <a href={explorerUrl(phase.signature)} target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
           tx
         </a>
       </span>
     );
   }
-  // error
   return (
-    <span style={{ color: "var(--short, #E84CC9)" }}>
+    <span style={{ color: "var(--down)" }}>
       ⚠ {phase.message}
       {phase.signature ? (
         <>
-          {" "}
-          ·{" "}
-          <a
-            href={explorerUrl(phase.signature)}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: "var(--cyan)" }}
-          >
+          {" "}·{" "}
+          <a href={explorerUrl(phase.signature)} target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
             tx
           </a>
         </>
@@ -401,7 +356,6 @@ async function postTopupWithRetry(
     });
     const json = await r.json().catch(() => ({}));
     if (r.ok) return json;
-    // 404 = RPC hasn't seen tx yet; back off and retry.
     if (r.status === 404 && attempt < maxAttempts - 1) {
       await new Promise((res) => setTimeout(res, 1500));
       continue;

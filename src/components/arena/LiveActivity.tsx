@@ -1,88 +1,88 @@
 "use client";
 
-/**
- * LiveActivity — scrolling event feed for the arena (REAL data).
- *
- * v2 port of v1's LiveActivity — now wired to Supabase Realtime via
- * `useArenaActivity()`. Renders predict / settle / claim events. Markup
- * + visual chrome unchanged from the prior mock version (.tf-term /
- * .tf-term-head / .tf-dir-* / spectrum tokens) so the design system
- * stays locked.
- */
-
 import { useEffect, useState } from "react";
 import { useArenaActivity, relativeTime, type ActivityEvent } from "@/lib/realtime/activity";
+
+type Tone = "up" | "down" | "hold" | "neutral";
 
 interface ActivityRow {
   key: string;
   ts: string;
   who: string;
-  marker: "✓" | "▸" | "◉" | "＋";
+  initials: string;
+  avClass: string;
   msg: string;
   pos: string;
-  posCls: "long" | "short" | "hold" | "";
-  pnl: string;
-  pnlCls: "up" | "down" | "";
-  rawTs: string;
+  tone: Tone;
+  conf?: number;
+  pnl?: string;
+  pnlTone?: "up" | "down";
 }
 
-function dirToCls(d: "buy" | "sell" | "hold"): "long" | "short" | "hold" {
-  return d === "buy" ? "long" : d === "sell" ? "short" : "hold";
-}
 function dirToLabel(d: "buy" | "sell" | "hold"): string {
-  return d === "buy" ? "LONG" : d === "sell" ? "SHORT" : "HOLD";
+  return d === "buy" ? "▲ LONG" : d === "sell" ? "▼ SHORT" : "· HOLD";
+}
+function dirToTone(d: "buy" | "sell" | "hold"): Tone {
+  return d === "buy" ? "up" : d === "sell" ? "down" : "hold";
+}
+function initialsOf(name: string): string {
+  const parts = name.replace(/[^a-zA-Z\s]/g, "").trim().split(/\s+/);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+function avClassFor(tone: Tone): string {
+  if (tone === "up") return "av green";
+  if (tone === "down") return "av red";
+  return "av";
 }
 
 function eventToRow(e: ActivityEvent, i: number): ActivityRow {
   const tsRel = relativeTime(e.ts);
   if (e.kind === "predict") {
+    const tone = dirToTone(e.dir);
     return {
       key: `p-${i}-${e.ts}-${e.who}`,
       ts: tsRel,
-      who: e.who.toUpperCase(),
-      marker: "✓",
-      msg: `${dirToLabel(e.dir)} ${e.token} · conf ${(e.conf * 100).toFixed(0)}%`,
+      who: e.who,
+      initials: initialsOf(e.who),
+      avClass: avClassFor(tone),
+      msg: e.token,
       pos: dirToLabel(e.dir),
-      posCls: dirToCls(e.dir),
-      pnl: "—",
-      pnlCls: "",
-      rawTs: e.ts,
+      tone,
+      conf: e.conf,
     };
   }
   if (e.kind === "settle") {
+    const tone = dirToTone(e.dir);
     const sign = e.pnl >= 0 ? "+" : "−";
-    const abs = Math.abs(e.pnl).toFixed(2);
     return {
       key: `s-${i}-${e.ts}-${e.who}`,
       ts: tsRel,
-      who: e.who.toUpperCase(),
-      marker: "◉",
-      msg: `settled ${dirToLabel(e.dir)} ${e.token} @ ${e.horizon}`,
+      who: e.who,
+      initials: initialsOf(e.who),
+      avClass: avClassFor(tone),
+      msg: `settled ${e.token} @ ${e.horizon}`,
       pos: dirToLabel(e.dir),
-      posCls: dirToCls(e.dir),
-      pnl: `${sign}${abs}%`,
-      pnlCls: e.pnl >= 0 ? "up" : "down",
-      rawTs: e.ts,
+      tone,
+      pnl: `${sign}${Math.abs(e.pnl).toFixed(2)}%`,
+      pnlTone: e.pnl >= 0 ? "up" : "down",
     };
   }
   return {
     key: `c-${i}-${e.ts}-${e.who}`,
     ts: tsRel,
-    who: e.who.toUpperCase(),
-    marker: "＋",
-    msg: `agent claimed`,
+    who: e.who,
+    initials: initialsOf(e.who),
+    avClass: "av",
+    msg: "agent claimed",
     pos: "JOIN",
-    posCls: "",
-    pnl: "",
-    pnlCls: "",
-    rawTs: e.ts,
+    tone: "neutral",
   };
 }
 
 export function LiveActivity() {
   const { events, loading } = useArenaActivity();
-  // Re-render every 10s so relative timestamps tick without subscribing
-  // to a 1s timer (which would be wasteful).
   const [, setNow] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setNow((n) => n + 1), 10_000);
@@ -93,135 +93,93 @@ export function LiveActivity() {
   const empty = !loading && rows.length === 0;
 
   return (
-    <div className="tf-term">
-      <div className="tf-term-head">
-        <span>
-          <span className="dots" style={{ display: "inline-flex", gap: "5px", marginRight: "10px" }}>
-            <span /> <span /> <span />
-          </span>
-          ACTIVITY · LIVE FEED
-        </span>
-        <span className="tf-live">{loading ? "syncing…" : "LIVE"}</span>
-      </div>
+    <aside
+      style={{
+        background: "var(--bg-1)",
+        borderLeft: "1px solid var(--bd-1)",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        height: "100%",
+        minHeight: 540,
+      }}
+    >
       <div
-        className="tf-term-body"
-        aria-live="polite"
-        aria-atomic="false"
-        style={{ padding: 0 }}
+        style={{
+          padding: 16,
+          borderBottom: "1px solid var(--bd-1)",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
       >
+        <h4 style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>Activity feed</h4>
+        <span className="chip chip-live">
+          <span className="dot" />
+          {loading ? "SYNC" : "LIVE"}
+        </span>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto" }} aria-live="polite" aria-atomic="false" className="no-scrollbar">
         {empty ? (
-          <div
-            style={{
-              padding: "32px 16px",
-              textAlign: "center",
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-small)",
-              color: "var(--fg-faint)",
-              fontVariantNumeric: "tabular-nums",
-            }}
-          >
-            ▸ NO ACTIVITY — open a round at /ask
+          <div style={{ padding: "40px 16px", textAlign: "center", fontSize: 13, color: "var(--fg-3)" }}>
+            No activity yet.<br />
+            Open a round at <span style={{ color: "var(--cyan)" }}>/ask</span>.
           </div>
         ) : (
-          <div role="table">
-            {rows.map((row, i) => (
-              <div
-                key={row.key}
-                role="row"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "64px 18px 110px 1fr 110px 80px",
-                  gap: "10px",
-                  padding: "10px 16px",
-                  borderTop: i === 0 ? "none" : "1px dashed var(--line)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--t-small)",
-                  alignItems: "center",
-                  fontVariantNumeric: "tabular-nums",
-                }}
-              >
-                <span style={{ color: "var(--fg-faint)" }}>{row.ts}</span>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    color:
-                      row.marker === "◉"
-                        ? "var(--mint)"
-                        : row.marker === "▸"
-                          ? "var(--cyan)"
-                          : row.marker === "＋"
-                            ? "var(--violet)"
-                            : "var(--fg-dim)",
-                  }}
-                >
-                  {row.marker}
-                </span>
-                <span
-                  style={{
-                    color: "var(--fg)",
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
+          rows.map((row) => (
+            <div
+              key={row.key}
+              style={{
+                padding: "12px 16px",
+                borderBottom: "1px solid var(--bd-1)",
+                display: "grid",
+                gridTemplateColumns: "28px 1fr",
+                gap: 10,
+              }}
+            >
+              <div className={row.avClass}>{row.initials}</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>
                   {row.who}
-                </span>
-                <span
-                  style={{
-                    color: "var(--fg-dim)",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {row.msg}
-                </span>
-                <span
-                  className={
-                    row.posCls === "long"
-                      ? "tf-dir-long"
-                      : row.posCls === "short"
-                        ? "tf-dir-short"
-                        : row.posCls === "hold"
-                          ? "tf-dir-hold"
-                          : ""
-                  }
-                  style={{
-                    fontFamily: "var(--font-pixel)",
-                    letterSpacing: "0.16em",
-                    textAlign: "right",
-                    color:
-                      row.posCls === "long"
-                        ? "var(--long)"
-                        : row.posCls === "short"
-                          ? "var(--short)"
-                          : row.posCls === "hold"
-                            ? "var(--hold)"
-                            : "var(--fg-faint)",
-                  }}
-                >
-                  {row.pos}
-                </span>
-                <span
-                  style={{
-                    color:
-                      row.pnlCls === "up"
-                        ? "var(--long)"
-                        : row.pnlCls === "down"
-                          ? "var(--short)"
-                          : "var(--fg-faint)",
-                    textAlign: "right",
-                  }}
-                >
-                  {row.pnl || "—"}
-                </span>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2, display: "flex", gap: 6, alignItems: "center" }}>
+                  <span className="num">{row.ts}</span>
+                  {row.conf !== undefined && (
+                    <>
+                      <span>·</span>
+                      <span>{row.conf.toFixed(2)} conf</span>
+                    </>
+                  )}
+                </div>
+                <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 12, flexWrap: "wrap" }}>
+                  <span
+                    className={
+                      row.tone === "up"
+                        ? "chip chip-up"
+                        : row.tone === "down"
+                          ? "chip chip-down"
+                          : row.tone === "hold"
+                            ? "chip chip-hold"
+                            : "chip"
+                    }
+                  >
+                    {row.pos}
+                  </span>
+                  <span style={{ color: "var(--fg-3)" }}>{row.msg}</span>
+                  {row.pnl && (
+                    <span
+                      className="num"
+                      style={{ color: row.pnlTone === "up" ? "var(--up)" : "var(--down)", marginLeft: "auto" }}
+                    >
+                      {row.pnl}
+                    </span>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         )}
       </div>
-    </div>
+    </aside>
   );
 }

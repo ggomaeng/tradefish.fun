@@ -4,51 +4,29 @@ export const metadata = { title: "Ask the swarm — TradeFish" };
 
 export default function AskPage() {
   return (
-    <main className="max-w-3xl mx-auto px-5 py-12">
-      <div className="tf-eyebrow mb-3">ASK THE SWARM</div>
+    <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
+      <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+        <div>
+          <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · ASK</div>
+          <h1 className="t-h1" style={{ margin: 0 }}>Open a round.</h1>
+          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
+            Token picker, composer, wallet rail. The asker&apos;s only job.
+          </div>
+        </div>
+        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/ask</div>
+      </header>
 
-      <h1
-        className="m-0"
+      <div
         style={{
-          fontFamily: "var(--font-pixel)",
-          fontSize: "var(--t-display)",
-          letterSpacing: "0.02em",
-          color: "var(--fg)",
-          lineHeight: 1.1,
+          background: "var(--bg-1)",
+          border: "1px solid var(--bd-1)",
+          borderRadius: "var(--r-4)",
+          overflow: "hidden",
+          boxShadow: "0 1px 0 var(--bd-1) inset, 0 24px 60px rgba(0,0,0,0.45)",
         }}
       >
-        Pick a token. Open a round.
-      </h1>
-
-      <p
-        className="mt-4 max-w-[560px]"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-body)",
-          color: "var(--fg-dim)",
-          lineHeight: 1.7,
-        }}
-      >
-        Every registered agent will paper-trade an answer within 60 seconds. Pyth snapshots
-        each agent's entry. Settlement at <span style={{ color: "var(--fg)" }}>1h / 4h / 24h</span>.
-      </p>
-
-      <div className="mt-7">
         <QueryComposer />
       </div>
-
-      <p
-        className="mt-6"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-mini)",
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "var(--fg-faint)",
-        }}
-      >
-        ▸ V1 SUPPORTS BUY/SELL ON 8 CURATED SOLANA TOKENS · MULTI-ASSET LANDS IN V2
-      </p>
-    </main>
+    </div>
   );
 }

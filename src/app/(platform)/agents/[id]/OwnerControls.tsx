@@ -1,16 +1,5 @@
 "use client";
 
-/**
- * OwnerControls — the strip of owner-only affordances on /agents/<short_id>.
- *
- * If the connected wallet matches `agent.owner_pubkey`:
- *   - Onboarding prompt block (canonical instruction + COPY)
- *   - Send a test query CTA (anon path → no credit debit)
- *   - Webhook info (delivery=webhook only)
- *
- * If not the owner: render nothing. Public view stays clean.
- */
-
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -26,21 +15,6 @@ type AgentLite = {
   last_seen_at: string | null;
 };
 
-function formatRelative(iso: string | null): string {
-  if (!iso) return "Never delivered";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "Never delivered";
-  const diff = Date.now() - then;
-  if (diff < 0) return "just now";
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  return `${d}d ago`;
-}
-
 export function OwnerControls({ agent }: { agent: AgentLite }) {
   const router = useRouter();
   const { publicKey, connected } = useWallet();
@@ -49,11 +23,8 @@ export function OwnerControls({ agent }: { agent: AgentLite }) {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Resolve site URL on the client so the prompt always shows the live origin.
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      setSiteUrl(window.location.origin);
-    }
+    if (typeof window !== "undefined") setSiteUrl(window.location.origin);
   }, []);
 
   const isOwner = useMemo(
@@ -74,33 +45,23 @@ export function OwnerControls({ agent }: { agent: AgentLite }) {
       await navigator.clipboard.writeText(onboardingPrompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   async function sendTestQuery() {
     setSubmitting(true);
     setErrorMsg(null);
     try {
-      // Anon path — intentionally NO X-Wallet-Pubkey header so credits aren't
-      // debited from the owner's balance for a self-test.
       const r = await fetch("/api/queries", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token_mint: SOL_MINT,
-          question_type: "buy_sell_now",
-        }),
+        body: JSON.stringify({ token_mint: SOL_MINT, question_type: "buy_sell_now" }),
       });
       const json = (await r.json().catch(() => null)) as
         | { query_id?: string; error?: string; message?: string }
         | null;
       if (!r.ok || !json?.query_id) {
-        setErrorMsg(
-          (json && (json.message || json.error)) ||
-            `Failed to open round (${r.status}).`,
-        );
+        setErrorMsg((json && (json.message || json.error)) || `Failed to open round (${r.status}).`);
         return;
       }
       router.push(`/round/${json.query_id}`);
@@ -112,121 +73,46 @@ export function OwnerControls({ agent }: { agent: AgentLite }) {
   }
 
   return (
-    <section className="mt-8 space-y-5">
-      <div className="t-label" style={{ color: "var(--cyan)" }}>
-        ▸ OWNER CONTROLS
-      </div>
+    <section style={{ marginTop: 32 }}>
+      <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 16px" }}>Owner controls</h3>
 
-      <div className="tf-term">
-        <div className="tf-term-head">
-          <div className="flex items-center gap-3">
-            <div className="dots">
-              <span />
-              <span />
-              <span />
-            </div>
-            <span>▸ ONBOARDING PROMPT · GIVE THIS TO YOUR AGENT</span>
-          </div>
+      <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--bd-1)", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+          <span className="t-mini">Onboarding prompt — give this to your AI</span>
           <button
             type="button"
             onClick={copyPrompt}
-            className="tf-cta-ghost"
-            style={{
-              padding: "2px 10px",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.18em",
-              color: copied ? "var(--mint)" : "var(--cyan)",
-              borderColor: copied ? "var(--line-mint)" : "var(--line-strong)",
-            }}
+            className="btn btn-sm"
+            style={{ color: copied ? "var(--up)" : "var(--fg)" }}
           >
-            {copied ? "COPIED" : "COPY"}
+            {copied ? "Copied" : "Copy"}
           </button>
         </div>
         <pre
-          className="m-0 overflow-x-auto"
-          style={{
-            padding: "16px 18px",
-            background: "transparent",
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-small)",
-            lineHeight: 1.7,
-            color: "var(--fg)",
-          }}
+          className="codeblock"
+          style={{ margin: 0, border: 0, borderRadius: 0, background: "var(--bg-1)" }}
         >
-          <span style={{ color: "var(--cyan)" }}>$ </span>
-          {onboardingPrompt}
+          <span className="k">$ </span>{onboardingPrompt}
         </pre>
       </div>
 
-      <div className="flex items-center gap-3 flex-wrap">
+      <div style={{ display: "flex", gap: 12, marginTop: 16, alignItems: "center", flexWrap: "wrap" }}>
         <button
           type="button"
           onClick={sendTestQuery}
           disabled={submitting}
-          className="tf-cta"
-          style={{
-            opacity: submitting ? 0.6 : 1,
-            cursor: submitting ? "wait" : "pointer",
-          }}
+          className="btn btn-primary"
         >
-          {submitting ? "▸ OPENING ROUND…" : "▸ SEND A TEST QUERY"}
+          {submitting ? "Opening round…" : "Send a test query →"}
         </button>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-mini)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--fg-faint)",
-          }}
-        >
-          opens a free SOL round — your agent should answer.
+        <span className="t-small" style={{ color: "var(--fg-3)" }}>
+          Opens a free SOL round — your agent should answer.
         </span>
       </div>
 
       {errorMsg && (
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-small)",
-            color: "var(--short)",
-            padding: "8px 10px",
-            border: "1px solid var(--short)",
-          }}
-        >
-          ▸ {errorMsg}
-        </div>
-      )}
-
-      {agent.delivery === "webhook" && (
-        <div className="tf-card p-4" style={{ borderColor: "var(--line-strong)" }}>
-          <div className="t-label" style={{ color: "var(--fg-faint)" }}>
-            ▸ WEBHOOK
-          </div>
-          <div
-            className="mt-2 break-all"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-small)",
-              color: "var(--fg)",
-            }}
-          >
-            {agent.endpoint || (
-              <span style={{ color: "var(--fg-faintest)" }}>no endpoint set</span>
-            )}
-          </div>
-          <div
-            className="mt-2"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: agent.last_seen_at ? "var(--mint)" : "var(--fg-faint)",
-            }}
-          >
-            ▸ LAST DELIVERY · {formatRelative(agent.last_seen_at)}
-          </div>
+        <div style={{ marginTop: 12, padding: "8px 12px", border: "1px solid var(--down-bd)", borderRadius: "var(--r-2)", color: "var(--down)", fontSize: 13 }}>
+          ⚠ {errorMsg}
         </div>
       )}
     </section>

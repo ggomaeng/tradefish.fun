@@ -1,0 +1,243 @@
+/* TradeFish — terminal/pixel design tokens v2
+ * Inspiration: quadwork 4-quadrant terminal dashboard, Claude orange,
+ * CRT phosphor warmth, agent-debate text logs.
+ */
+
+@font-face {
+  font-family: 'Departure Mono';
+  src: url('fonts/DepartureMono-Regular.woff2') format('woff2'),
+       url('fonts/DepartureMono-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  /* Cool-black ocean palette */
+  --bg-0: #050a14;
+  --bg-1: #08111f;
+  --bg-2: #0d1830;
+  --bg-3: #162540;
+
+  /* Surfaces — translucent deep-water */
+  --surface:        rgba(13, 24, 48, 0.78);
+  --surface-2:      rgba(22, 37, 64, 0.85);
+  --surface-glass:  rgba(168, 216, 232, 0.04);
+  --surface-deep:   rgba(4, 8, 16, 0.92);
+
+  /* Hairlines — cyan-tinted */
+  --line:         rgba(168, 216, 232, 0.14);
+  --line-strong:  rgba(168, 216, 232, 0.32);
+  --line-bright:  rgba(168, 216, 232, 0.55);
+
+  /* Type — pale ocean tones */
+  --fg:         #f0e9e1;
+  --fg-dim:     #a8b8c8;
+  --fg-faint:   #6a7a8a;
+  --fg-faintest:#3a4858;
+
+  /* Brand — cool monochrome only */
+  --orange:       #a8d8e8;
+  --orange-bright:#c4ecf5;
+  --orange-dim:   #6a9bb5;
+  --coral:        #a8d8e8;
+  --cream:        #f0e9e1;
+  --rust:         #6a9bb5;
+
+  /* Cool accents */
+  --cyan:         #a8d8e8;
+  --cyan-bright:  #c4ecf5;
+  --deep-blue:    #4a7ab8;
+
+  /* Phosphor accents */
+  --phosphor:     #7fe0a8;
+  --amber:        #ffb84a;
+  --magenta:      #d96baa;
+
+  /* Trading semantic */
+  --long:         #7fe0a8;
+  --long-bg:      rgba(127, 224, 168, 0.10);
+  --short:        #e07560;
+  --short-bg:     rgba(224, 117, 96, 0.10);
+  --hold:         #ffb84a;
+  --hold-bg:      rgba(255, 184, 74, 0.08);
+
+  /* Sponsor accents — re-tinted to live in warm palette */
+  --s-flock:      #66c0d4;       /* cool teal — only cool sponsor color */
+  --s-nansen:     #7fe05c;       /* phosphor green */
+  --s-virtuals:   #d96baa;       /* warm magenta */
+  --s-pancake:    #ffb84a;       /* warm amber */
+  --s-bananagun:  #f5d76e;       /* yellow */
+  --s-base:       #6e8af0;       /* base blue (kept for brand) */
+  --s-risk:       #e09276;       /* coral */
+
+  /* Type stack */
+  --font-mono:    "Departure Mono", "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", "Menlo", monospace;
+  --font-pixel:   "Departure Mono", "VT323", ui-monospace, monospace;
+  --font-display: "Departure Mono", "VT323", ui-monospace, monospace;
+  --font-sans:    "Departure Mono", "JetBrains Mono", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-0);
+  color: var(--fg);
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum", "zero";
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.mono { font-family: var(--font-mono); }
+.pixel { font-family: var(--font-pixel); letter-spacing: 0.02em; }
+.tabular { font-variant-numeric: tabular-nums; }
+.upper { text-transform: uppercase; letter-spacing: 0.14em; }
+
+/* ── CRT scanlines ─────────────────────────────────────────────────────── */
+.tf-scanlines {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(168, 216, 232, 0.025) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  z-index: 50;
+  mix-blend-mode: overlay;
+}
+
+/* ── ASCII grid background — dot lattice with warm tint ─────────────────── */
+.tf-grid-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(168, 216, 232, 0.10) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
+}
+
+/* Vignette — warm-black falloff */
+.tf-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.65) 100%);
+  z-index: 40;
+}
+
+/* ── Terminal window chrome ─────────────────────────────────────────────── */
+.tf-term {
+  background: var(--surface-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: 0;            /* sharp pixel corners */
+  position: relative;
+  font-family: var(--font-mono);
+}
+.tf-term-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(217,119,87,0.05), transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+}
+.tf-term-head .dots { display: flex; gap: 4px; }
+.tf-term-head .dots span { width: 8px; height: 8px; background: var(--orange-dim); border-radius: 50%; }
+.tf-term-head .dots span:nth-child(2) { background: var(--amber); }
+.tf-term-head .dots span:nth-child(3) { background: var(--phosphor); }
+
+/* ── Card (terminal panel) ──────────────────────────────────────────────── */
+.tf-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  position: relative;
+}
+
+/* ── Phosphor / glow ────────────────────────────────────────────────────── */
+.tf-glow-orange { box-shadow: 0 0 0 1px rgba(217, 119, 87, 0.45), 0 0 20px rgba(217, 119, 87, 0.25); }
+.tf-glow-long   { box-shadow: 0 0 0 1px rgba(127, 224, 92, 0.40), 0 0 18px rgba(127, 224, 92, 0.22); }
+.tf-glow-short  { box-shadow: 0 0 0 1px rgba(224, 92, 92, 0.40), 0 0 18px rgba(224, 92, 92, 0.22); }
+
+.tf-text-glow { text-shadow: 0 0 8px currentColor, 0 0 16px currentColor; }
+
+/* ── Chip / pill ────────────────────────────────────────────────────────── */
+.tf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  background: var(--surface-glass);
+}
+
+.tf-dot {
+  width: 6px; height: 6px; border-radius: 0;
+  background: var(--orange);
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* ── Caret blink ────────────────────────────────────────────────────────── */
+@keyframes tf-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.tf-caret {
+  display: inline-block; width: 0.55em; height: 1em; margin-left: 2px;
+  background: currentColor; vertical-align: -2px;
+  animation: tf-blink 1s steps(1) infinite;
+}
+
+/* ── Numbers ────────────────────────────────────────────────────────────── */
+.tf-num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.tf-tick-up   { color: var(--long); }
+.tf-tick-down { color: var(--short); }
+
+/* ── Selection ──────────────────────────────────────────────────────────── */
+::selection { background: rgba(168, 216, 232, 0.35); color: var(--bg-0); }
+
+/* ── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes tf-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+@keyframes tf-pulse-orange {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0.6); }
+  50%      { box-shadow: 0 0 0 6px rgba(217, 119, 87, 0); }
+}
+
+@keyframes tf-flicker {
+  0%, 100% { opacity: 1; }
+  47% { opacity: 1; }
+  48% { opacity: 0.4; }
+  49% { opacity: 1; }
+  88% { opacity: 1; }
+  89% { opacity: 0.6; }
+  90% { opacity: 1; }
+}
+
+.tf-flicker { animation: tf-flicker 6s infinite; }
+
+/* ── Pixel divider ──────────────────────────────────────────────────────── */
+.tf-hr {
+  border: none;
+  border-top: 1px dashed var(--line);
+  margin: 8px 0;
+}
+
+/* ── Box-drawing helpers ────────────────────────────────────────────────── */
+.tf-box-tl { border-top: 1px solid var(--line-strong); border-left: 1px solid var(--line-strong); }
+.tf-box-br { border-bottom: 1px solid var(--line-strong); border-right: 1px solid var(--line-strong); }
+
+/* Prevent default scrollbars in fullscreen artifacts */
+.tf-noscroll::-webkit-scrollbar { display: none; }
+.tf-noscroll { scrollbar-width: none; }

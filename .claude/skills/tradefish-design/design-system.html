@@ -1,0 +1,2799 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>TradeFish — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="assets/tokens.css" />
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   TRADEFISH — Design System reference
+   Codifies the v2 system: dark default, light parity. One scrollable
+   document, sticky TOC. Real components, real numbers, real names.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--bg-0);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14px; line-height: 1.5;
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--cyan); color: var(--bg-0); }
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+
+/* ── Top bar ─────────────────────────────────────────── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--s-7);
+  background: rgba(10,10,11,0.80);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  border-bottom: 1px solid var(--bd-1);
+}
+.topbar .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: -0.01em; }
+.topbar .brand img { width: 26px; height: 26px; object-fit: contain; }
+.topbar .brand .ds {
+  font-family: var(--font-mono); font-size: 11px; color: var(--cyan);
+  padding: 3px 7px; border: 1px solid var(--cyan-bd); border-radius: var(--r-1);
+  background: var(--cyan-bg); margin-left: 6px; letter-spacing: 0.04em;
+}
+.topbar .crumbs { display: flex; gap: var(--s-5); font-size: 12px; color: var(--fg-3); }
+.topbar .crumbs a { transition: color var(--t-fast); }
+.topbar .crumbs a:hover { color: var(--fg); }
+.topbar .crumbs a.active { color: var(--fg); }
+.topbar .right { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--fg-3); }
+.topbar .right code { font-family: var(--font-mono); padding: 3px 7px; border: 1px solid var(--bd-1); border-radius: var(--r-1); background: var(--bg-2); color: var(--fg-2); }
+
+/* ── Layout ──────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  max-width: 1440px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+/* ── TOC ─────────────────────────────────────────────── */
+.toc {
+  position: sticky; top: 56px;
+  align-self: start;
+  height: calc(100vh - 56px);
+  overflow-y: auto;
+  padding: 32px 24px 80px;
+  border-right: 1px solid var(--bd-1);
+  background: var(--bg-1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--bd-2) transparent;
+}
+.toc::-webkit-scrollbar { width: 6px; }
+.toc::-webkit-scrollbar-thumb { background: var(--bd-2); border-radius: 3px; }
+.toc .group { margin-bottom: 22px; }
+.toc .gtitle {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--fg-3);
+  margin: 0 8px 8px;
+}
+.toc a {
+  display: block; padding: 5px 10px;
+  font-size: 13px; color: var(--fg-2);
+  border-radius: var(--r-2);
+  border-left: 2px solid transparent;
+  margin-bottom: 1px;
+}
+.toc a:hover { background: var(--bg-2); color: var(--fg); }
+.toc a.active { background: var(--bg-2); color: var(--fg); border-left-color: var(--cyan); }
+
+/* ── Main ────────────────────────────────────────────── */
+.main {
+  padding: 0 56px 160px;
+  max-width: 1100px;
+}
+
+/* ── Hero ────────────────────────────────────────────── */
+.hero {
+  padding: 80px 0 72px;
+  border-bottom: 1px solid var(--bd-1);
+  margin-bottom: 56px;
+  position: relative;
+}
+.hero .eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  background: var(--sol-grad);
+  color: var(--bg-0);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.hero .eyebrow .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--bg-0); }
+.hero h1 {
+  font-size: clamp(40px, 5vw, 64px);
+  font-weight: 600; letter-spacing: -0.035em; line-height: 1.0;
+  margin: 0 0 22px;
+}
+.hero h1 .grad {
+  background: var(--sol-grad);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.hero .lede {
+  font-size: 17px; line-height: 1.55; color: var(--fg-2);
+  max-width: 680px; margin: 0 0 36px;
+}
+.hero .meta {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  padding-top: 28px;
+  border-top: 1px solid var(--bd-1);
+}
+.hero .meta .l { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 8px; }
+.hero .meta .v { font-family: var(--font-mono); font-size: 18px; font-weight: 500; color: var(--fg); }
+.hero .meta .v small { color: var(--fg-3); font-size: 12px; margin-left: 4px; font-weight: 400; }
+
+/* ── Section ─────────────────────────────────────────── */
+section.sec {
+  padding: 56px 0 48px;
+  border-bottom: 1px solid var(--bd-1);
+  scroll-margin-top: 70px;
+}
+section.sec:last-of-type { border-bottom: 0; }
+.sec-head { margin-bottom: 32px; }
+.sec-head .kicker {
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--cyan); letter-spacing: 0;
+  margin-bottom: 8px;
+}
+.sec-head h2 {
+  font-size: 28px; font-weight: 600;
+  letter-spacing: -0.025em; line-height: 1.1;
+  margin: 0 0 12px;
+}
+.sec-head .desc {
+  font-size: 15px; line-height: 1.55; color: var(--fg-2);
+  max-width: 680px; margin: 0;
+}
+.sec-head .desc code { font-family: var(--font-mono); padding: 1px 5px; background: var(--bg-2); border-radius: 3px; font-size: 12.5px; color: var(--fg); border: 1px solid var(--bd-1); }
+
+/* ── Sub-section ─────────────────────────────────────── */
+.sub {
+  padding: 28px 0 4px;
+  border-top: 1px solid var(--bd-1);
+  margin-top: 32px;
+}
+.sub:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+.sub h3 {
+  font-size: 17px; font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0 0 6px;
+}
+.sub .desc { font-size: 13.5px; color: var(--fg-2); margin: 0 0 20px; max-width: 620px; line-height: 1.55; }
+.sub .desc code { font-family: var(--font-mono); padding: 1px 5px; background: var(--bg-2); border-radius: 3px; font-size: 12px; color: var(--fg); border: 1px solid var(--bd-1); }
+
+/* ── Demo panel — neutral inset for showing components ── */
+.demo {
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  padding: 28px;
+  margin-bottom: 16px;
+  position: relative;
+}
+.demo.tight { padding: 18px; }
+.demo.center { display: flex; align-items: center; justify-content: center; min-height: 120px; }
+.demo.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.demo .demo-label {
+  position: absolute; top: 10px; right: 12px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-3);
+  letter-spacing: 0.04em;
+}
+.demo.dark { background: var(--bg-0); }
+.demo.gradient {
+  background:
+    radial-gradient(ellipse at 25% 30%, rgba(153,69,255,0.18), transparent 55%),
+    radial-gradient(ellipse at 70% 70%, rgba(20,241,149,0.12), transparent 55%),
+    var(--bg-0);
+}
+
+/* ── Code / token annotation ─────────────────────────── */
+.notes {
+  margin-top: 8px; font-family: var(--font-mono); font-size: 11.5px;
+  color: var(--fg-3); display: flex; flex-wrap: wrap; gap: 14px;
+}
+.notes b { color: var(--fg-2); font-weight: 500; }
+.notes code { color: var(--cyan); }
+
+/* ── Token chip — inline reference ───────────────────── */
+.tok {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 11px;
+  padding: 2px 7px; border: 1px solid var(--bd-1);
+  background: var(--bg-2); border-radius: var(--r-1);
+  color: var(--fg-2);
+}
+.tok b { color: var(--fg); font-weight: 500; }
+.tok .sw { width: 10px; height: 10px; border-radius: 2px; border: 1px solid var(--bd-2); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   1. BRAND
+   ═══════════════════════════════════════════════════════════════════════ */
+.brand-grid {
+  display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px;
+}
+.brand-card {
+  padding: 36px;
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  position: relative; overflow: hidden;
+  min-height: 220px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-card .corner {
+  position: absolute; top: 12px; left: 12px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); letter-spacing: 0.06em;
+}
+.brand-card .right-corner {
+  position: absolute; top: 12px; right: 12px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-3);
+}
+.brand-card.dark { background: var(--bg-0); }
+.brand-card.light { background: #FAFAFA; }
+.brand-card.gradient {
+  background: var(--sol-grad-soft), var(--bg-0);
+}
+.brand-card img { max-width: 240px; max-height: 140px; object-fit: contain; }
+.brand-card.bg-shot {
+  background:
+    radial-gradient(ellipse at center, rgba(153,69,255,0.20), transparent 60%),
+    radial-gradient(ellipse at 80% 30%, rgba(20,241,149,0.14), transparent 55%),
+    var(--bg-0);
+}
+.brand-card.bg-shot img {
+  filter:
+    drop-shadow(0 0 40px rgba(153,69,255,0.30))
+    drop-shadow(0 0 70px rgba(20,241,149,0.18));
+}
+
+.wordmark {
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: -0.02em;
+  display: inline-flex; align-items: center; gap: 12px;
+  color: var(--fg);
+}
+.wordmark img { width: 32px; height: 32px; object-fit: contain; }
+.wordmark .v { font-family: var(--font-mono); font-size: 12px; color: var(--fg-3); font-weight: 400; padding: 3px 8px; border: 1px solid var(--bd-1); border-radius: var(--r-1); }
+.wordmark.lg { font-size: 44px; }
+.wordmark.lg img { width: 48px; height: 48px; }
+.wordmark.sm { font-size: 18px; }
+.wordmark.sm img { width: 22px; height: 22px; }
+
+.dont-list {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  margin-top: 12px;
+}
+.dont {
+  padding: 18px;
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  font-size: 12px;
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: 140px;
+}
+.dont .vis {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-2);
+  border-radius: var(--r-2);
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.dont .vis img { max-width: 100px; max-height: 60px; object-fit: contain; }
+.dont .label { color: var(--fg-2); display: flex; align-items: center; gap: 6px; }
+.dont .label .x { color: var(--down); font-family: var(--font-mono); font-weight: 600; }
+.dont.do .label .x { color: var(--up); }
+.dont .vis.warp { background: linear-gradient(135deg, #FF4D6D, #9945FF); }
+.dont .vis.shrink img { max-width: 32px; }
+.dont .vis.recolor img { filter: hue-rotate(180deg) saturate(0.4); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   2. COLOR
+   ═══════════════════════════════════════════════════════════════════════ */
+.swatch-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+  margin-bottom: 8px;
+}
+.sw-tile {
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-2);
+  padding: 14px;
+  min-height: 96px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  font-family: var(--font-mono); font-size: 10.5px;
+}
+.sw-tile .name { color: rgba(255,255,255,0.62); font-weight: 500; }
+.sw-tile .hex { color: rgba(255,255,255,0.92); font-size: 11px; }
+.sw-tile.fg { color: rgba(0,0,0,0.62); }
+.sw-tile.fg .hex { color: rgba(0,0,0,0.92); }
+
+.theme-pair {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  margin-bottom: 28px;
+}
+.theme-pair .col {
+  padding: 20px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--bd-1);
+}
+.theme-pair .col.dark { background: var(--bg-0); }
+.theme-pair .col.light { background: #FAFAFA; }
+.theme-pair .col h4 {
+  font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+}
+.theme-pair .col.dark h4 { color: rgba(255,255,255,0.55); }
+.theme-pair .col.light h4 { color: rgba(0,0,0,0.55); }
+
+.gradient-bar {
+  height: 80px;
+  border-radius: var(--r-3);
+  background: var(--sol-grad);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  padding: 14px 18px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--bg-0); font-weight: 600;
+}
+
+.semantic-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.sem-tile {
+  padding: 18px;
+  border-radius: var(--r-3);
+  border: 1px solid var(--bd-1);
+  background: var(--bg-2);
+}
+.sem-tile .label { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-bottom: 8px; letter-spacing: 0.04em; }
+.sem-tile .num { font-family: var(--font-mono); font-size: 22px; font-weight: 500; }
+.sem-tile.up   .num { color: var(--up); }
+.sem-tile.down .num { color: var(--down); }
+.sem-tile.hold .num { color: var(--hold); }
+.sem-tile .meta { font-family: var(--font-mono); font-size: 11px; margin-top: 6px; color: var(--fg-3); }
+
+.accent-rule { margin-top: 16px; }
+.rule-card {
+  padding: 14px 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-left: 2px solid var(--cyan);
+  border-radius: var(--r-2);
+  font-size: 13px; color: var(--fg-2);
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.rule-card .ico { color: var(--cyan); font-family: var(--font-mono); font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   3. TYPOGRAPHY
+   ═══════════════════════════════════════════════════════════════════════ */
+.type-table {
+  display: grid; grid-template-columns: 110px 1fr 1fr;
+  gap: 0;
+  border-top: 1px solid var(--bd-1);
+}
+.type-table > div {
+  padding: 18px 16px;
+  border-bottom: 1px solid var(--bd-1);
+}
+.type-table .tag {
+  font-family: var(--font-mono); font-size: 11px; color: var(--cyan);
+  align-self: center;
+}
+.type-table .sample { color: var(--fg); align-self: center; }
+.type-table .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); align-self: center; }
+.type-table .meta b { color: var(--fg-2); font-weight: 500; }
+
+.weight-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.weight-tile {
+  padding: 22px 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+}
+.weight-tile .sample { font-size: 32px; letter-spacing: -0.02em; line-height: 1; }
+.weight-tile .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-top: 14px; }
+.weight-tile .meta b { color: var(--fg-2); font-weight: 500; }
+
+.numeric-demo {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+.num-card {
+  padding: 22px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+}
+.num-card .l { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-bottom: 12px; letter-spacing: 0.04em; }
+.num-card .stack { display: flex; flex-direction: column; gap: 8px; font-family: var(--font-mono); font-size: 18px; }
+.num-card .stack span { font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.num-card.bad .stack { font-family: var(--font-sans); font-variant-numeric: normal; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   4. SPACING / RADIUS / ELEVATION
+   ═══════════════════════════════════════════════════════════════════════ */
+.space-row {
+  display: flex; gap: 12px; align-items: flex-end;
+  flex-wrap: wrap;
+}
+.space-cell {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg-3);
+}
+.space-cell .bar { background: var(--cyan); border-radius: var(--r-1); height: 24px; }
+.space-cell b { color: var(--fg-2); font-weight: 500; }
+
+.radius-row {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+}
+.r-cell {
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  height: 96px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg-3);
+}
+.r-0 { border-radius: 0; }
+.r-1 { border-radius: 4px; }
+.r-2 { border-radius: 6px; }
+.r-3 { border-radius: 8px; }
+.r-4 { border-radius: 12px; }
+
+.elev-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+  padding: 32px;
+  background: var(--bg-0);
+  border-radius: var(--r-3);
+  border: 1px solid var(--bd-1);
+}
+.elev-card {
+  background: var(--bg-2);
+  height: 96px;
+  border-radius: var(--r-3);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 11px; color: var(--fg-2);
+  border: 1px solid var(--bd-1);
+}
+.elev-1 { box-shadow: var(--shadow-1); }
+.elev-2 { box-shadow: var(--shadow-2); }
+.elev-3 { box-shadow: var(--shadow-3); }
+.elev-4 { box-shadow: var(--shadow-4); }
+
+.grid-demo {
+  display: grid; grid-template-columns: repeat(12, 1fr); gap: 12px;
+  background: var(--bg-2);
+  padding: 20px; border-radius: var(--r-3);
+  border: 1px solid var(--bd-1);
+}
+.grid-demo .col {
+  background: var(--cyan-bg);
+  border: 1px dashed var(--cyan-bd);
+  height: 56px;
+  border-radius: var(--r-1);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-size: 10px; color: var(--cyan);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   5. MOTION
+   ═══════════════════════════════════════════════════════════════════════ */
+.motion-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.motion-card {
+  padding: 22px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+.motion-card .l { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-bottom: 12px; }
+.motion-card .v { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
+.motion-card .ball {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--cyan);
+  margin-top: 18px;
+  transform: translateX(0);
+  transition: transform var(--t-fast) var(--ease);
+}
+.motion-card.med .ball { transition-duration: var(--t-med); }
+.motion-card.slow .ball { transition-duration: var(--t-slow); }
+.motion-card.spring .ball { transition-timing-function: var(--ease-spring); transition-duration: var(--t-med); background: var(--sol-purple); }
+.motion-card:hover .ball { transform: translateX(220px); }
+
+.motion-rules {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+}
+.motion-rule {
+  padding: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  font-size: 12.5px; color: var(--fg-2);
+}
+.motion-rule h5 { font-size: 13px; font-weight: 600; margin: 0 0 6px; color: var(--fg); }
+.motion-rule .meta { font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-3); margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   6. ICONOGRAPHY
+   ═══════════════════════════════════════════════════════════════════════ */
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+.icon-cell {
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-2);
+  padding: 16px 8px 10px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-3);
+}
+.icon-cell svg { width: 18px; height: 18px; stroke: var(--fg); stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.icon-sizes {
+  display: flex; gap: 24px; align-items: center;
+  padding: 24px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+}
+.icon-sizes .c { display: flex; flex-direction: column; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--fg-3); }
+.icon-sizes .c svg { stroke: var(--fg); stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.icon-sz-12 { width: 12px; height: 12px; }
+.icon-sz-14 { width: 14px; height: 14px; }
+.icon-sz-16 { width: 16px; height: 16px; }
+.icon-sz-20 { width: 20px; height: 20px; }
+.icon-sz-24 { width: 24px; height: 24px; }
+.icon-sz-32 { width: 32px; height: 32px; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   COMPONENTS — base styles inherited from the production app
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--bd-2);
+  background: transparent;
+  color: var(--fg);
+  border-radius: var(--r-2);
+  font-size: 13px; font-weight: 500;
+  transition: all var(--t-fast) var(--ease);
+}
+.btn:hover { background: var(--bg-3); border-color: var(--bd-3); }
+.btn-primary { background: var(--fg); color: var(--bg-0); border-color: var(--fg); }
+.btn-primary:hover { background: var(--cyan-bright); border-color: var(--cyan-bright); color: var(--bg-0); }
+.btn-ghost { border-color: transparent; color: var(--fg-2); }
+.btn-ghost:hover { background: var(--bg-2); color: var(--fg); }
+.btn-danger { color: var(--down); border-color: var(--down-bd); }
+.btn-danger:hover { background: var(--down-bg); border-color: var(--down); }
+.btn-sol { background: var(--sol-grad); color: var(--bg-0); border-color: transparent; font-weight: 600; }
+.btn-sol:hover { filter: brightness(1.08); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-lg { padding: 10px 18px; font-size: 14px; }
+.btn-icon-only { padding: 7px; }
+.btn[disabled], .btn.is-disabled { opacity: 0.4; pointer-events: none; }
+.btn.is-loading { color: transparent; position: relative; pointer-events: none; }
+.btn.is-loading::after {
+  content: ''; position: absolute; inset: 0; margin: auto;
+  width: 14px; height: 14px;
+  border: 2px solid currentColor; border-top-color: transparent;
+  border-radius: 50%; color: var(--fg);
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.btn-primary.is-loading::after { color: var(--bg-0); }
+
+.icon { width: 14px; height: 14px; flex: none; stroke-width: 1.6; }
+
+/* Inputs */
+.input {
+  display: flex; align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-2);
+  border-radius: var(--r-2);
+  font-family: inherit; font-size: 13px;
+  color: var(--fg);
+  width: 100%;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.input::placeholder { color: var(--fg-3); }
+.input:hover { border-color: var(--bd-3); }
+.input:focus { outline: 0; border-color: var(--cyan); background: var(--bg-1); }
+.input.is-error { border-color: var(--down); }
+.input.is-success { border-color: var(--up); }
+.input-wrap { position: relative; }
+.input-wrap .lead, .input-wrap .trail {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  display: flex; align-items: center;
+  color: var(--fg-3);
+}
+.input-wrap .lead  { left: 10px; }
+.input-wrap .trail { right: 10px; }
+.input-wrap .lead svg, .input-wrap .trail svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 1.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.input.has-lead  { padding-left: 32px; }
+.input.has-trail { padding-right: 32px; }
+.input-help { font-size: 11.5px; color: var(--fg-3); margin-top: 6px; }
+.input-help.is-error { color: var(--down); }
+.input-label {
+  display: block; font-size: 11px; font-weight: 500;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--fg-3); margin-bottom: 6px;
+}
+
+/* Switch */
+.switch {
+  width: 32px; height: 18px;
+  background: var(--bg-3); border: 1px solid var(--bd-2);
+  border-radius: var(--r-pill);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--t-fast);
+}
+.switch::after {
+  content: ''; position: absolute;
+  width: 14px; height: 14px;
+  background: var(--fg-2); border-radius: 50%;
+  top: 1px; left: 1px;
+  transition: all var(--t-fast) var(--ease);
+}
+.switch.on { background: var(--cyan-bg); border-color: var(--cyan-bd); }
+.switch.on::after { left: 15px; background: var(--cyan); }
+
+/* Checkbox */
+.check {
+  width: 16px; height: 16px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-2);
+  border-radius: var(--r-1);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.check.checked {
+  background: var(--cyan); border-color: var(--cyan);
+  color: var(--bg-0);
+}
+.check.checked::after { content: '✓'; font-size: 11px; font-weight: 700; }
+
+/* Radio */
+.radio {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--bg-2); border: 1px solid var(--bd-2);
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.radio.checked { border-color: var(--cyan); }
+.radio.checked::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); }
+
+/* Chips */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px;
+  font-size: 11px; font-weight: 500;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--bd-2);
+  color: var(--fg-2);
+  background: var(--bg-2);
+}
+.chip-cyan { color: var(--cyan); background: var(--cyan-bg); border-color: var(--cyan-bd); }
+.chip-up   { color: var(--up); background: var(--up-bg); border-color: var(--up-bd); }
+.chip-down { color: var(--down); background: var(--down-bg); border-color: var(--down-bd); }
+.chip-hold { color: var(--hold); background: var(--hold-bg); border-color: var(--hold-bd); }
+.chip-sol  { color: var(--bg-0); background: var(--sol-grad); border-color: transparent; font-weight: 600; }
+.chip-live { color: var(--up); background: var(--up-bg); border-color: var(--up-bd); }
+.chip-live .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--up); animation: pulse 1.4s ease-out infinite; }
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(20,241,149,0.7); }
+  100% { box-shadow: 0 0 0 8px rgba(20,241,149,0); }
+}
+.chip-lg { padding: 5px 11px; font-size: 12px; }
+
+/* Cards */
+.card {
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  padding: 18px;
+}
+.card-hover { transition: border-color var(--t-fast), background var(--t-fast); }
+.card-hover:hover { border-color: var(--bd-2); background: var(--bg-3); }
+.card-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: -18px -18px 14px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--bd-1);
+  font-size: 12px; font-weight: 500;
+}
+.card-foot {
+  margin: 14px -18px -18px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--bd-1);
+  display: flex; justify-content: flex-end; gap: 8px;
+}
+
+/* Tables */
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl thead { background: var(--bg-1); border-bottom: 1px solid var(--bd-1); }
+.tbl th {
+  text-align: left; padding: 10px 14px;
+  font-size: 11px; font-weight: 500; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--fg-3);
+}
+.tbl th.r { text-align: right; }
+.tbl td { padding: 12px 14px; border-bottom: 1px solid var(--bd-1); font-size: 13px; }
+.tbl td.r { text-align: right; font-family: var(--font-mono); }
+.tbl tr:hover td { background: var(--bg-2); }
+
+/* Tabs */
+.tabs {
+  display: inline-flex; padding: 3px;
+  background: var(--bg-2); border: 1px solid var(--bd-1);
+  border-radius: var(--r-2);
+}
+.tabs button {
+  padding: 6px 12px;
+  background: transparent; border: 0;
+  font-size: 12px; font-weight: 500; color: var(--fg-3);
+  border-radius: var(--r-1);
+  transition: all var(--t-fast);
+}
+.tabs button.active { background: var(--bg-3); color: var(--fg); }
+.tabs.lg button { padding: 8px 16px; font-size: 13px; }
+
+.tabs-line {
+  display: flex; gap: 4px;
+  border-bottom: 1px solid var(--bd-1);
+}
+.tabs-line button {
+  background: transparent; border: 0;
+  padding: 10px 14px;
+  font-size: 13px; font-weight: 500; color: var(--fg-3);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.tabs-line button:hover { color: var(--fg); }
+.tabs-line button.active { color: var(--fg); border-bottom-color: var(--cyan); }
+
+/* Toasts */
+.toast {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-2);
+  border-left: 3px solid var(--cyan);
+  border-radius: var(--r-3);
+  max-width: 420px;
+  box-shadow: var(--shadow-3);
+}
+.toast .ico { color: var(--cyan); font-family: var(--font-mono); font-weight: 600; }
+.toast .body { flex: 1; }
+.toast .body .t { font-size: 13px; font-weight: 500; color: var(--fg); }
+.toast .body .d { font-size: 12px; color: var(--fg-2); margin-top: 2px; line-height: 1.45; }
+.toast .x { color: var(--fg-3); font-family: var(--font-mono); cursor: pointer; padding: 0 2px; }
+.toast.t-up   { border-left-color: var(--up); }   .toast.t-up   .ico { color: var(--up); }
+.toast.t-down { border-left-color: var(--down); } .toast.t-down .ico { color: var(--down); }
+.toast.t-hold { border-left-color: var(--hold); } .toast.t-hold .ico { color: var(--hold); }
+.toast.t-sol  { border-left-color: var(--sol-purple); } .toast.t-sol .ico { background: var(--sol-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* Banner */
+.banner {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px 16px;
+  background: var(--cyan-bg);
+  border: 1px solid var(--cyan-bd);
+  border-radius: var(--r-3);
+  font-size: 13px;
+}
+.banner.warn { background: var(--hold-bg); border-color: var(--hold-bd); color: var(--hold); }
+.banner.danger { background: var(--down-bg); border-color: var(--down-bd); color: var(--down); }
+.banner .ico { font-family: var(--font-mono); font-weight: 600; color: var(--cyan); }
+.banner.warn .ico { color: var(--hold); }
+.banner.danger .ico { color: var(--down); }
+
+/* Tooltip */
+.tt-host { position: relative; display: inline-flex; }
+.tt {
+  position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-4);
+  border: 1px solid var(--bd-2);
+  color: var(--fg);
+  padding: 6px 10px;
+  border-radius: var(--r-2);
+  font-size: 11.5px;
+  white-space: nowrap;
+  box-shadow: var(--shadow-2);
+}
+.tt::after {
+  content: ''; position: absolute; top: 100%; left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--bg-4);
+}
+
+/* Skeleton */
+.skel {
+  background: linear-gradient(90deg, var(--bg-2), var(--bg-3), var(--bg-2));
+  background-size: 200% 100%;
+  border-radius: var(--r-1);
+  animation: shimmer 1.4s linear infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Spinner */
+.spin {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--bd-2);
+  border-top-color: var(--cyan);
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+/* Progress */
+.progress {
+  height: 4px; background: var(--bg-3); border-radius: var(--r-pill);
+  overflow: hidden;
+}
+.progress > div { height: 100%; background: var(--cyan); }
+.progress.sol > div { background: var(--sol-grad); }
+
+/* Code blocks */
+.code {
+  background: var(--bg-1);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  padding: 14px 16px;
+  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7;
+  color: var(--fg-2);
+  white-space: pre;
+  overflow-x: auto;
+  position: relative;
+}
+.code .k { color: var(--cyan); }
+.code .s { color: var(--up); }
+.code .c { color: var(--fg-3); font-style: italic; }
+.code .v { color: #A78BFA; }
+
+/* Tokens */
+.token {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 50%;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  color: var(--bg-0);
+  flex: none;
+}
+.token-bonk { background: linear-gradient(135deg,#FFD93D,#FF6B35); }
+.token-sol  { background: linear-gradient(135deg,#9945FF,#14F195); }
+.token-jup  { background: linear-gradient(135deg,#22D3EE,#06B6D4); }
+.token-wif  { background: linear-gradient(135deg,#FFB6E1,#A78BFA); }
+.token-pyth { background: linear-gradient(135deg,#7C3AED,#9F67FF); color: #fff; }
+.token-jto  { background: linear-gradient(135deg,#3B82F6,#2DD4BF); color: #fff; }
+.token.lg { width: 40px; height: 40px; font-size: 12px; }
+.token.sm { width: 20px; height: 20px; font-size: 9px; }
+
+/* Numerics */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.up { color: var(--up); } .down { color: var(--down); } .hold { color: var(--hold); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PATTERNS
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Wallet widget */
+.wallet {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px 6px 8px;
+  border: 1px solid var(--bd-2);
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  font-size: 12px;
+}
+.wallet .av {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: linear-gradient(135deg, #9945FF, #5EEAF0);
+}
+.wallet .pk { font-family: var(--font-mono); color: var(--fg); }
+.wallet .bal { color: var(--fg-3); border-left: 1px solid var(--bd-1); padding-left: 8px; margin-left: 2px; font-family: var(--font-mono); }
+.wallet.empty { color: var(--fg-3); }
+.wallet.empty .av { background: var(--bg-3); border: 1px dashed var(--bd-2); }
+
+/* Agent avatar */
+.av {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, #5EEAF0, #9945FF);
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--bg-0);
+  flex: none;
+}
+.av-1 { background: linear-gradient(135deg,#14F195,#5EEAF0); }
+.av-2 { background: linear-gradient(135deg,#9945FF,#FFB347); }
+.av-3 { background: linear-gradient(135deg,#5EEAF0,#FF4D6D); }
+.av-4 { background: linear-gradient(135deg,#A78BFA,#14F195); }
+.av-5 { background: linear-gradient(135deg,#FFB347,#9945FF); }
+.av-6 { background: linear-gradient(135deg,#FF4D6D,#5EEAF0); }
+.av.sm { width: 22px; height: 22px; font-size: 9px; }
+.av.lg { width: 64px; height: 64px; font-size: 18px; border-radius: 14px; }
+.av.xl { width: 96px; height: 96px; font-size: 26px; border-radius: 18px; }
+
+/* Agent card */
+.agent-card {
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  padding: 18px;
+  display: grid; grid-template-columns: 40px 1fr auto; gap: 14px;
+  align-items: center;
+  transition: border-color var(--t-fast), background var(--t-fast);
+}
+.agent-card:hover { border-color: var(--bd-2); background: var(--bg-3); }
+.agent-card .av { width: 40px; height: 40px; font-size: 13px; }
+.agent-card .name { font-weight: 500; font-size: 14px; }
+.agent-card .name .v { color: var(--cyan); font-size: 10px; margin-left: 6px; vertical-align: 2px; }
+.agent-card .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+.agent-card .pnl { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+
+/* Response card */
+.resp {
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  padding: 16px;
+  display: grid; grid-template-columns: 40px 1fr; gap: 12px;
+}
+.resp .av { width: 40px; height: 40px; font-size: 13px; }
+.resp .name { font-size: 13px; font-weight: 500; }
+.resp .meta { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+.resp .ans-row { display: flex; gap: 8px; align-items: center; margin-top: 10px; }
+.resp .ans {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--r-2);
+  font-family: var(--font-mono); font-size: 12px; font-weight: 500;
+}
+.resp .ans.long  { background: var(--up-bg);   color: var(--up);   border: 1px solid var(--up-bd); }
+.resp .ans.short { background: var(--down-bg); color: var(--down); border: 1px solid var(--down-bd); }
+.resp .ans.hold  { background: var(--hold-bg); color: var(--hold); border: 1px solid var(--hold-bd); }
+.resp .conf { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+.resp .rationale { font-size: 13px; color: var(--fg-2); margin-top: 10px; line-height: 1.55; }
+.resp .rationale code { background: var(--bg-1); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+/* Price tile (for token list / arena bottom) */
+.price-tile {
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  padding: 14px 16px;
+  display: grid; grid-template-columns: 32px 1fr auto; gap: 12px;
+  align-items: center;
+}
+.price-tile .meta .sym { font-weight: 600; font-size: 14px; }
+.price-tile .meta .name { font-size: 11px; color: var(--fg-3); margin-top: 2px; }
+.price-tile .right { text-align: right; }
+.price-tile .right .p { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+.price-tile .right .d { font-family: var(--font-mono); font-size: 11px; margin-top: 2px; }
+
+/* Round timeline pip */
+.tl-pip {
+  display: flex; gap: 0; align-items: center;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-pill);
+  padding: 2px;
+  width: fit-content;
+}
+.tl-pip .seg {
+  padding: 4px 12px;
+  font-family: var(--font-mono); font-size: 11px;
+  color: var(--fg-3);
+  border-radius: var(--r-pill);
+}
+.tl-pip .seg.done { color: var(--up); background: var(--up-bg); }
+.tl-pip .seg.now  { color: var(--fg); background: var(--bg-4); }
+
+/* Status pills */
+.status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--bd-2);
+  background: var(--bg-2);
+  color: var(--fg-2);
+}
+.status-pill.live  { color: var(--up); background: var(--up-bg); border-color: var(--up-bd); }
+.status-pill.live  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--up); animation: pulse 1.4s ease-out infinite; }
+.status-pill.sett  { color: var(--hold); background: var(--hold-bg); border-color: var(--hold-bd); }
+.status-pill.sett  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--hold); }
+.status-pill.final { color: var(--fg-2); background: var(--bg-3); border-color: var(--bd-2); }
+.status-pill.final .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--fg-3); }
+
+/* Chain badge */
+.chain {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 8px;
+  border-radius: var(--r-2);
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  font-size: 11px;
+  font-family: var(--font-mono);
+}
+.chain .mark {
+  width: 12px; height: 12px;
+  background: var(--sol-grad);
+  border-radius: 2px;
+}
+.chain.solid {
+  background: var(--sol-grad); color: var(--bg-0);
+  border-color: transparent; font-weight: 600;
+}
+.chain.solid .mark { background: var(--bg-0); opacity: 0.85; }
+
+/* Empty state */
+.empty {
+  background: var(--bg-1);
+  border: 1px dashed var(--bd-2);
+  border-radius: var(--r-3);
+  padding: 40px 24px;
+  text-align: center;
+}
+.empty .ico {
+  width: 48px; height: 48px; margin: 0 auto 14px;
+  border-radius: 12px;
+  background: var(--bg-3);
+  border: 1px solid var(--bd-1);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--fg-3);
+  font-family: var(--font-mono);
+}
+.empty h4 { font-size: 14px; font-weight: 500; margin: 0 0 6px; }
+.empty p { font-size: 13px; color: var(--fg-3); margin: 0 0 16px; }
+
+/* Swarm orb (canvas swatch) */
+.swarm {
+  position: relative;
+  height: 240px;
+  border-radius: var(--r-3);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 30% 40%, rgba(153,69,255,0.18), transparent 60%),
+    radial-gradient(ellipse at 70% 60%, rgba(20,241,149,0.14), transparent 60%),
+    var(--bg-0);
+  border: 1px solid var(--bd-1);
+}
+.swarm canvas { display: block; width: 100%; height: 100%; }
+.swarm .legend {
+  position: absolute; left: 16px; bottom: 14px;
+  display: flex; gap: 14px;
+  font-family: var(--font-mono); font-size: 10px; color: var(--fg-3);
+}
+.swarm .legend span { display: inline-flex; align-items: center; gap: 5px; }
+.swarm .legend .d { width: 6px; height: 6px; border-radius: 50%; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DATA VIZ
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* PnL bars */
+.pnl-bars {
+  display: flex; flex-direction: column; gap: 12px;
+}
+.pnl-row { display: grid; grid-template-columns: 80px 1fr 80px; gap: 12px; align-items: center; }
+.pnl-row .l { font-family: var(--font-mono); font-size: 12px; }
+.pnl-row .v { font-family: var(--font-mono); font-size: 13px; text-align: right; }
+.pnl-bar {
+  display: flex; height: 8px;
+  background: var(--bg-3);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  position: relative;
+}
+.pnl-bar .center { position: absolute; top: -2px; bottom: -2px; left: 50%; width: 1px; background: var(--bd-3); }
+.pnl-bar .pos { position: absolute; left: 50%; top: 0; bottom: 0; background: var(--up); }
+.pnl-bar .neg { position: absolute; right: 50%; top: 0; bottom: 0; background: var(--down); }
+
+/* Sparkline */
+.spark { width: 80px; height: 24px; vertical-align: middle; }
+.spark.lg { width: 160px; height: 48px; }
+
+/* Tally bar */
+.tally {
+  height: 6px; width: 240px; border-radius: 3px;
+  background: var(--bg-3); overflow: hidden; display: flex;
+}
+.tally > * { height: 100%; }
+.tally .b-up   { background: var(--up); }
+.tally .b-down { background: var(--down); }
+.tally .b-hold { background: var(--hold); }
+
+/* Confidence meter */
+.conf-meter {
+  height: 4px; background: var(--bg-3); border-radius: var(--r-pill);
+  overflow: hidden;
+  width: 100%;
+}
+.conf-meter > div {
+  height: 100%; background: var(--cyan);
+}
+
+/* Round timeline (long horizontal) */
+.round-tl {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  position: relative;
+  padding: 24px 0 8px;
+}
+.round-tl::before {
+  content: ''; position: absolute;
+  top: 33px; left: 12.5%; right: 12.5%;
+  height: 1px; background: var(--bd-2);
+}
+.round-tl .pt {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  position: relative;
+}
+.round-tl .pt .dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--bg-2); border: 1px solid var(--bd-2);
+  position: relative; z-index: 1;
+}
+.round-tl .pt.done .dot { background: var(--up); border-color: var(--up); }
+.round-tl .pt.now .dot { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 0 4px rgba(94,234,240,0.18); }
+.round-tl .pt .l { font-family: var(--font-mono); font-size: 11px; color: var(--fg-3); }
+.round-tl .pt .v { font-family: var(--font-mono); font-size: 12px; color: var(--fg-2); margin-top: 2px; }
+.round-tl .pt.done .l, .round-tl .pt.now .l { color: var(--fg); }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VOICE / TONE
+   ═══════════════════════════════════════════════════════════════════════ */
+.voice-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+.voice-cell {
+  padding: 16px 18px;
+  background: var(--bg-2);
+  border: 1px solid var(--bd-1);
+  border-radius: var(--r-3);
+  font-size: 13px;
+  line-height: 1.55;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.voice-cell .l {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.voice-cell.do { border-left: 2px solid var(--up); }
+.voice-cell.do .l { color: var(--up); }
+.voice-cell.dont { border-left: 2px solid var(--down); }
+.voice-cell.dont .l { color: var(--down); }
+.voice-cell .ex { color: var(--fg); font-weight: 500; }
+.voice-cell .why { color: var(--fg-3); font-size: 12px; }
+
+.fmt-row {
+  display: grid; grid-template-columns: 160px 1fr 1fr;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--bd-1);
+  align-items: center;
+  gap: 16px;
+}
+.fmt-row .l { font-family: var(--font-mono); font-size: 11.5px; color: var(--cyan); }
+.fmt-row .y { font-family: var(--font-mono); font-size: 13px; color: var(--up); }
+.fmt-row .n { font-family: var(--font-mono); font-size: 13px; color: var(--down); text-decoration: line-through; opacity: 0.7; }
+
+/* ── Footer ──────────────────────────────────────────── */
+.foot {
+  padding: 60px 56px 80px 296px;
+  font-size: 12px; color: var(--fg-3);
+  border-top: 1px solid var(--bd-1);
+  display: flex; justify-content: space-between; max-width: 1440px; margin: 0 auto;
+}
+.foot a { color: var(--cyan); }
+
+/* Helper utilities */
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.col { display: flex; flex-direction: column; gap: 12px; }
+.sg { display: grid; gap: 12px; }
+.sg-2 { grid-template-columns: repeat(2, 1fr); }
+.sg-3 { grid-template-columns: repeat(3, 1fr); }
+.sg-4 { grid-template-columns: repeat(4, 1fr); }
+
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="assets/logo.png" alt="TradeFish" />
+    TRADEFISH
+    <span class="ds">design system</span>
+  </div>
+  <nav class="crumbs">
+    <a href="index.html">SHOWCASE</a>
+    <a href="design-system.html" class="active">SYSTEM</a>
+    <a href="#components">COMPONENTS</a>
+    <a href="#patterns">PATTERNS</a>
+    <a href="#viz">DATA VIZ</a>
+  </nav>
+  <div class="right">
+    <code>v2.1 · DARK</code>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ═══════════ TOC ═══════════ -->
+  <aside class="toc">
+    <div class="group">
+      <div class="gtitle">Foundations</div>
+      <a href="#brand" class="active">Brand</a>
+      <a href="#color">Color</a>
+      <a href="#typography">Typography</a>
+      <a href="#numerics">Numerics &amp; data</a>
+      <a href="#spacing">Spacing &amp; layout</a>
+      <a href="#radius">Radius &amp; borders</a>
+      <a href="#elevation">Elevation</a>
+      <a href="#motion">Motion</a>
+      <a href="#iconography">Iconography</a>
+    </div>
+    <div class="group">
+      <div class="gtitle">Components</div>
+      <a href="#buttons">Buttons</a>
+      <a href="#inputs">Inputs &amp; controls</a>
+      <a href="#chips">Chips &amp; badges</a>
+      <a href="#cards">Cards</a>
+      <a href="#tables">Tables</a>
+      <a href="#tabs">Tabs</a>
+      <a href="#modals">Modals &amp; sheets</a>
+      <a href="#toasts">Toasts &amp; banners</a>
+      <a href="#tooltips">Tooltips</a>
+      <a href="#loading">Loading &amp; progress</a>
+      <a href="#code">Code blocks</a>
+    </div>
+    <div class="group">
+      <div class="gtitle">Patterns</div>
+      <a href="#wallet">Wallet widget</a>
+      <a href="#agent-avatar">Agent avatar</a>
+      <a href="#agent-card">Agent card</a>
+      <a href="#response">Response card</a>
+      <a href="#price-tile">Price tile &amp; tokens</a>
+      <a href="#leaderboard-row">Leaderboard row</a>
+      <a href="#status">Status pills</a>
+      <a href="#chain">Chain badge</a>
+      <a href="#empty">Empty states</a>
+      <a href="#swarm">Swarm canvas</a>
+    </div>
+    <div class="group">
+      <div class="gtitle">Data viz</div>
+      <a href="#viz-pnl">PnL bars</a>
+      <a href="#viz-spark">Sparklines</a>
+      <a href="#viz-tally">Tally &amp; confidence</a>
+      <a href="#viz-timeline">Round timeline</a>
+    </div>
+    <div class="group">
+      <div class="gtitle">Voice</div>
+      <a href="#voice-tone">Tone</a>
+      <a href="#voice-format">Number formatting</a>
+      <a href="#voice-errors">Errors &amp; empty</a>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <span class="eyebrow"><span class="dot"></span>v2.1 · 2026-05-09</span>
+      <h1>The <span class="grad">TradeFish</span> design system.</h1>
+      <p class="lede">
+        A consumer-grade interface for a Solana-native AI trading arena.
+        Calm dark canvas, single-shot Solana gradient, Inter for prose,
+        JetBrains Mono for every number that matters. Built so a Builder,
+        an Asker, and a Spectator can each find their lane in under three seconds.
+      </p>
+      <div class="meta">
+        <div><div class="l">Tokens</div><div class="v">147</div></div>
+        <div><div class="l">Components</div><div class="v">28</div></div>
+        <div><div class="l">Patterns</div><div class="v">19</div></div>
+        <div><div class="l">Themes</div><div class="v">2 <small>· dark, light</small></div></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         FOUNDATIONS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <section class="sec" id="brand">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 01</div>
+        <h2>Brand</h2>
+        <p class="desc">The mark is a candlestick stylized as a fish — Solana-gradient body, cyan-bright head. It carries the brand alone; the wordmark stays plain because the mark is doing the heavy lifting.</p>
+      </div>
+
+      <div class="sub">
+        <h3>The mark</h3>
+        <p class="desc">Three sanctioned contexts: dark canvas (default), light parity, and the hero "halo" treatment with a soft purple+green drop-shadow. Never re-render the mark in a single solid color.</p>
+        <div class="brand-grid" style="margin-top: 16px;">
+          <div class="brand-card dark">
+            <span class="corner">DARK · CANONICAL</span>
+            <span class="right-corner">120px+</span>
+            <img src="assets/logo.png" alt="" />
+          </div>
+          <div class="brand-card light">
+            <span class="corner" style="color:#6E6E78">LIGHT PARITY</span>
+            <span class="right-corner" style="color:#6E6E78">120px+</span>
+            <img src="assets/logo.png" alt="" />
+          </div>
+        </div>
+        <div class="brand-grid" style="margin-top: 12px;">
+          <div class="brand-card bg-shot">
+            <span class="corner">HERO HALO</span>
+            <span class="right-corner">200px+ · single use per page</span>
+            <img src="assets/logo.png" alt="" style="width: 200px;" />
+          </div>
+          <div class="brand-card dark" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; padding-left: 36px; gap: 14px;">
+            <span class="corner">CLEAR-SPACE</span>
+            <div style="display: flex; align-items: center; gap: 8px; padding: 12px; border: 1px dashed var(--cyan-bd); border-radius: 8px;">
+              <img src="assets/logo.png" alt="" style="width: 56px;" />
+            </div>
+            <div class="notes" style="margin-top: 4px;">
+              <span><b>min</b> <code>0.5×</code> the mark height on every side</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Wordmark</h3>
+        <p class="desc">Inter 600 at 1× ratio. Tracking <code>-0.02em</code>. Always set in the foreground color — never in the gradient. The mark beside the wordmark is optional; the gradient fish is enough on its own when context is clear.</p>
+        <div class="demo center" style="gap: 36px; flex-wrap: wrap;">
+          <div class="wordmark lg"><img src="assets/logo.png" alt="" />TradeFish</div>
+          <div class="wordmark"><img src="assets/logo.png" alt="" />TradeFish<span class="v">v2.1</span></div>
+          <div class="wordmark sm"><img src="assets/logo.png" alt="" />TradeFish</div>
+          <div class="wordmark sm">TradeFish</div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Don'ts</h3>
+        <p class="desc">Three failure modes worth pre-empting. Reject any layout that triggers them.</p>
+        <div class="dont-list">
+          <div class="dont">
+            <div class="vis warp"><img src="assets/logo.png" alt="" /></div>
+            <div class="label"><span class="x">✕</span>Don't recolor the body</div>
+          </div>
+          <div class="dont">
+            <div class="vis recolor"><img src="assets/logo.png" alt="" /></div>
+            <div class="label"><span class="x">✕</span>Don't desaturate or invert</div>
+          </div>
+          <div class="dont">
+            <div class="vis shrink"><img src="assets/logo.png" alt="" /></div>
+            <div class="label"><span class="x">✕</span>Don't render below 22px</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         COLOR
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="color">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 02</div>
+        <h2>Color</h2>
+        <p class="desc">Dark default, light parity. Cool neutrals carry 80% of the surface. Cyan carries the brand at low intensity. The Solana purple→green gradient is reserved for one decisive moment per page — never a button, never a divider, never a chip.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Backgrounds &amp; foreground</h3>
+        <p class="desc">Five-step background ramp and four-step foreground ramp. Use the lowest contrast that still reads — readability is the constraint, not maximum contrast.</p>
+        <div class="theme-pair">
+          <div class="col dark">
+            <h4>Dark · default</h4>
+            <div class="swatch-grid">
+              <div class="sw-tile" style="background:#0A0A0B"><span class="name">--bg-0</span><span class="hex">#0A0A0B</span></div>
+              <div class="sw-tile" style="background:#0F0F11"><span class="name">--bg-1</span><span class="hex">#0F0F11</span></div>
+              <div class="sw-tile" style="background:#15151A"><span class="name">--bg-2</span><span class="hex">#15151A</span></div>
+              <div class="sw-tile" style="background:#1C1C22"><span class="name">--bg-3</span><span class="hex">#1C1C22</span></div>
+              <div class="sw-tile" style="background:#25252C"><span class="name">--bg-4</span><span class="hex">#25252C</span></div>
+            </div>
+            <div class="swatch-grid" style="margin-top: 6px;">
+              <div class="sw-tile" style="background:#F5F5F7" ><span class="name" style="color:rgba(0,0,0,0.55)">--fg</span><span class="hex" style="color:rgba(0,0,0,0.85)">#F5F5F7</span></div>
+              <div class="sw-tile" style="background:#A0A0A8"><span class="name" style="color:rgba(0,0,0,0.55)">--fg-2</span><span class="hex" style="color:rgba(0,0,0,0.85)">#A0A0A8</span></div>
+              <div class="sw-tile" style="background:#6E6E78"><span class="name">--fg-3</span><span class="hex">#6E6E78</span></div>
+              <div class="sw-tile" style="background:#404048"><span class="name">--fg-4</span><span class="hex">#404048</span></div>
+              <div class="sw-tile" style="background:rgba(255,255,255,0.06)"><span class="name">--bd-1</span><span class="hex">α 0.06</span></div>
+            </div>
+          </div>
+          <div class="col light">
+            <h4>Light · parity</h4>
+            <div class="swatch-grid">
+              <div class="sw-tile fg" style="background:#FAFAFA"><span class="name">--bg-0</span><span class="hex">#FAFAFA</span></div>
+              <div class="sw-tile fg" style="background:#FFFFFF"><span class="name">--bg-1</span><span class="hex">#FFFFFF</span></div>
+              <div class="sw-tile fg" style="background:#F5F5F7"><span class="name">--bg-2</span><span class="hex">#F5F5F7</span></div>
+              <div class="sw-tile fg" style="background:#ECECEE"><span class="name">--bg-3</span><span class="hex">#ECECEE</span></div>
+              <div class="sw-tile fg" style="background:#E0E0E4"><span class="name">--bg-4</span><span class="hex">#E0E0E4</span></div>
+            </div>
+            <div class="swatch-grid" style="margin-top: 6px;">
+              <div class="sw-tile" style="background:#0A0A0B"><span class="name">--fg</span><span class="hex">#0A0A0B</span></div>
+              <div class="sw-tile" style="background:#4A4A52"><span class="name">--fg-2</span><span class="hex">#4A4A52</span></div>
+              <div class="sw-tile fg" style="background:#8A8A92"><span class="name">--fg-3</span><span class="hex">#8A8A92</span></div>
+              <div class="sw-tile fg" style="background:#C0C0C8"><span class="name">--fg-4</span><span class="hex">#C0C0C8</span></div>
+              <div class="sw-tile fg" style="background:rgba(0,0,0,0.06)"><span class="name">--bd-1</span><span class="hex">α 0.06</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Brand cyan</h3>
+        <p class="desc">The mark's cyan, derived directly from the logo. Used for active nav, links, focus rings, and the single accent flourish per surface. Never a background fill at full saturation.</p>
+        <div class="swatch-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="sw-tile" style="background:#A8F4F8" ><span class="name" style="color:rgba(0,0,0,0.6)">--cyan-bright</span><span class="hex" style="color:rgba(0,0,0,0.9)">#A8F4F8</span></div>
+          <div class="sw-tile" style="background:#5EEAF0"><span class="name" style="color:rgba(0,0,0,0.6)">--cyan</span><span class="hex" style="color:rgba(0,0,0,0.9)">#5EEAF0</span></div>
+          <div class="sw-tile" style="background:#2DA8B0"><span class="name">--cyan-dim</span><span class="hex">#2DA8B0</span></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Solana — the one-shot gradient</h3>
+        <p class="desc">Purple <code>#9945FF</code> → Green <code>#14F195</code>, 135°. Used <strong>once</strong> per page on the most decisive moment: hero badge, hero CTA, claim core, or a chain marker — never twice on the same surface.</p>
+        <div class="gradient-bar">
+          <span>--sol-purple · #9945FF · 0%</span>
+          <span>--sol-green · #14F195 · 100%</span>
+        </div>
+        <div class="rule-card accent-rule">
+          <span class="ico">!</span>
+          <div><b>Accent budget:</b> on any single surface, the Solana gradient appears at most once. Cyan may appear up to twice (active nav + one accent). Everything else is neutral.</div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Trading semantic</h3>
+        <p class="desc">PnL up, PnL down, hold. Used for numerics, response chips, and confidence indicators. The "down" token is mauve-red, intentionally cooler than vermilion — keeps it from screaming next to a green tally.</p>
+        <div class="semantic-row">
+          <div class="sem-tile up">
+            <div class="label">PnL · UP</div>
+            <div class="num">+$1,284.30</div>
+            <div class="meta">--up &nbsp;·&nbsp; #14F195</div>
+          </div>
+          <div class="sem-tile down">
+            <div class="label">PnL · DOWN</div>
+            <div class="num">−$406.10</div>
+            <div class="meta">--down &nbsp;·&nbsp; #FF4D6D</div>
+          </div>
+          <div class="sem-tile hold">
+            <div class="label">HOLD</div>
+            <div class="num">±0.00</div>
+            <div class="meta">--hold &nbsp;·&nbsp; #FFB347</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         TYPOGRAPHY
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="typography">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 03</div>
+        <h2>Typography</h2>
+        <p class="desc">Inter for everything that reads. JetBrains Mono for every number, key, hash, ticker, or balance. Tracking is negative for display, zero for body, positive only for uppercase labels. No serifs, no Roboto, no Arial.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Type scale</h3>
+        <p class="desc">Seven roles. Seven sizes. The display tier exists for the hero only — most surfaces top out at <code>--t-h1</code>.</p>
+        <div class="type-table">
+          <div class="tag">.t-display</div><div class="sample" style="font-size:56px; font-weight:600; letter-spacing:-0.035em; line-height:1.0;">Buy or sell?</div><div class="meta"><b>56 / 600 / -0.035em</b> · 1.00 lh · hero only</div>
+          <div class="tag">.t-h1</div><div class="sample" style="font-size:32px; font-weight:600; letter-spacing:-0.025em; line-height:1.15;">Live arena</div><div class="meta"><b>32 / 600 / -0.025em</b> · 1.15 lh</div>
+          <div class="tag">.t-h2</div><div class="sample" style="font-size:22px; font-weight:600; letter-spacing:-0.018em; line-height:1.2;">Recent rounds</div><div class="meta"><b>22 / 600 / -0.018em</b> · 1.20 lh</div>
+          <div class="tag">.t-h3</div><div class="sample" style="font-size:16px; font-weight:600; letter-spacing:-0.01em; line-height:1.3;">Settlement schedule</div><div class="meta"><b>16 / 600 / -0.01em</b> · 1.30 lh</div>
+          <div class="tag">.t-body</div><div class="sample" style="font-size:14px; line-height:1.55; color:var(--fg-2)">Each registered AI agent answers your question in plain text, with a confidence score. Their predictions are paper-traded against the real Pyth oracle price.</div><div class="meta"><b>14 / 400 / 0</b> · 1.55 lh</div>
+          <div class="tag">.t-small</div><div class="sample" style="font-size:13px; color:var(--fg-2)">Settles at 1h, 4h, and 24h. PnL is computed per round.</div><div class="meta"><b>13 / 400 / 0</b> · 1.50 lh</div>
+          <div class="tag">.t-mini</div><div class="sample" style="font-size:11px; font-weight:500; letter-spacing:0.06em; text-transform:uppercase; color:var(--fg-3);">SETTLEMENT · 1H · 4H · 24H</div><div class="meta"><b>11 / 500 / +0.06em</b> · UPPERCASE only</div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Weight</h3>
+        <p class="desc">Four sanctioned weights. 700 is reserved for chip-on-gradient text where contrast can't carry alone — never for body, never for headings.</p>
+        <div class="weight-row">
+          <div class="weight-tile"><div class="sample" style="font-weight:400">Aa Tg</div><div class="meta"><b>400</b> · regular · body, prose</div></div>
+          <div class="weight-tile"><div class="sample" style="font-weight:500">Aa Tg</div><div class="meta"><b>500</b> · medium · UI labels, table values</div></div>
+          <div class="weight-tile"><div class="sample" style="font-weight:600">Aa Tg</div><div class="meta"><b>600</b> · semibold · headings, buttons</div></div>
+          <div class="weight-tile"><div class="sample" style="font-weight:700">Aa Tg</div><div class="meta"><b>700</b> · bold · gradient chips only</div></div>
+        </div>
+      </div>
+
+      <div class="sub" id="numerics">
+        <h3>Numerics &amp; data</h3>
+        <p class="desc">Every number that lives in a column, row, or arithmetic relationship is set in JetBrains Mono with <code>tabular-nums</code>. This is non-negotiable — sans-figured numerics jitter against each other and look amateur in a trading UI.</p>
+        <div class="numeric-demo">
+          <div class="num-card">
+            <div class="l">DO · mono, tabular</div>
+            <div class="stack">
+              <span>+$1,284.30</span>
+              <span>+$  406.10</span>
+              <span>+$   12.05</span>
+              <span>−$  178.40</span>
+            </div>
+          </div>
+          <div class="num-card bad">
+            <div class="l">DON'T · sans, proportional</div>
+            <div class="stack">
+              <span>+$1,284.30</span>
+              <span>+$ 406.10</span>
+              <span>+$ 12.05</span>
+              <span>−$ 178.40</span>
+            </div>
+          </div>
+        </div>
+        <div class="notes">
+          <span>Class: <code>.num</code></span>
+          <span>Stack: <code>JetBrains Mono → SF Mono → ui-monospace</code></span>
+          <span>Always: <code>font-variant-numeric: tabular-nums</code></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         SPACING / LAYOUT
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="spacing">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 04</div>
+        <h2>Spacing &amp; layout</h2>
+        <p class="desc">A 4-based scale. Use <code>--s-3</code> through <code>--s-6</code> for nearly everything; reserve <code>--s-7</code>+ for section spacing.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Spacing scale</h3>
+        <div class="space-row">
+          <div class="space-cell"><div class="bar" style="width:4px"></div><span><b>4</b> --s-1</span></div>
+          <div class="space-cell"><div class="bar" style="width:8px"></div><span><b>8</b> --s-2</span></div>
+          <div class="space-cell"><div class="bar" style="width:12px"></div><span><b>12</b> --s-3</span></div>
+          <div class="space-cell"><div class="bar" style="width:16px"></div><span><b>16</b> --s-4</span></div>
+          <div class="space-cell"><div class="bar" style="width:20px"></div><span><b>20</b> --s-5</span></div>
+          <div class="space-cell"><div class="bar" style="width:24px"></div><span><b>24</b> --s-6</span></div>
+          <div class="space-cell"><div class="bar" style="width:32px"></div><span><b>32</b> --s-7</span></div>
+          <div class="space-cell"><div class="bar" style="width:48px"></div><span><b>48</b> --s-8</span></div>
+          <div class="space-cell"><div class="bar" style="width:64px"></div><span><b>64</b> --s-9</span></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Layout grid</h3>
+        <p class="desc">12-column grid, 1320px max width, 24px gutters at desktop. Sidebars get fixed widths in a content/rail split (<code>1fr 360px</code> or <code>1fr 280px</code>) — never percentage-based.</p>
+        <div class="grid-demo">
+          <div class="col">1</div><div class="col">2</div><div class="col">3</div>
+          <div class="col">4</div><div class="col">5</div><div class="col">6</div>
+          <div class="col">7</div><div class="col">8</div><div class="col">9</div>
+          <div class="col">10</div><div class="col">11</div><div class="col">12</div>
+        </div>
+        <div class="notes" style="margin-top: 14px;">
+          <span><b>max-width:</b> <code>1320px</code></span>
+          <span><b>gutter:</b> <code>24px</code></span>
+          <span><b>content padding:</b> <code>32–48px</code></span>
+          <span><b>sidebar:</b> <code>240 / 280 / 320 / 360</code></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         RADIUS
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="radius">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 05</div>
+        <h2>Radius &amp; borders</h2>
+        <p class="desc">Five radii. Most surfaces use <code>--r-3</code> (8px) for cards and <code>--r-2</code> (6px) for controls. Borders are alpha — never solid grey — so they tint with the underlying surface.</p>
+      </div>
+      <div class="radius-row">
+        <div class="r-cell r-0">0 · sharp</div>
+        <div class="r-cell r-1">4 · --r-1</div>
+        <div class="r-cell r-2">6 · --r-2</div>
+        <div class="r-cell r-3">8 · --r-3</div>
+        <div class="r-cell r-4">12 · --r-4</div>
+      </div>
+      <div class="notes" style="margin-top: 14px;">
+        <span><b>controls:</b> <code>--r-2</code> (6px)</span>
+        <span><b>cards / panels:</b> <code>--r-3</code> (8px)</span>
+        <span><b>modals / hero cards:</b> <code>--r-4</code> (12px)</span>
+        <span><b>chips / pills:</b> <code>--r-pill</code> (999)</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ELEVATION
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="elevation">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 06</div>
+        <h2>Elevation</h2>
+        <p class="desc">On dark surfaces shadow does little — borders carry separation. Reserve real shadow for floating layers (modals, dropdowns, toasts).</p>
+      </div>
+      <div class="elev-row">
+        <div class="elev-card elev-1">--shadow-1<br>inset hairline</div>
+        <div class="elev-card elev-2">--shadow-2<br>menus, popovers</div>
+        <div class="elev-card elev-3">--shadow-3<br>toasts</div>
+        <div class="elev-card elev-4">--shadow-4<br>modals, full overlays</div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         MOTION
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="motion">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 07</div>
+        <h2>Motion</h2>
+        <p class="desc">Three durations. One easing curve for everything UI. A spring is reserved for arrival animations on the swarm canvas. Hover any tile below to scrub.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Durations &amp; easing</h3>
+        <div class="motion-row">
+          <div class="motion-card"><div class="l">--t-fast</div><div class="v">120ms · ease</div><div class="ball"></div></div>
+          <div class="motion-card med"><div class="l">--t-med</div><div class="v">220ms · ease</div><div class="ball"></div></div>
+          <div class="motion-card slow"><div class="l">--t-slow</div><div class="v">360ms · ease</div><div class="ball"></div></div>
+        </div>
+        <div class="motion-row" style="margin-top: 12px;">
+          <div class="motion-card spring"><div class="l">--ease-spring</div><div class="v">220ms · spring</div><div class="ball"></div></div>
+          <div class="motion-card"><div class="l">--ease</div><div class="v">cubic-bezier(.2, .8, .2, 1)</div><div class="ball"></div></div>
+          <div class="motion-card slow spring"><div class="l">--t-slow + spring</div><div class="v">arrival flourish</div><div class="ball"></div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Rules of motion</h3>
+        <div class="motion-rules">
+          <div class="motion-rule">
+            <h5>Hover &amp; focus = fast</h5>
+            Anything tied to the cursor uses <code>--t-fast</code>. If the user can outpace the animation, it's too slow.
+            <div class="meta">120ms · ease</div>
+          </div>
+          <div class="motion-rule">
+            <h5>State change = medium</h5>
+            Modal open, tab switch, drawer slide. Long enough to perceive, short enough to feel responsive.
+            <div class="meta">220ms · ease</div>
+          </div>
+          <div class="motion-rule">
+            <h5>Arrival = slow + spring</h5>
+            Swarm orbs settling, claim core entrance. One per surface, on first paint only.
+            <div class="meta">360ms · spring</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ICONOGRAPHY
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="iconography">
+      <div class="sec-head">
+        <div class="kicker">FOUNDATIONS · 08</div>
+        <h2>Iconography</h2>
+        <p class="desc">Stroked, 1.5px weight, rounded caps and joins. 14px inside buttons, 16px in nav, 24px in cards, 32px+ in empty states. Solid icons are forbidden — they fight Inter's openness.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Sizes</h3>
+        <div class="icon-sizes">
+          <div class="c"><svg class="icon-sz-12" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>12</span></div>
+          <div class="c"><svg class="icon-sz-14" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>14</span></div>
+          <div class="c"><svg class="icon-sz-16" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>16</span></div>
+          <div class="c"><svg class="icon-sz-20" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>20</span></div>
+          <div class="c"><svg class="icon-sz-24" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>24</span></div>
+          <div class="c"><svg class="icon-sz-32" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>32</span></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Library</h3>
+        <p class="desc">A starter set covering navigation, trading, wallet, status, and data viz. Add new icons with the same 1.5px weight and 24px viewBox.</p>
+        <div class="icon-grid">
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9M5 10v10h14V10"/></svg>home</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>menu</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>search</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>arrow-r</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>chev-d</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>chev-u</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M6 18 18 6"/></svg>close</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></svg>check</div>
+
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>trend-up</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M3 7l6 6 4-4 8 8"/><path d="M14 17h7v-7"/></svg>trend-d</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20v-3"/></svg>chart</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>clock</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M3 7h18l-2 12H5z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg>wallet</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>verified</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M12 2 4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6z"/></svg>shield</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-1-3.5L20 6M5 18l2-2.5A7 7 0 0 1 5 12M12 5V2M12 22v-3M22 12h-3M5 12H2"/></svg>settings</div>
+
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/></svg>plus</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M2 12h20"/></svg>minus</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r=".8"/></svg>info</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".8"/></svg>warn</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M14 2H6v20h12V8z"/><path d="M14 2v6h6"/></svg>doc</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="m9 12 2 2 4-4"/></svg>checkbox</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>chev-r</div>
+          <div class="icon-cell"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v6h-6"/></svg>refresh</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         COMPONENTS
+         ═══════════════════════════════════════════════════════════════════ -->
+
+    <section class="sec" id="components" style="border-bottom: 0; padding-bottom: 12px;">
+      <div class="sec-head">
+        <div class="kicker">PART · 02</div>
+        <h2>Components</h2>
+        <p class="desc">The neutral building blocks. Each one is direct, composable, and never carries the brand alone — they recede so content can lead.</p>
+      </div>
+    </section>
+
+    <!-- BUTTONS -->
+    <section class="sec" id="buttons">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 01</div>
+        <h2>Buttons</h2>
+        <p class="desc">Five variants. Primary is white-on-black for ruthless contrast — the cyan and Solana variants are reserved for hero CTAs. Secondary is the everyday workhorse.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Variants</h3>
+        <div class="demo row">
+          <button class="btn btn-primary">Open round</button>
+          <button class="btn">Cancel</button>
+          <button class="btn btn-ghost">Skip</button>
+          <button class="btn btn-danger">Disconnect wallet</button>
+          <button class="btn btn-sol">Connect Phantom</button>
+        </div>
+        <div class="notes">
+          <span><code>.btn</code> — secondary, default</span>
+          <span><code>.btn-primary</code> — invert</span>
+          <span><code>.btn-ghost</code> — chromeless</span>
+          <span><code>.btn-danger</code> — destructive</span>
+          <span><code>.btn-sol</code> — single Solana CTA per surface</span>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Sizes</h3>
+        <div class="demo row">
+          <button class="btn btn-primary btn-sm">Small · 28h</button>
+          <button class="btn btn-primary">Medium · 32h</button>
+          <button class="btn btn-primary btn-lg">Large · 38h</button>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>States</h3>
+        <div class="demo row">
+          <button class="btn btn-primary">Default</button>
+          <button class="btn btn-primary" style="background: var(--cyan-bright); border-color: var(--cyan-bright);">Hover</button>
+          <button class="btn btn-primary is-loading">Settling</button>
+          <button class="btn btn-primary is-disabled">Disabled</button>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>With icon</h3>
+        <div class="demo row">
+          <button class="btn btn-primary"><svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>Ask question</button>
+          <button class="btn"><svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v6h-6"/></svg>Refresh</button>
+          <button class="btn btn-ghost"><svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          <button class="btn btn-icon-only"><svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- INPUTS -->
+    <section class="sec" id="inputs">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 02</div>
+        <h2>Inputs &amp; controls</h2>
+        <p class="desc">Inputs sit on <code>--bg-2</code> by default; on focus they brighten to <code>--bg-1</code> and pick up a cyan border. No floating labels — labels live above the field in uppercase mini.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Text input</h3>
+        <div class="demo sg sg-2">
+          <div>
+            <label class="input-label">Question</label>
+            <input class="input" placeholder="Buy or sell BONK right now?" />
+            <div class="input-help">10 credits · resolves in 1h, 4h, 24h</div>
+          </div>
+          <div>
+            <label class="input-label">Wallet address</label>
+            <div class="input-wrap">
+              <span class="lead"><svg viewBox="0 0 24 24"><path d="M3 7h18l-2 12H5z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg></span>
+              <input class="input has-lead" value="HxLp9...4Tnf" />
+            </div>
+            <div class="input-help">Phantom wallet — read-only</div>
+          </div>
+          <div>
+            <label class="input-label">Top-up amount</label>
+            <div class="input-wrap">
+              <input class="input has-trail" value="0.05" />
+              <span class="trail" style="font-family: var(--font-mono); font-size: 12px; color: var(--fg-3);">SOL</span>
+            </div>
+          </div>
+          <div>
+            <label class="input-label">Agent name (error)</label>
+            <input class="input is-error" value="HxLp9-bot-bot-bot-bot-bot" />
+            <div class="input-help is-error">Name already claimed by another wallet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Switches, checkboxes, radios</h3>
+        <div class="demo row" style="gap: 28px;">
+          <label style="display: inline-flex; gap: 10px; align-items: center; font-size: 13px;">
+            <span class="switch on"></span>Notify on settlement
+          </label>
+          <label style="display: inline-flex; gap: 10px; align-items: center; font-size: 13px;">
+            <span class="switch"></span>Auto-replenish credits
+          </label>
+          <label style="display: inline-flex; gap: 8px; align-items: center; font-size: 13px;">
+            <span class="check checked"></span>I have read the skill spec
+          </label>
+          <label style="display: inline-flex; gap: 8px; align-items: center; font-size: 13px;">
+            <span class="check"></span>Subscribe to leaderboard digest
+          </label>
+          <label style="display: inline-flex; gap: 8px; align-items: center; font-size: 13px;">
+            <span class="radio checked"></span>Devnet
+          </label>
+          <label style="display: inline-flex; gap: 8px; align-items: center; font-size: 13px;">
+            <span class="radio"></span>Mainnet
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHIPS -->
+    <section class="sec" id="chips">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 03</div>
+        <h2>Chips &amp; badges</h2>
+        <p class="desc">Pill-shaped, 11px, 500 weight. Colored chips inherit semantic tokens. The Solana chip is the only place gradient-on-color appears outside the hero.</p>
+      </div>
+      <div class="demo row">
+        <span class="chip">Pyth oracle</span>
+        <span class="chip chip-cyan">Verified agent</span>
+        <span class="chip chip-up">+24.6% · 24h</span>
+        <span class="chip chip-down">−12.3% · 24h</span>
+        <span class="chip chip-hold">HOLD</span>
+        <span class="chip chip-sol">SOLANA · MAINNET</span>
+        <span class="chip chip-live"><span class="dot"></span>LIVE</span>
+        <span class="chip chip-lg chip-cyan">Tier 1</span>
+      </div>
+      <div class="notes">
+        <span>Class root: <code>.chip</code></span>
+        <span>Variants: <code>.chip-cyan / -up / -down / -hold / -sol / -live</code></span>
+        <span>Size: <code>.chip-lg</code></span>
+      </div>
+    </section>
+
+    <!-- CARDS -->
+    <section class="sec" id="cards">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 04</div>
+        <h2>Cards</h2>
+        <p class="desc">Surface containers. Default uses <code>--bg-2</code> on a hairline border. Hover variants brighten to <code>--bg-3</code>. Avoid stacking cards more than two-deep — use sections instead.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Anatomy</h3>
+        <div class="demo sg sg-3">
+          <div class="card">
+            <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px;">Plain card</div>
+            <div style="font-size: 13px; color: var(--fg-2);">Single content block on <code>--bg-2</code>. The default container for everything.</div>
+          </div>
+          <div class="card card-hover">
+            <div style="font-size: 14px; font-weight: 500; margin-bottom: 6px;">Hoverable</div>
+            <div style="font-size: 13px; color: var(--fg-2);">Adds <code>.card-hover</code>. Used for clickable rows.</div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span>Recent rounds</span><span style="color: var(--fg-3); font-family: var(--font-mono); font-size: 11px;">12 today</span></div>
+            <div style="font-size: 13px; color: var(--fg-2);">Header + body. <code>.card-head</code> + <code>.card-foot</code> are negative-margin trims.</div>
+            <div class="card-foot"><button class="btn btn-sm">View all</button></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TABLES -->
+    <section class="sec" id="tables">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 05</div>
+        <h2>Tables</h2>
+        <p class="desc">No row striping. Hairline dividers. Numerical columns right-aligned and set in mono. Headers are uppercase mini in <code>--fg-3</code>.</p>
+      </div>
+      <div class="demo tight">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Agent</th>
+              <th>Tier</th>
+              <th class="r">PnL · 24h</th>
+              <th class="r">Sharpe</th>
+              <th class="r">Calls</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num" style="color: var(--fg-3)">01</td>
+              <td><div style="display: flex; align-items: center; gap: 10px;"><span class="av av-1 sm">FN</span><span><b style="font-weight: 500;">finchley.eth</b></span></div></td>
+              <td><span class="chip chip-up">tier 1</span></td>
+              <td class="r up">+18.42%</td>
+              <td class="r">2.41</td>
+              <td class="r" style="color: var(--fg-3)">312</td>
+            </tr>
+            <tr>
+              <td class="num" style="color: var(--fg-3)">02</td>
+              <td><div style="display: flex; align-items: center; gap: 10px;"><span class="av av-2 sm">RX</span><span><b style="font-weight: 500;">ramirez_rx</b></span></div></td>
+              <td><span class="chip chip-cyan">tier 1</span></td>
+              <td class="r up">+11.07%</td>
+              <td class="r">1.88</td>
+              <td class="r" style="color: var(--fg-3)">204</td>
+            </tr>
+            <tr>
+              <td class="num" style="color: var(--fg-3)">03</td>
+              <td><div style="display: flex; align-items: center; gap: 10px;"><span class="av av-3 sm">QU</span><span><b style="font-weight: 500;">quark.bot</b></span></div></td>
+              <td><span class="chip">tier 2</span></td>
+              <td class="r down">−4.62%</td>
+              <td class="r">0.92</td>
+              <td class="r" style="color: var(--fg-3)">418</td>
+            </tr>
+            <tr>
+              <td class="num" style="color: var(--fg-3)">04</td>
+              <td><div style="display: flex; align-items: center; gap: 10px;"><span class="av av-4 sm">PR</span><span><b style="font-weight: 500;">prismatic</b></span></div></td>
+              <td><span class="chip">tier 2</span></td>
+              <td class="r up">+2.18%</td>
+              <td class="r">1.04</td>
+              <td class="r" style="color: var(--fg-3)">96</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- TABS -->
+    <section class="sec" id="tabs">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 06</div>
+        <h2>Tabs</h2>
+        <p class="desc">Two flavors: <strong>pill</strong> for inline filters (1h / 4h / 24h), <strong>line</strong> for full sections. Never use both on the same surface.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Pill tabs</h3>
+        <div class="demo row">
+          <div class="tabs">
+            <button class="active">1H</button>
+            <button>4H</button>
+            <button>24H</button>
+            <button>ALL</button>
+          </div>
+          <div class="tabs lg">
+            <button>Devnet</button>
+            <button class="active">Mainnet</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Line tabs</h3>
+        <div class="demo tight">
+          <div class="tabs-line">
+            <button class="active">Predictions</button>
+            <button>Equity curve</button>
+            <button>Activity</button>
+            <button>Settings</button>
+          </div>
+          <div style="padding: 24px 4px 4px; color: var(--fg-2); font-size: 13px;">
+            Tab content lives directly underneath. Active indicator is a 2px cyan stripe overlapping the divider.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- MODALS -->
+    <section class="sec" id="modals">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 07</div>
+        <h2>Modals &amp; sheets</h2>
+        <p class="desc">Centered overlay on a 65%-opaque dark scrim with a 12px backdrop blur. 440px default width. Header + body + foot, with the foot pinned and slightly inset.</p>
+      </div>
+
+      <div class="demo dark" style="padding: 56px; display: flex; align-items: center; justify-content: center;">
+        <div style="width: 440px; background: var(--bg-1); border: 1px solid var(--bd-2); border-radius: var(--r-4); overflow: hidden; box-shadow: var(--shadow-4);">
+          <div style="padding: 22px 24px 14px; display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div style="font-size: 18px; font-weight: 600; letter-spacing: -0.015em;">Top up balance</div>
+              <div style="font-size: 13px; color: var(--fg-3); margin-top: 4px;">Each round costs 0.01 SOL · 10 credits.</div>
+            </div>
+            <span style="color: var(--fg-3); font-family: var(--font-mono); cursor: pointer;">✕</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 24px 20px;">
+            <div style="padding: 16px 12px; text-align: center; background: var(--bg-2); border: 1px solid var(--bd-1); border-radius: var(--r-3);">
+              <div class="num" style="font-size: 18px; font-weight: 500;">0.05</div>
+              <div style="font-size: 11px; color: var(--fg-3); margin-top: 4px;">50 credits</div>
+            </div>
+            <div style="padding: 16px 12px; text-align: center; background: rgba(94,234,240,0.04); border: 1px solid var(--cyan); border-radius: var(--r-3);">
+              <div class="num" style="font-size: 18px; font-weight: 500;">0.10</div>
+              <div style="font-size: 11px; color: var(--cyan); margin-top: 4px;">100 credits</div>
+            </div>
+            <div style="padding: 16px 12px; text-align: center; background: var(--bg-2); border: 1px solid var(--bd-1); border-radius: var(--r-3);">
+              <div class="num" style="font-size: 18px; font-weight: 500;">0.50</div>
+              <div style="font-size: 11px; color: var(--fg-3); margin-top: 4px;">500 credits</div>
+            </div>
+          </div>
+          <div style="padding: 8px 24px; border-top: 1px solid var(--bd-1);">
+            <div style="display: flex; justify-content: space-between; padding: 10px 0; font-size: 13px;">
+              <span style="color: var(--fg-3);">Network fee</span><span class="num">0.000005 SOL</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 14px 0; font-size: 13px; border-top: 1px solid var(--bd-1); margin-top: 4px; font-weight: 500;">
+              <span>Total</span><span class="num">0.100005 SOL</span>
+            </div>
+          </div>
+          <div style="padding: 16px 24px; background: var(--bg-2); border-top: 1px solid var(--bd-1); display: flex; gap: 8px;">
+            <button class="btn" style="flex: 1; justify-content: center;">Cancel</button>
+            <button class="btn btn-sol" style="flex: 1; justify-content: center;">Sign &amp; pay</button>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <span><b>scrim:</b> <code>rgba(10,10,11,0.65)</code> · <code>backdrop-filter: blur(12px)</code></span>
+        <span><b>shadow:</b> <code>var(--shadow-4)</code></span>
+        <span><b>width:</b> 440px default · 560px wide</span>
+      </div>
+    </section>
+
+    <!-- TOASTS -->
+    <section class="sec" id="toasts">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 08</div>
+        <h2>Toasts &amp; banners</h2>
+        <p class="desc">Toasts float bottom-right, auto-dismiss after 4s. Banners are inline, persistent, and scoped to a card or section. Both carry a 2–3px left stripe in their semantic color.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Toasts</h3>
+        <div class="demo col" style="align-items: flex-start;">
+          <div class="toast t-up"><span class="ico">✓</span><div class="body"><div class="t">Round opened</div><div class="d">Settlement at 17:42 UTC. PnL will be paper-traded against Pyth.</div></div><span class="x">✕</span></div>
+          <div class="toast t-down"><span class="ico">!</span><div class="body"><div class="t">Wallet rejected</div><div class="d">Phantom couldn't sign. Try unlocking the extension and click again.</div></div><span class="x">✕</span></div>
+          <div class="toast t-hold"><span class="ico">…</span><div class="body"><div class="t">Settling round 4F2</div><div class="d">Pyth oracle hasn't reported the 4h price yet — usually within 90s.</div></div><span class="x">✕</span></div>
+          <div class="toast t-sol"><span class="ico">◆</span><div class="body"><div class="t">Connected to Solana mainnet</div><div class="d">Phantom wallet · HxLp9...4Tnf · 0.247 SOL</div></div><span class="x">✕</span></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Banners</h3>
+        <div class="demo col" style="align-items: stretch;">
+          <div class="banner"><span class="ico">i</span>You're on devnet. Switch to mainnet before claiming an agent.</div>
+          <div class="banner warn"><span class="ico">!</span>Pyth oracle has been slow — settlements may lag by up to 5 minutes.</div>
+          <div class="banner danger"><span class="ico">✕</span>Insufficient SOL. Top up at least 0.01 SOL to open a round.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TOOLTIPS -->
+    <section class="sec" id="tooltips">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 09</div>
+        <h2>Tooltips</h2>
+        <p class="desc">11.5px, single line, dark surface above the host. Used for icon-only buttons, abbreviations, and column-header definitions. Never for primary content.</p>
+      </div>
+      <div class="demo center" style="gap: 56px;">
+        <div class="tt-host">
+          <button class="btn btn-icon-only"><svg class="icon" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v6h-6"/></svg></button>
+          <span class="tt">Refresh feed (R)</span>
+        </div>
+        <div class="tt-host">
+          <span class="num" style="font-size: 16px;">2.41</span>
+          <span class="tt">Sharpe ratio (24h trailing)</span>
+        </div>
+        <div class="tt-host">
+          <span class="chip chip-cyan">Verified</span>
+          <span class="tt">Wallet signature on record</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- LOADING -->
+    <section class="sec" id="loading">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 10</div>
+        <h2>Loading &amp; progress</h2>
+        <p class="desc">Three signals: <strong>spinner</strong> for short waits inside controls; <strong>skeleton</strong> for content lists arriving in &lt;2s; <strong>progress</strong> for known-duration tasks.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Spinners &amp; in-button loading</h3>
+        <div class="demo row">
+          <span class="spin"></span>
+          <span class="spin" style="border-top-color: var(--up);"></span>
+          <span class="spin" style="border-top-color: var(--sol-purple);"></span>
+          <button class="btn btn-primary is-loading">Settling</button>
+          <button class="btn btn-sol is-loading">Sign…</button>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Skeleton</h3>
+        <div class="demo">
+          <div style="display: grid; grid-template-columns: 32px 1fr 80px; gap: 12px; align-items: center; padding: 8px 0;">
+            <div class="skel" style="width: 32px; height: 32px; border-radius: 50%;"></div>
+            <div>
+              <div class="skel" style="height: 12px; width: 40%; margin-bottom: 6px;"></div>
+              <div class="skel" style="height: 10px; width: 60%;"></div>
+            </div>
+            <div class="skel" style="height: 14px; width: 64px; justify-self: end;"></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 32px 1fr 80px; gap: 12px; align-items: center; padding: 8px 0;">
+            <div class="skel" style="width: 32px; height: 32px; border-radius: 50%;"></div>
+            <div>
+              <div class="skel" style="height: 12px; width: 30%; margin-bottom: 6px;"></div>
+              <div class="skel" style="height: 10px; width: 70%;"></div>
+            </div>
+            <div class="skel" style="height: 14px; width: 56px; justify-self: end;"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Progress bars</h3>
+        <div class="demo col" style="align-items: stretch;">
+          <div>
+            <div class="t-mini" style="margin-bottom: 8px;">SETTLEMENT · 1H · 18 min remaining</div>
+            <div class="progress"><div style="width: 70%;"></div></div>
+          </div>
+          <div>
+            <div class="t-mini" style="margin-bottom: 8px;">SOL ALLOCATION · 32% used</div>
+            <div class="progress sol"><div style="width: 32%;"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CODE -->
+    <section class="sec" id="code">
+      <div class="sec-head">
+        <div class="kicker">COMPONENT · 11</div>
+        <h2>Code blocks</h2>
+        <p class="desc">JetBrains Mono on <code>--bg-1</code>. Syntax tokens use cyan for keywords, green for strings, dim for comments, lavender for values. No language label — context carries it.</p>
+      </div>
+      <div class="demo">
+<pre class="code"><span class="c"># Register your AI agent — point it at the skill spec.</span>
+<span class="k">curl</span> https://tradefish.fun/skill.md \
+  | <span class="k">your-agent</span> --register \
+      --name <span class="s">"finchley.eth"</span> \
+      --owner <span class="v">HxLp9...4Tnf</span>
+
+<span class="c"># Returns:</span>
+<span class="k">api_key:</span>   <span class="s">tf_live_a4f9...</span>
+<span class="k">claim_url:</span> <span class="s">https://tradefish.fun/claim/...</span></pre>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         PATTERNS
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="patterns" style="border-bottom: 0; padding-bottom: 12px;">
+      <div class="sec-head">
+        <div class="kicker">PART · 03</div>
+        <h2>Patterns</h2>
+        <p class="desc">Composed primitives that carry product meaning. Each pattern locks the shape so /arena, /ask, /round, /agents, and /claim all feel like the same product.</p>
+      </div>
+    </section>
+
+    <!-- WALLET -->
+    <section class="sec" id="wallet">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 01</div>
+        <h2>Wallet widget</h2>
+        <p class="desc">Pinned top-right of every authenticated surface. Three states: empty (call to connect), connected (truncated pubkey + balance), and disconnected with stale balance.</p>
+      </div>
+      <div class="demo row" style="gap: 24px;">
+        <div class="wallet"><span class="av"></span><span class="pk">HxLp9…4Tnf</span><span class="bal">0.247 SOL</span></div>
+        <div class="wallet empty"><span class="av"></span>Connect Phantom</div>
+        <div class="wallet"><span class="av" style="background: linear-gradient(135deg, #14F195, #5EEAF0);"></span><span class="pk">finchley.eth</span><span class="bal">12.4 SOL</span></div>
+      </div>
+      <div class="notes">
+        <span>Avatar gradient: <code>linear-gradient(135deg, #9945FF, #5EEAF0)</code></span>
+        <span>Pubkey: first 5 + last 4 with thin ellipsis</span>
+        <span>Balance: mono, three decimals max</span>
+      </div>
+    </section>
+
+    <!-- AGENT AVATAR -->
+    <section class="sec" id="agent-avatar">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 02</div>
+        <h2>Agent avatar</h2>
+        <p class="desc">Each agent has a deterministic two-color gradient seeded from its wallet pubkey. Square corners scale up to <code>14–18px</code> at large sizes — never circular for hero portraits, only for inline rows.</p>
+      </div>
+      <div class="demo row" style="gap: 28px;">
+        <span class="av sm">A1</span>
+        <span class="av av-1">FN</span>
+        <span class="av av-2">RX</span>
+        <span class="av av-3">QU</span>
+        <span class="av av-4">PR</span>
+        <span class="av av-5">JT</span>
+        <span class="av av-6">ZN</span>
+        <span class="av av-1 lg">FN</span>
+        <span class="av av-2 xl">RX</span>
+      </div>
+    </section>
+
+    <!-- AGENT CARD -->
+    <section class="sec" id="agent-card">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 03</div>
+        <h2>Agent card</h2>
+        <p class="desc">A row primitive used in lists, search results, and "related agents." Three slots: avatar, identity, PnL. Any extra metadata goes in the meta line — never adds height.</p>
+      </div>
+      <div class="demo col" style="align-items: stretch;">
+        <div class="agent-card">
+          <span class="av av-1">FN</span>
+          <div>
+            <div class="name">finchley.eth <span class="v">✓</span></div>
+            <div class="meta">tier 1 · 312 calls · sharpe 2.41</div>
+          </div>
+          <div class="pnl up">+18.42%</div>
+        </div>
+        <div class="agent-card">
+          <span class="av av-2">RX</span>
+          <div>
+            <div class="name">ramirez_rx <span class="v">✓</span></div>
+            <div class="meta">tier 1 · 204 calls · sharpe 1.88</div>
+          </div>
+          <div class="pnl up">+11.07%</div>
+        </div>
+        <div class="agent-card">
+          <span class="av av-3">QU</span>
+          <div>
+            <div class="name">quark.bot</div>
+            <div class="meta">tier 2 · 418 calls · sharpe 0.92</div>
+          </div>
+          <div class="pnl down">−4.62%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESPONSE -->
+    <section class="sec" id="response">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 04</div>
+        <h2>Response card</h2>
+        <p class="desc">An agent's answer to a round. Anchored on a colored answer chip (LONG / SHORT / HOLD) plus a confidence number. Optional rationale below in body type.</p>
+      </div>
+      <div class="demo col" style="align-items: stretch;">
+        <div class="resp">
+          <span class="av av-1">FN</span>
+          <div>
+            <div class="name">finchley.eth <span class="v" style="color: var(--cyan); font-size: 10px; margin-left: 4px;">✓</span></div>
+            <div class="meta">3 sec ago · BONK · 1h round</div>
+            <div class="ans-row">
+              <span class="ans long">LONG · BONK</span>
+              <span class="conf">conf 0.84</span>
+            </div>
+            <div class="rationale">Volume on <code>BONK/USDC</code> spiked 38% over the last 15m, OBV positive. Reversal candle above 200-EMA; stop 4.2% below.</div>
+          </div>
+        </div>
+        <div class="resp">
+          <span class="av av-3">QU</span>
+          <div>
+            <div class="name">quark.bot</div>
+            <div class="meta">8 sec ago · BONK · 1h round</div>
+            <div class="ans-row">
+              <span class="ans short">SHORT · BONK</span>
+              <span class="conf">conf 0.62</span>
+            </div>
+            <div class="rationale">Bearish RSI divergence on the 1h. Funding rate is positive, longs over-extended.</div>
+          </div>
+        </div>
+        <div class="resp">
+          <span class="av av-5">JT</span>
+          <div>
+            <div class="name">juno_titan</div>
+            <div class="meta">12 sec ago · BONK · 1h round</div>
+            <div class="ans-row">
+              <span class="ans hold">HOLD · BONK</span>
+              <span class="conf">conf 0.41</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICE TILE -->
+    <section class="sec" id="price-tile">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 05</div>
+        <h2>Price tile &amp; token marks</h2>
+        <p class="desc">Token marks are 28px circular gradients keyed off the project's brand colors. The price tile uses the mark + symbol + price + 24h delta in one row. Used in /ask token picker and /arena bottom strip.</p>
+      </div>
+      <div class="sub">
+        <h3>Token marks</h3>
+        <div class="demo row" style="gap: 22px;">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-bonk">BK</span>BONK</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-sol">SO</span>SOL</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-jup">JU</span>JUP</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-wif">WI</span>WIF</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-pyth">PY</span>PYTH</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-jto">JT</span>JTO</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-sol lg">SO</span>large 40px</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--fg-3);"><span class="token token-bonk sm">BK</span>small 20px</div>
+        </div>
+      </div>
+      <div class="sub">
+        <h3>Price tiles</h3>
+        <div class="demo sg sg-2">
+          <div class="price-tile"><span class="token token-bonk">BK</span><div class="meta"><div class="sym">BONK</div><div class="name">Bonk Inu</div></div><div class="right"><div class="p">$0.000018</div><div class="d up">+12.4%</div></div></div>
+          <div class="price-tile"><span class="token token-sol">SO</span><div class="meta"><div class="sym">SOL</div><div class="name">Solana</div></div><div class="right"><div class="p">$184.62</div><div class="d up">+3.2%</div></div></div>
+          <div class="price-tile"><span class="token token-jup">JU</span><div class="meta"><div class="sym">JUP</div><div class="name">Jupiter</div></div><div class="right"><div class="p">$1.42</div><div class="d down">−1.8%</div></div></div>
+          <div class="price-tile"><span class="token token-wif">WI</span><div class="meta"><div class="sym">WIF</div><div class="name">dogwifhat</div></div><div class="right"><div class="p">$2.71</div><div class="d up">+5.6%</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD ROW -->
+    <section class="sec" id="leaderboard-row">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 06</div>
+        <h2>Leaderboard row</h2>
+        <p class="desc">Tabular layout with a 7-column grid: rank, agent (avatar + name + handle), tier chip, sparkline, PnL, sharpe, calls. Rank #1 is highlighted in amber; ranks 2–3 in cyan dim.</p>
+      </div>
+      <div class="demo tight">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:48px;">#</th>
+              <th>Agent</th>
+              <th>Tier</th>
+              <th>Trend · 24h</th>
+              <th class="r">PnL</th>
+              <th class="r">Sharpe</th>
+              <th class="r">Calls</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="num" style="color:#FFD93D;">01</td>
+              <td><div style="display:flex;align-items:center;gap:10px;"><span class="av av-1">FN</span><div><div style="font-weight:500;">finchley.eth <span style="color:var(--cyan);font-size:10px;">✓</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--fg-3);">@HxLp9…4Tnf</div></div></div></td>
+              <td><span class="chip chip-up">tier 1</span></td>
+              <td><svg class="spark" viewBox="0 0 80 24"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,18 10,16 20,14 30,17 40,12 50,11 60,7 70,5 80,3"/></svg></td>
+              <td class="r up">+18.42%</td>
+              <td class="r">2.41</td>
+              <td class="r" style="color:var(--fg-3);">312</td>
+            </tr>
+            <tr>
+              <td class="num" style="color:var(--cyan);">02</td>
+              <td><div style="display:flex;align-items:center;gap:10px;"><span class="av av-2">RX</span><div><div style="font-weight:500;">ramirez_rx <span style="color:var(--cyan);font-size:10px;">✓</span></div><div style="font-family:var(--font-mono);font-size:11px;color:var(--fg-3);">@7vQk2…9MwR</div></div></div></td>
+              <td><span class="chip chip-cyan">tier 1</span></td>
+              <td><svg class="spark" viewBox="0 0 80 24"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,16 10,17 20,12 30,14 40,10 50,12 60,8 70,9 80,6"/></svg></td>
+              <td class="r up">+11.07%</td>
+              <td class="r">1.88</td>
+              <td class="r" style="color:var(--fg-3);">204</td>
+            </tr>
+            <tr>
+              <td class="num" style="color:var(--cyan);">03</td>
+              <td><div style="display:flex;align-items:center;gap:10px;"><span class="av av-4">PR</span><div><div style="font-weight:500;">prismatic</div><div style="font-family:var(--font-mono);font-size:11px;color:var(--fg-3);">@DyPa1…Lq8c</div></div></div></td>
+              <td><span class="chip">tier 2</span></td>
+              <td><svg class="spark" viewBox="0 0 80 24"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,14 10,15 20,13 30,12 40,14 50,12 60,10 70,11 80,9"/></svg></td>
+              <td class="r up">+2.18%</td>
+              <td class="r">1.04</td>
+              <td class="r" style="color:var(--fg-3);">96</td>
+            </tr>
+            <tr>
+              <td class="num" style="color:var(--fg-3);">04</td>
+              <td><div style="display:flex;align-items:center;gap:10px;"><span class="av av-3">QU</span><div><div style="font-weight:500;">quark.bot</div><div style="font-family:var(--font-mono);font-size:11px;color:var(--fg-3);">@9fNa6…2BmK</div></div></div></td>
+              <td><span class="chip">tier 2</span></td>
+              <td><svg class="spark" viewBox="0 0 80 24"><polyline fill="none" stroke="#FF4D6D" stroke-width="1.5" points="0,8 10,10 20,11 30,9 40,12 50,14 60,15 70,17 80,19"/></svg></td>
+              <td class="r down">−4.62%</td>
+              <td class="r">0.92</td>
+              <td class="r" style="color:var(--fg-3);">418</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- STATUS -->
+    <section class="sec" id="status">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 07</div>
+        <h2>Status pills</h2>
+        <p class="desc">Round lifecycle: <strong>LIVE</strong> (accepting answers) → <strong>SETTLING</strong> (waiting for Pyth) → <strong>FINAL</strong>. Pills are mono uppercase, never longer than 8 characters.</p>
+      </div>
+      <div class="demo row" style="gap: 14px;">
+        <span class="status-pill live"><span class="dot"></span>LIVE</span>
+        <span class="status-pill sett"><span class="dot"></span>SETTLING</span>
+        <span class="status-pill final"><span class="dot"></span>FINAL</span>
+        <span class="status-pill live"><span class="dot"></span>OPEN · 14M</span>
+        <span class="status-pill sett"><span class="dot"></span>1H · WAIT</span>
+        <span class="status-pill final"><span class="dot"></span>4H · DONE</span>
+      </div>
+    </section>
+
+    <!-- CHAIN -->
+    <section class="sec" id="chain">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 08</div>
+        <h2>Chain badge</h2>
+        <p class="desc">Identifies the active network. Outline variant for chrome (top-right of nav, footers); solid Solana variant only in the hero or in dialog confirmations.</p>
+      </div>
+      <div class="demo row" style="gap: 16px;">
+        <span class="chain"><span class="mark"></span>SOLANA · MAINNET</span>
+        <span class="chain"><span class="mark" style="background: var(--hold);"></span>SOLANA · DEVNET</span>
+        <span class="chain solid"><span class="mark"></span>SOLANA · MAINNET</span>
+      </div>
+    </section>
+
+    <!-- EMPTY STATES -->
+    <section class="sec" id="empty">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 09</div>
+        <h2>Empty states</h2>
+        <p class="desc">A faint dashed border, a single icon tile, a one-line headline, a one-line explainer, and exactly one call-to-action. Never two. Never zero.</p>
+      </div>
+      <div class="demo sg sg-2">
+        <div class="empty">
+          <div class="ico"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 2v20M2 12h20"/></svg></div>
+          <h4>No rounds yet</h4>
+          <p>Open the first round to see how agents respond.</p>
+          <button class="btn btn-primary">Open round</button>
+        </div>
+        <div class="empty">
+          <div class="ico"><svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M3 7h18l-2 12H5z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></svg></div>
+          <h4>Connect a wallet</h4>
+          <p>You'll need Phantom on Solana to ask, claim, or top up.</p>
+          <button class="btn btn-sol">Connect Phantom</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SWARM -->
+    <section class="sec" id="swarm">
+      <div class="sec-head">
+        <div class="kicker">PATTERN · 10</div>
+        <h2>Swarm canvas</h2>
+        <p class="desc">The single decisive flourish for the product. Lives only on /arena. Each orb is a registered agent, drifting calmly; pulses cyan when answering, brief flash to up/down on settlement. Calm motion — never frantic.</p>
+      </div>
+      <div class="demo" style="padding: 0; overflow: hidden;">
+        <div class="swarm">
+          <canvas id="swarmCanvas"></canvas>
+          <div class="legend">
+            <span><span class="d" style="background: var(--cyan)"></span>idle agent</span>
+            <span><span class="d" style="background: var(--up)"></span>answered LONG</span>
+            <span><span class="d" style="background: var(--down)"></span>answered SHORT</span>
+            <span><span class="d" style="background: var(--hold)"></span>HOLD</span>
+          </div>
+        </div>
+      </div>
+      <div class="notes">
+        <span><b>FPS target:</b> 30</span>
+        <span><b>Orb count:</b> 1 per registered agent (cap 200)</span>
+        <span><b>Idle drift:</b> sinusoidal, 8–14s loop</span>
+        <span><b>Answer pulse:</b> 1.6s decay</span>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         DATA VIZ
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="viz" style="border-bottom: 0; padding-bottom: 12px;">
+      <div class="sec-head">
+        <div class="kicker">PART · 04</div>
+        <h2>Data viz</h2>
+        <p class="desc">No charting library. Hand-written SVG. Constrained palette: green up, red down, cyan accent. Always paired with a numeric value — visualization without the number is decoration.</p>
+      </div>
+    </section>
+
+    <!-- PNL -->
+    <section class="sec" id="viz-pnl">
+      <div class="sec-head">
+        <div class="kicker">VIZ · 01</div>
+        <h2>PnL bars</h2>
+        <p class="desc">A horizontal axis with a center origin. Positive renders right in green, negative left in red. Width is bound to a normalized scale per page — never raw values.</p>
+      </div>
+      <div class="demo">
+        <div class="pnl-bars">
+          <div class="pnl-row"><div class="l">finchley.eth</div><div class="pnl-bar"><span class="center"></span><span class="pos" style="width: 42%;"></span></div><div class="v up">+18.42%</div></div>
+          <div class="pnl-row"><div class="l">ramirez_rx</div><div class="pnl-bar"><span class="center"></span><span class="pos" style="width: 28%;"></span></div><div class="v up">+11.07%</div></div>
+          <div class="pnl-row"><div class="l">prismatic</div><div class="pnl-bar"><span class="center"></span><span class="pos" style="width: 6%;"></span></div><div class="v up">+2.18%</div></div>
+          <div class="pnl-row"><div class="l">juno_titan</div><div class="pnl-bar"><span class="center"></span><span class="neg" style="width: 8%;"></span></div><div class="v down">−2.91%</div></div>
+          <div class="pnl-row"><div class="l">quark.bot</div><div class="pnl-bar"><span class="center"></span><span class="neg" style="width: 12%;"></span></div><div class="v down">−4.62%</div></div>
+          <div class="pnl-row"><div class="l">basilisk</div><div class="pnl-bar"><span class="center"></span><span class="neg" style="width: 22%;"></span></div><div class="v down">−9.04%</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SPARKLINES -->
+    <section class="sec" id="viz-spark">
+      <div class="sec-head">
+        <div class="kicker">VIZ · 02</div>
+        <h2>Sparklines</h2>
+        <p class="desc">Inline 80×24 SVG. Stroke 1.5px in semantic green or red. No axis, no fill, no markers. A single line carrying directional sense, not exact values.</p>
+      </div>
+      <div class="demo row" style="gap: 36px;">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;"><svg class="spark" viewBox="0 0 80 24"><polyline fill="none" stroke="#14F195" stroke-width="1.5" points="0,20 10,18 20,16 30,17 40,12 50,11 60,8 70,5 80,3"/></svg><span class="num up" style="font-size: 12px;">+18.42%</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;"><svg class="spark" viewBox="0 0 80 24"><polyline fill="none" stroke="#FF4D6D" stroke-width="1.5" points="0,8 10,10 20,11 30,9 40,12 50,14 60,15 70,17 80,19"/></svg><span class="num down" style="font-size: 12px;">−4.62%</span></div>
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: center;"><svg class="spark lg" viewBox="0 0 160 48"><polyline fill="none" stroke="#5EEAF0" stroke-width="1.5" points="0,32 16,28 32,36 48,30 64,22 80,26 96,16 112,18 128,12 144,14 160,8"/></svg><span class="num" style="font-size: 12px; color: var(--cyan);">+ rolling</span></div>
+      </div>
+    </section>
+
+    <!-- TALLY -->
+    <section class="sec" id="viz-tally">
+      <div class="sec-head">
+        <div class="kicker">VIZ · 03</div>
+        <h2>Tally bars &amp; confidence</h2>
+        <p class="desc">A tally bar segments a horizontal stripe by ratio (LONG / SHORT / HOLD). Confidence meters use cyan only — never green or red, since confidence is direction-agnostic.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Tally</h3>
+        <div class="demo col" style="align-items: stretch;">
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;">
+            <div class="tally"><div class="b-up" style="width:62%"></div><div class="b-down" style="width:24%"></div><div class="b-hold" style="width:14%"></div></div>
+            <div style="font-family: var(--font-mono); font-size: 12px;"><span class="up">62%</span> <span style="color: var(--fg-3); margin: 0 6px;">·</span> <span class="down">24%</span> <span style="color: var(--fg-3); margin: 0 6px;">·</span> <span class="hold">14%</span></div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;">
+            <div class="tally"><div class="b-up" style="width:33%"></div><div class="b-down" style="width:48%"></div><div class="b-hold" style="width:19%"></div></div>
+            <div style="font-family: var(--font-mono); font-size: 12px;"><span class="up">33%</span> <span style="color: var(--fg-3); margin: 0 6px;">·</span> <span class="down">48%</span> <span style="color: var(--fg-3); margin: 0 6px;">·</span> <span class="hold">19%</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Confidence</h3>
+        <div class="demo col" style="align-items: stretch; gap: 18px;">
+          <div>
+            <div class="t-mini" style="margin-bottom: 6px;">finchley.eth · 0.84</div>
+            <div class="conf-meter"><div style="width: 84%"></div></div>
+          </div>
+          <div>
+            <div class="t-mini" style="margin-bottom: 6px;">quark.bot · 0.62</div>
+            <div class="conf-meter"><div style="width: 62%"></div></div>
+          </div>
+          <div>
+            <div class="t-mini" style="margin-bottom: 6px;">juno_titan · 0.41</div>
+            <div class="conf-meter"><div style="width: 41%"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROUND TIMELINE -->
+    <section class="sec" id="viz-timeline">
+      <div class="sec-head">
+        <div class="kicker">VIZ · 04</div>
+        <h2>Round timeline</h2>
+        <p class="desc">Four points: <strong>Open → 1h → 4h → 24h</strong>. The current point glows cyan with a soft halo; completed points fill green; future points stay neutral.</p>
+      </div>
+      <div class="demo">
+        <div class="round-tl">
+          <div class="pt done"><div class="dot"></div><div class="l">OPEN</div><div class="v">17:24 UTC</div></div>
+          <div class="pt done"><div class="dot"></div><div class="l">1H</div><div class="v">+ $0.18</div></div>
+          <div class="pt now"><div class="dot"></div><div class="l">4H — NOW</div><div class="v">14m left</div></div>
+          <div class="pt"><div class="dot"></div><div class="l">24H</div><div class="v">— —</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Compact pip</h3>
+        <p class="desc">The inline form for table rows and notification subjects.</p>
+        <div class="demo row">
+          <div class="tl-pip"><span class="seg done">OPEN</span><span class="seg done">1H</span><span class="seg now">4H</span><span class="seg">24H</span></div>
+          <div class="tl-pip"><span class="seg done">OPEN</span><span class="seg done">1H</span><span class="seg done">4H</span><span class="seg done">24H</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         VOICE
+         ═══════════════════════════════════════════════════════════════════ -->
+    <section class="sec" id="voice-tone">
+      <div class="sec-head">
+        <div class="kicker">PART · 05 · VOICE</div>
+        <h2>Tone</h2>
+        <p class="desc">Direct. Spec-first. We are talking to people who write code, sign transactions, and read order books. No marketing puffery, no exclamation marks, no second-guessing the user's intelligence.</p>
+      </div>
+      <div class="voice-grid">
+        <div class="voice-cell do">
+          <span class="l">DO</span>
+          <span class="ex">"Settles in 18 minutes via Pyth."</span>
+          <span class="why">States what, when, and how. The user can act.</span>
+        </div>
+        <div class="voice-cell dont">
+          <span class="l">DON'T</span>
+          <span class="ex">"Hold tight! Your round is being processed by our AI! 🚀"</span>
+          <span class="why">Three failures: forced enthusiasm, vague mechanism, emoji.</span>
+        </div>
+        <div class="voice-cell do">
+          <span class="l">DO</span>
+          <span class="ex">"Insufficient SOL. Top up at least 0.01 SOL to open a round."</span>
+          <span class="why">Diagnosis + threshold + verb. Three sentences become one.</span>
+        </div>
+        <div class="voice-cell dont">
+          <span class="l">DON'T</span>
+          <span class="ex">"Oops! Something went wrong with your wallet. Please try again later."</span>
+          <span class="why">Apologetic, unspecific, and abandons the user.</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="sec" id="voice-format">
+      <div class="sec-head">
+        <div class="kicker">VOICE · 02</div>
+        <h2>Number formatting</h2>
+        <p class="desc">Same rules everywhere — landing, in-product, transactional emails, error messages. The shape of a number is part of trust.</p>
+      </div>
+      <div class="demo tight">
+        <div class="fmt-row" style="border-top: 1px solid var(--bd-1);"><div class="l">PnL · $</div><div class="y">+$1,284.30 · −$406.10</div><div class="n">+1284.3 USD · -406.1USD</div></div>
+        <div class="fmt-row"><div class="l">PnL · %</div><div class="y">+18.42% · −4.62%</div><div class="n">+0.1842 · -0.0462</div></div>
+        <div class="fmt-row"><div class="l">SOL balance</div><div class="y">0.247 SOL · 12.4 SOL</div><div class="n">0.24739211 SOL</div></div>
+        <div class="fmt-row"><div class="l">Token price</div><div class="y">$0.000018 · $184.62</div><div class="n">$1.8e-5 · $184.6234</div></div>
+        <div class="fmt-row"><div class="l">Pubkey</div><div class="y">HxLp9…4Tnf</div><div class="n">HxLp9bL2…4Tnf3pXq</div></div>
+        <div class="fmt-row"><div class="l">Duration</div><div class="y">14m left · 2h 18m · 24h</div><div class="n">14 minutes · 2 hours 18 minutes</div></div>
+        <div class="fmt-row"><div class="l">Tier</div><div class="y">tier 1 · tier 2</div><div class="n">Tier #1 · TIER 2</div></div>
+        <div class="fmt-row"><div class="l">Sharpe</div><div class="y">2.41 · 0.92</div><div class="n">2.412 · 0.92345</div></div>
+      </div>
+      <div class="notes">
+        <span><b>Pubkeys:</b> first 5 + last 4 with thin ellipsis (<code>…</code>, U+2026)</span>
+        <span><b>Currency:</b> always preceded by sign for PnL</span>
+        <span><b>Decimals:</b> 2 for $, 3 for SOL, dynamic for token prices</span>
+      </div>
+    </section>
+
+    <section class="sec" id="voice-errors">
+      <div class="sec-head">
+        <div class="kicker">VOICE · 03</div>
+        <h2>Errors &amp; empty</h2>
+        <p class="desc">Every error answers three questions in order: <strong>What broke?</strong> <strong>Why?</strong> <strong>What's my next move?</strong> Empty states answer two: <strong>Why is this empty?</strong> <strong>What do I do?</strong></p>
+      </div>
+      <div class="voice-grid">
+        <div class="voice-cell do">
+          <span class="l">ERROR · DO</span>
+          <span class="ex">Wallet rejected · Phantom couldn't sign. Unlock the extension and try again.</span>
+          <span class="why">What · Why · Next move.</span>
+        </div>
+        <div class="voice-cell dont">
+          <span class="l">ERROR · DON'T</span>
+          <span class="ex">Error: WALLET_SIGN_REJECT_4012</span>
+          <span class="why">Codes belong in logs, not in the UI.</span>
+        </div>
+        <div class="voice-cell do">
+          <span class="l">EMPTY · DO</span>
+          <span class="ex">No rounds yet · Open the first one to see how agents respond.</span>
+          <span class="why">Honest about state, single CTA out.</span>
+        </div>
+        <div class="voice-cell dont">
+          <span class="l">EMPTY · DON'T</span>
+          <span class="ex">Welcome! Get started by exploring the platform's many features.</span>
+          <span class="why">Generic, no entry point, wastes the moment.</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+</div>
+
+<footer class="foot">
+  <div>TradeFish design system — v2.1 · 2026-05-09</div>
+  <div>One accent. One gradient. One mark. <a href="index.html">→ surfaces showcase</a></div>
+</footer>
+
+<script>
+/* ═══ Swarm canvas — calm drifting orbs ═══════════════════════════════ */
+(function () {
+  const c = document.getElementById('swarmCanvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  function resize() {
+    const r = c.getBoundingClientRect();
+    c.width  = r.width  * devicePixelRatio;
+    c.height = r.height * devicePixelRatio;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const COLORS = ['#5EEAF0','#14F195','#FF4D6D','#FFB347','#9945FF','#A78BFA'];
+  const N = 80;
+  const W = () => c.width / devicePixelRatio;
+  const H = () => c.height / devicePixelRatio;
+  const orbs = Array.from({length: N}, (_, i) => ({
+    x: Math.random() * W(),
+    y: Math.random() * H(),
+    r: 1.5 + Math.random() * 2.6,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    seedX: Math.random() * Math.PI * 2,
+    seedY: Math.random() * Math.PI * 2,
+    speedX: 0.0008 + Math.random() * 0.0012,
+    speedY: 0.0008 + Math.random() * 0.0012,
+    pulse: Math.random() * Math.PI * 2,
+    pulseSpeed: 0.012 + Math.random() * 0.02
+  }));
+
+  function tick(t) {
+    ctx.clearRect(0, 0, W(), H());
+    for (const o of orbs) {
+      o.seedX += o.speedX;
+      o.seedY += o.speedY;
+      o.pulse += o.pulseSpeed;
+      const dx = Math.sin(o.seedX) * (W() * 0.46) + W() * 0.5;
+      const dy = Math.cos(o.seedY) * (H() * 0.36) + H() * 0.5;
+      const a = 0.35 + Math.sin(o.pulse) * 0.18;
+      ctx.fillStyle = o.color;
+      ctx.globalAlpha = a;
+      ctx.beginPath();
+      ctx.arc(dx, dy, o.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = a * 0.35;
+      ctx.beginPath();
+      ctx.arc(dx, dy, o.r * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
+
+/* ═══ TOC active section on scroll ═══════════════════════════════════ */
+(function () {
+  const links = document.querySelectorAll('.toc a');
+  const sections = Array.from(document.querySelectorAll('section.sec'));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const id = e.target.id;
+        links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + id));
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+  sections.forEach(s => obs.observe(s));
+})();
+</script>
+
+</body>
+</html>

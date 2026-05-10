@@ -7,17 +7,33 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
 import { TopupModal } from "@/components/wallet/TopupModal";
 
-const ACTIONS = [{ value: "buy_sell", label: "buy or sell" }] as const;
 const CREDITS_PER_QUERY = 10;
+
+const TOKEN_GRID_SLUGS = ["BONK", "SOL", "JUP", "WIF", "PYTH", "JTO"];
+
+const TOKEN_AVATAR_CLASS: Record<string, string> = {
+  BONK: "token token-bonk",
+  SOL:  "token token-sol",
+  JUP:  "token token-jup",
+  WIF:  "token token-wif",
+  PYTH: "token token-pyth",
+  JTO:  "token token-jto",
+  USDC: "token token-jto",
+  USDT: "token token-jto",
+};
+
+function tokenAvClass(symbol: string): string {
+  return TOKEN_AVATAR_CLASS[symbol] ?? "token token-sol";
+}
+function tokenInitials(symbol: string): string {
+  return symbol.slice(0, 2);
+}
 
 export function QueryComposer() {
   const router = useRouter();
   const { publicKey, connected } = useWallet();
   const { setVisible: setWalletModalVisible } = useWalletModal();
   const [token, setToken] = useState<SupportedToken | null>(null);
-  const [action] = useState<typeof ACTIONS[number]["value"]>("buy_sell");
-  const [tokenQuery, setTokenQuery] = useState("");
-  const [tokenOpen, setTokenOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);
@@ -37,7 +53,7 @@ export function QueryComposer() {
       const json = (await r.json()) as { credits?: number };
       setCredits(typeof json.credits === "number" ? json.credits : 0);
     } catch {
-      // composer balance is a hint; don't crash on transient errors
+      // hint only
     }
   }, [publicKey]);
 
@@ -45,38 +61,28 @@ export function QueryComposer() {
     void refetchBalance();
   }, [refetchBalance]);
 
-  // Listen for cross-component balance hints (e.g. nav widget topup).
   useEffect(() => {
-    function onHint() {
-      void refetchBalance();
-    }
+    function onHint() { void refetchBalance(); }
     window.addEventListener("tradefish:credits-changed", onHint);
-    return () =>
-      window.removeEventListener("tradefish:credits-changed", onHint);
+    return () => window.removeEventListener("tradefish:credits-changed", onHint);
   }, [refetchBalance]);
 
-  const matches = useMemo(() => {
-    const q = tokenQuery.trim().toLowerCase();
-    if (!q) return SUPPORTED_TOKENS.slice(0, 8);
-    return SUPPORTED_TOKENS
-      .filter((t) => t.symbol.toLowerCase().includes(q) || t.name.toLowerCase().includes(q))
-      .slice(0, 8);
-  }, [tokenQuery]);
+  const featured = useMemo(() => {
+    return TOKEN_GRID_SLUGS
+      .map((s) => SUPPORTED_TOKENS.find((t) => t.symbol === s))
+      .filter((t): t is SupportedToken => Boolean(t));
+  }, []);
 
   async function submit() {
     setError(null);
     if (!token) {
-      setError("Pick a token from the list.");
+      setError("Pick a token from the grid.");
       return;
     }
-    // Wallet is required — humans pay for every question. If not connected,
-    // route to the wallet modal instead of submitting.
     if (!connected || !publicKey) {
       setWalletModalVisible(true);
       return;
     }
-    // If wallet is connected but underfunded, route to topup instead of
-    // sending an obviously-doomed request.
     if ((credits ?? 0) < CREDITS_PER_QUERY) {
       setTopupOpen(true);
       return;
@@ -96,14 +102,12 @@ export function QueryComposer() {
       });
       const json = await r.json();
       if (r.status === 402) {
-        // Server says we don't have enough — open topup modal instead of error.
         setSubmitting(false);
         setTopupOpen(true);
         await refetchBalance();
         return;
       }
       if (r.status === 401) {
-        // Server says wallet missing/rejected — re-prompt to connect.
         setSubmitting(false);
         setWalletModalVisible(true);
         return;
@@ -118,232 +122,203 @@ export function QueryComposer() {
     }
   }
 
+  const ctaLabel = submitting
+    ? "Opening…"
+    : !connected
+      ? "Connect wallet to ask"
+      : (credits ?? 0) < CREDITS_PER_QUERY
+        ? "Top up to ask"
+        : "Open round";
+
+  const balanceCredits = credits ?? 0;
+  const balanceSol = (balanceCredits / 1000).toFixed(2); // 0.001 SOL per credit
+
   return (
     <>
-    <div className="tf-term">
-      <div className="tf-term-head">
-        <div className="flex items-center gap-3">
-          <div className="dots">
-            <span />
-            <span />
-            <span />
+      <div className="ask-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", minHeight: 640 }}>
+        {/* Main */}
+        <div style={{ padding: "64px 48px" }}>
+          <div style={{ color: "var(--cyan)", fontSize: 12, fontWeight: 500, letterSpacing: "0.04em", marginBottom: 12, textTransform: "uppercase" }}>
+            ◈ New round
           </div>
-          <span>QUERY · COMPOSER</span>
-        </div>
-        <span style={{ color: "var(--cyan)" }}>
-          {connected && credits !== null
-            ? `BALANCE ${credits} CR · COST 10`
-            : "10 CREDITS"}
-        </span>
-      </div>
+          <h1 style={{ fontSize: 40, fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1.05, margin: "0 0 12px" }}>
+            What should the swarm decide?
+          </h1>
+          <p className="t-body" style={{ marginBottom: 36, maxWidth: 520 }}>
+            Pick a token, ask your question. Every active agent gets one shot. Settlement at 1h, 4h, 24h via Pyth.
+          </p>
 
-      <div className="p-5">
-        <div className="t-label" style={{ color: "var(--cyan)" }}>
-          ▸ ASK
-        </div>
+          {/* Token grid */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 10,
+              marginBottom: 28,
+            }}
+            className="token-grid"
+          >
+            {featured.map((t) => {
+              const sel = token?.mint === t.mint;
+              return (
+                <button
+                  key={t.mint}
+                  type="button"
+                  onClick={() => setToken(t)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: 14,
+                    background: sel ? "rgba(94,234,240,0.05)" : "var(--bg-2)",
+                    border: `1px solid ${sel ? "var(--cyan)" : "var(--bd-1)"}`,
+                    borderRadius: "var(--r-3)",
+                    transition: "all 120ms",
+                    cursor: "pointer",
+                    color: "var(--fg)",
+                    textAlign: "left",
+                  }}
+                >
+                  <div className={tokenAvClass(t.symbol)}>{tokenInitials(t.symbol)}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14 }}>{t.symbol}</div>
+                    <div className="num" style={{ fontSize: 12, color: "var(--fg-2)" }}>{t.name}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
 
-        <div
-          className="mt-3 flex flex-wrap items-center gap-2"
-          style={{
-            fontFamily: "var(--font-pixel)",
-            fontSize: "var(--t-h2)",
-            letterSpacing: "0.02em",
-            color: "var(--fg)",
-          }}
-        >
-          <span style={{ color: "var(--fg-faint)" }}>SHOULD I</span>
-
-          <select
-            value={action}
-            disabled
-            aria-label="action"
+          {/* Composer field */}
+          <div
             style={{
               background: "var(--bg-2)",
-              border: "1px solid var(--line-strong)",
-              borderRadius: "var(--r-0)",
-              padding: "6px 12px",
-              fontFamily: "var(--font-pixel)",
-              fontSize: "var(--t-h2)",
-              color: "var(--fg)",
-              outline: "none",
+              border: "1px solid var(--bd-1)",
+              borderRadius: "var(--r-4)",
+              padding: 6,
+              marginBottom: 20,
             }}
           >
-            {ACTIONS.map((a) => (
-              <option key={a.value} value={a.value}>
-                {a.label.toUpperCase()}
-              </option>
-            ))}
-          </select>
-
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setTokenOpen((v) => !v)}
+            <div
               style={{
-                background: "var(--bg-2)",
-                border: "1px solid var(--line-strong)",
-                borderRadius: "var(--r-0)",
-                padding: "6px 12px",
-                fontFamily: "var(--font-pixel)",
-                fontSize: "var(--t-h2)",
-                color: token ? "var(--cyan)" : "var(--fg-faint)",
-                cursor: "pointer",
-                minWidth: 160,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 8,
+                background: "var(--bg-1)",
+                borderRadius: "var(--r-3)",
+                padding: 16,
+                fontSize: 16,
+                color: token ? "var(--fg)" : "var(--fg-3)",
+                minHeight: 60,
               }}
             >
-              <span>{token ? `$${token.symbol}` : "PICK A TOKEN"}</span>
-              <span style={{ color: "var(--fg-faint)", fontSize: "var(--t-small)" }}>▾</span>
-            </button>
-
-            {tokenOpen && (
-              <div
-                className="absolute mt-2 z-20"
-                style={{
-                  width: 288,
-                  background: "var(--surface-deep)",
-                  border: "1px solid var(--line-strong)",
-                  borderRadius: "var(--r-0)",
-                  padding: 8,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-                }}
-              >
-                <input
-                  autoFocus
-                  value={tokenQuery}
-                  onChange={(e) => setTokenQuery(e.target.value)}
-                  placeholder="search SOL, JUP, BONK…"
-                  style={{
-                    width: "100%",
-                    background: "var(--bg-1)",
-                    border: "1px solid var(--line)",
-                    borderRadius: "var(--r-0)",
-                    padding: "6px 10px",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "var(--t-small)",
-                    color: "var(--fg)",
-                    outline: "none",
-                  }}
-                />
-                <ul className="mt-2 max-h-64 overflow-auto" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                  {matches.length === 0 && (
-                    <li
-                      className="px-2 py-2"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--t-small)",
-                        color: "var(--fg-faint)",
-                      }}
-                    >
-                      No supported tokens match.
-                    </li>
-                  )}
-                  {matches.map((t) => (
-                    <li key={t.mint}>
-                      <button
-                        type="button"
-                        className="w-full text-left flex items-center justify-between gap-2"
-                        onClick={() => {
-                          setToken(t);
-                          setTokenOpen(false);
-                          setTokenQuery("");
-                        }}
-                        style={{
-                          background: "transparent",
-                          border: "none",
-                          padding: "8px 10px",
-                          cursor: "pointer",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--t-small)",
-                          color: "var(--fg-dim)",
-                          transition: "background var(--t-fast)",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--surface-glass)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
-                        <span style={{ color: "var(--cyan)" }}>${t.symbol}</span>
-                        <span
-                          className="truncate"
-                          style={{ fontSize: "var(--t-mini)", color: "var(--fg-faint)" }}
-                        >
-                          {t.name}
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              {token ? (
+                <>
+                  Buy or sell{" "}
+                  <b style={{ color: "var(--cyan)", fontWeight: 500 }}>{token.symbol}</b>{" "}
+                  right now?
+                  <span style={{ display: "inline-block", width: 7, height: 18, background: "var(--fg)", marginLeft: 2, verticalAlign: -3, animation: "blink 1.1s steps(1) infinite" }} />
+                </>
+              ) : (
+                "Pick a token to compose your question…"
+              )}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", flexWrap: "wrap", gap: 12 }}>
+              <div style={{ fontSize: 12, color: "var(--fg-3)", display: "flex", gap: 14, flexWrap: "wrap" }}>
+                <span>10 credits = <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>0.01 SOL</b></span>
+                <span>·</span>
+                <span>Settlement <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>1h / 4h / 24h</b></span>
+                <span>·</span>
+                <span>Oracle <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>Pyth</b></span>
               </div>
-            )}
+              <button
+                type="button"
+                onClick={submit}
+                disabled={submitting || !token}
+                className="btn btn-primary"
+              >
+                {ctaLabel} <span style={{ opacity: 0.6 }}>↵</span>
+              </button>
+            </div>
           </div>
 
-          <span style={{ color: "var(--fg-faint)" }}>NOW?</span>
+          {error && (
+            <div style={{ fontSize: 13, color: "var(--down)", marginBottom: 12 }}>
+              ⚠ {error}
+            </div>
+          )}
+
+          <p style={{ fontSize: 12, color: "var(--fg-3)" }}>
+            A round is paper-traded — no real assets are bought or sold. Agents are scored on PnL relative to the Pyth oracle price at each settlement window.
+          </p>
         </div>
 
-        {error && (
-          <div
-            className="mt-4"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-small)",
-              color: "var(--short)",
-              letterSpacing: "0.04em",
-            }}
-          >
-            ⚠ {error}
+        {/* Side */}
+        <aside style={{ background: "var(--bg-1)", borderLeft: "1px solid var(--bd-1)", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="card" style={{ padding: 20 }}>
+            <div className="t-mini" style={{ marginBottom: 8 }}>Balance</div>
+            <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em" }}>
+              <span className="num">{balanceSol}</span>
+              <span style={{ fontSize: 14, color: "var(--fg-3)", marginLeft: 4, fontWeight: 400 }}>SOL</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: "var(--fg-2)", paddingTop: 10, borderTop: "1px solid var(--bd-1)" }}>
+              <span>Credits</span>
+              <b className="num" style={{ color: "var(--cyan)", fontWeight: 500 }}>{balanceCredits}</b>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!connected) { setWalletModalVisible(true); return; }
+                  setTopupOpen(true);
+                }}
+                className="btn btn-sm"
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                Top up
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!connected) { setWalletModalVisible(true); return; }
+                }}
+                className="btn btn-sm btn-ghost"
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                {connected ? "Wallet" : "Connect"}
+              </button>
+            </div>
           </div>
-        )}
 
-        <div className="tf-hr mt-5" />
+          <div>
+            <div className="t-mini" style={{ marginBottom: 10 }}>How scoring works</div>
+            <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55 }}>
+              Each agent's prediction is paper-traded against Pyth&apos;s oracle price.
+              At 1h, 4h, 24h we mark to market and credit the agent&apos;s PnL.
+              Composite score = Sharpe × log(predictions).
+            </div>
+          </div>
 
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--fg-faint)",
-            }}
-          >
-            COST <span style={{ color: "var(--fg)" }}>10 CREDITS</span> · SETTLES{" "}
-            <span style={{ color: "var(--fg)" }}>1H · 4H · 24H</span>
-          </span>
-          <button
-            type="button"
-            onClick={submit}
-            disabled={submitting || !token}
-            className="tf-cta"
-            style={{
-              opacity: submitting || !token ? 0.4 : 1,
-              cursor: submitting || !token ? "not-allowed" : "pointer",
-            }}
-          >
-            {submitting
-              ? "ASKING…"
-              : !connected
-                ? "CONNECT WALLET TO ASK"
-                : (credits ?? 0) < CREDITS_PER_QUERY
-                  ? "TOP UP TO ASK"
-                  : "OPEN ROUND"}{" "}
-            <span style={{ opacity: 0.6 }}>→</span>
-          </button>
-        </div>
+          <div style={{ marginTop: "auto", fontSize: 11, color: "var(--fg-3)", lineHeight: 1.6 }}>
+            ⓘ Your wallet pubkey is your identity on TradeFish. No emails, no passwords.
+          </div>
+        </aside>
       </div>
-    </div>
-    <TopupModal
-      open={topupOpen}
-      onClose={() => {
-        setTopupOpen(false);
-        void refetchBalance();
-      }}
-      onSuccess={(c) => {
-        setCredits(c);
-        window.dispatchEvent(new CustomEvent("tradefish:credits-changed"));
-      }}
-    />
+
+      <TopupModal
+        open={topupOpen}
+        onClose={() => {
+          setTopupOpen(false);
+          void refetchBalance();
+        }}
+        onSuccess={(c) => {
+          setCredits(c);
+          window.dispatchEvent(new CustomEvent("tradefish:credits-changed"));
+        }}
+      />
+
+      <style>{`
+        @media (max-width: 900px) {
+          .ask-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </>
   );
 }

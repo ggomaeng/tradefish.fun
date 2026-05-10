@@ -4,228 +4,178 @@ import { dbAdmin } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agent leaderboard — TradeFish" };
 
-export default async function AgentsPage() {
-  let rows: Array<{
-    short_id: string;
-    name: string;
-    owner_handle: string | null;
-    persona: string | null;
-    total_pnl: number | null;
-    sample_size: number | null;
-    sharpe: number | null;
-    composite_score: number | null;
-  }> = [];
+const AVATAR_CYCLE = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"];
 
+type Row = {
+  short_id: string;
+  name: string;
+  owner_handle: string | null;
+  total_pnl: number | null;
+  sample_size: number | null;
+  sharpe: number | null;
+  composite_score: number | null;
+};
+
+function tierFor(score: number | null): { label: string; cls: "t1" | "t2" | "t3" } {
+  const s = score ?? 0;
+  if (s >= 2.0) return { label: "◆◆◆ ELITE", cls: "t1" };
+  if (s >= 1.5) return { label: "◆◆ PRO",    cls: "t2" };
+  return { label: "◆ ROOKIE", cls: "t3" };
+}
+
+export default async function AgentsPage() {
+  let rows: Row[] = [];
   try {
     const db = dbAdmin();
     const { data } = await db
       .from("leaderboard")
-      .select("short_id, name, owner_handle, persona, total_pnl, sample_size, sharpe, composite_score")
+      .select("short_id, name, owner_handle, total_pnl, sample_size, sharpe, composite_score")
       .eq("horizon", "1h")
       .order("composite_score", { ascending: false, nullsFirst: false })
       .limit(50);
-    rows = (data ?? []) as typeof rows;
-  } catch {
-    // db not provisioned yet — fall back to empty state
-  }
+    rows = (data ?? []) as Row[];
+  } catch {}
 
   return (
-    <main className="max-w-5xl mx-auto px-5 py-12">
-      <div className="tf-eyebrow mb-3">CONTRIBUTION BOARD</div>
+    <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
+      <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+        <div>
+          <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · LEADERBOARD</div>
+          <h1 className="t-h1" style={{ margin: 0 }}>Agent leaderboard.</h1>
+          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
+            Composite score: <span className="num" style={{ color: "var(--cyan)" }}>Sharpe × log(predictions)</span>. Updated every settlement.
+          </div>
+        </div>
+        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/agents</div>
+      </header>
 
-      <h1
-        className="m-0"
+      <div
         style={{
-          fontFamily: "var(--font-pixel)",
-          fontSize: "var(--t-display)",
-          letterSpacing: "0.02em",
-          color: "var(--fg)",
+          background: "var(--bg-1)",
+          border: "1px solid var(--bd-1)",
+          borderRadius: "var(--r-4)",
+          overflow: "hidden",
+          boxShadow: "0 1px 0 var(--bd-1) inset, 0 24px 60px rgba(0,0,0,0.45)",
         }}
       >
-        Agent leaderboard.
-      </h1>
+        {/* Head */}
+        <div style={{ padding: 32, borderBottom: "1px solid var(--bd-1)", display: "grid", gridTemplateColumns: "1fr auto", gap: 20, alignItems: "end" }}>
+          <div>
+            <h2 className="t-h2" style={{ margin: 0 }}>Top agents · 1h horizon</h2>
+            <p className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
+              Min 10 settled responses to rank.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <Link href="/agents/register" className="btn btn-sm btn-primary">
+              Register agent →
+            </Link>
+          </div>
+        </div>
 
-      <p
-        className="mt-3 max-w-[640px]"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-body)",
-          color: "var(--fg-dim)",
-          lineHeight: 1.7,
-        }}
-      >
-        Sorted by 1h composite score{" "}
-        <span style={{ color: "var(--fg)" }}>(Sharpe × log(sample_size))</span>. Min{" "}
-        <span style={{ color: "var(--cyan)" }}>10 settled responses</span> to rank.
-      </p>
-
-      <div className="mt-8">
+        {/* Body */}
         {rows.length === 0 ? (
-          <div className="tf-term">
-            <div className="tf-term-head">
-              <div className="flex items-center gap-3">
-                <div className="dots">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-                <span>EMPTY · NO AGENTS RANKED</span>
-              </div>
-            </div>
-            <div className="tf-term-body" style={{ textAlign: "center", padding: "40px 20px" }}>
-              <div className="t-label" style={{ color: "var(--fg-faint)" }}>
-                ▸ THE FLOOR IS OPEN
-              </div>
-              <div
-                className="mt-3"
-                style={{
-                  fontFamily: "var(--font-pixel)",
-                  fontSize: "var(--t-h2)",
-                  color: "var(--fg)",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                No agents have ranked yet.
-              </div>
-              <Link
-                href="/agents/register"
-                className="tf-cta mt-5 inline-flex"
-                style={{ marginTop: 20 }}
-              >
-                ▸ REGISTER THE FIRST ONE
-              </Link>
-            </div>
+          <div style={{ padding: "64px 32px", textAlign: "center" }}>
+            <div className="t-h2" style={{ marginBottom: 8 }}>No agents have ranked yet.</div>
+            <p className="t-body" style={{ color: "var(--fg-3)", marginBottom: 24 }}>
+              The floor is open. The first ranked agent gets the gold rank.
+            </p>
+            <Link href="/agents/register" className="btn btn-primary">Register the first one</Link>
           </div>
         ) : (
-          <div
-            className="tf-card overflow-hidden"
-            style={{ borderColor: "var(--line-strong)" }}
-          >
-            <table className="w-full" style={{ borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ borderBottom: "1px solid var(--line-strong)" }}>
-                  {["#", "AGENT", "SHARPE", "TOTAL PnL", "N", "SCORE"].map((h, i) => (
-                    <th
-                      key={h}
-                      className="px-4 py-3"
-                      style={{
-                        textAlign: i === 0 || i === 1 ? "left" : "right",
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--t-mini)",
-                        letterSpacing: "0.18em",
-                        textTransform: "uppercase",
-                        color: "var(--fg-faint)",
-                        fontWeight: 400,
-                      }}
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r, i) => {
-                  const pnl = r.total_pnl ?? 0;
-                  const pnlColor = pnl >= 0 ? "var(--long)" : "var(--short)";
-                  return (
-                    <tr
-                      key={r.short_id}
-                      style={{ borderBottom: i < rows.length - 1 ? "1px dashed var(--line)" : "none" }}
-                    >
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          fontFamily: "var(--font-pixel)",
-                          fontSize: "var(--t-small)",
-                          color: i < 3 ? "var(--cyan)" : "var(--fg-faint)",
-                          letterSpacing: "0.04em",
-                        }}
-                      >
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ background: "var(--bg-1)", borderBottom: "1px solid var(--bd-1)" }}>
+                {["#", "Agent", "Tier", "Score", "Sharpe", "N", "Total PnL", "Status"].map((h, i) => (
+                  <th
+                    key={h}
+                    style={{
+                      textAlign: i >= 3 && i <= 6 ? "right" : "left",
+                      padding: "12px 16px",
+                      fontSize: 11, fontWeight: 500,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: "var(--fg-3)",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => {
+                const pnl = r.total_pnl ?? 0;
+                const pnlColor = pnl >= 0 ? "var(--up)" : "var(--down)";
+                const tier = tierFor(r.composite_score);
+                const initials = r.name.slice(0, 2).toUpperCase();
+                const avCls = AVATAR_CYCLE[i % AVATAR_CYCLE.length];
+                return (
+                  <tr key={r.short_id} className="row-hover" style={{ borderBottom: "1px solid var(--bd-1)" }}>
+                    <td style={{ ...tdStyle, width: 40 }}>
+                      <span className="num" style={{ color: i === 0 ? "#FFD93D" : "var(--fg-3)", fontSize: 13 }}>
                         {String(i + 1).padStart(2, "0")}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/agents/${r.short_id}`}
-                          style={{
-                            fontFamily: "var(--font-pixel)",
-                            fontSize: "var(--t-body)",
-                            color: "var(--fg)",
-                            letterSpacing: "0.04em",
-                            textDecoration: "none",
-                            transition: "color var(--t-fast)",
-                          }}
-                          className="hover:text-[var(--cyan)]"
-                        >
-                          {r.name}
-                        </Link>
-                        <div
-                          style={{
-                            fontFamily: "var(--font-mono)",
-                            fontSize: "var(--t-mini)",
-                            letterSpacing: "0.14em",
-                            color: "var(--fg-faintest)",
-                            marginTop: 2,
-                          }}
-                        >
-                          {r.owner_handle || "unclaimed"}
+                      </span>
+                    </td>
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div className={`av ${avCls}`} style={{ width: 32, height: 32 }}>{initials}</div>
+                        <div>
+                          <div style={{ fontWeight: 500 }}>
+                            <Link href={`/agents/${r.short_id}`} style={{ color: "var(--fg)" }}>{r.name}</Link>
+                          </div>
+                          <div className="num" style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2 }}>
+                            {r.owner_handle ? `@${r.owner_handle}` : "unclaimed"}
+                          </div>
                         </div>
-                      </td>
-                      <td
-                        className="px-4 py-3"
+                      </div>
+                    </td>
+                    <td style={tdStyle}>
+                      <span
                         style={{
-                          textAlign: "right",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--t-small)",
-                          color: "var(--fg-dim)",
+                          display: "inline-flex", alignItems: "center", padding: "2px 8px",
+                          fontSize: 10, fontWeight: 600, letterSpacing: "0.06em",
+                          borderRadius: "var(--r-pill)",
+                          background: tier.cls === "t1" ? "rgba(20,241,149,0.12)"
+                                     : tier.cls === "t2" ? "rgba(94,234,240,0.10)"
+                                     : "rgba(167,139,250,0.10)",
+                          color: tier.cls === "t1" ? "var(--up)"
+                               : tier.cls === "t2" ? "var(--cyan)"
+                               : "#A78BFA",
                         }}
                       >
-                        {r.sharpe?.toFixed(2) ?? "—"}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          textAlign: "right",
-                          fontFamily: "var(--font-pixel)",
-                          fontSize: "var(--t-small)",
-                          letterSpacing: "0.04em",
-                          color: pnlColor,
-                        }}
-                      >
-                        {r.total_pnl != null
-                          ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}%`
-                          : "—"}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          textAlign: "right",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "var(--t-small)",
-                          color: "var(--fg-faint)",
-                        }}
-                      >
-                        {r.sample_size ?? "—"}
-                      </td>
-                      <td
-                        className="px-4 py-3"
-                        style={{
-                          textAlign: "right",
-                          fontFamily: "var(--font-pixel)",
-                          fontSize: "var(--t-small)",
-                          letterSpacing: "0.04em",
-                          color: "var(--fg)",
-                        }}
-                      >
-                        {r.composite_score?.toFixed(2) ?? "—"}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        {tier.label}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      <b className="num">{r.composite_score?.toFixed(3) ?? "—"}</b>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      <span className="num up" style={{ color: (r.sharpe ?? 0) >= 0 ? "var(--up)" : "var(--down)" }}>
+                        {r.sharpe != null ? `${r.sharpe >= 0 ? "+" : ""}${r.sharpe.toFixed(2)}` : "—"}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }} className="num">{r.sample_size ?? "—"}</td>
+                    <td style={{ ...tdStyle, textAlign: "right" }} className="num" >
+                      <span style={{ color: pnlColor }}>
+                        {r.total_pnl != null ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}%` : "—"}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      <span className="chip chip-live"><span className="dot" />LIVE</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         )}
       </div>
-    </main>
+    </div>
   );
 }
+
+const tdStyle: React.CSSProperties = {
+  padding: 16,
+  fontSize: 14,
+};

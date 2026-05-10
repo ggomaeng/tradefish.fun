@@ -14,83 +14,81 @@ type Props = {
 };
 
 const DIR_BORDER: Record<Props["agent"]["last"], string> = {
-  buy: "var(--line-mint)",
-  sell: "var(--line-magenta)",
-  hold: "rgba(200,204,220,0.35)",
+  buy: "var(--up-bd)",
+  sell: "var(--down-bd)",
+  hold: "var(--bd-2)",
+};
+const DIR_BG: Record<Props["agent"]["last"], string> = {
+  buy: "var(--up-bg)",
+  sell: "var(--down-bg)",
+  hold: "var(--bg-2)",
+};
+const DIR_LABEL: Record<Props["agent"]["last"], string> = {
+  buy: "▲ LONG",
+  sell: "▼ SHORT",
+  hold: "· HOLD",
 };
 const DIR_COLOR: Record<Props["agent"]["last"], string> = {
-  buy: "var(--long)",
-  sell: "var(--short)",
+  buy: "var(--up)",
+  sell: "var(--down)",
   hold: "var(--hold)",
 };
 
 export function AgentNode({ agent }: Props) {
-  const tone = DIR_COLOR[agent.last];
   const border = DIR_BORDER[agent.last];
+  const bg = DIR_BG[agent.last];
   return (
     <Link
       href={`/agents/${agent.short_id ?? agent.id}`}
-      className="block w-[150px]"
       style={{
-        background: "rgba(7,7,12,0.8)",
+        display: "block",
+        width: 150,
+        background: "rgba(15,15,17,0.85)",
         border: `1px solid ${border}`,
-        borderRadius: "var(--r-0)",
+        borderRadius: "var(--r-3)",
         padding: "10px 12px",
-        backdropFilter: "blur(4px)",
+        backdropFilter: "blur(6px)",
         textDecoration: "none",
-        transition: "border-color var(--t-fast), box-shadow var(--t-fast)",
-        boxShadow: `0 0 16px rgba(0,0,0,0.4)`,
+        transition: "border-color 120ms, transform 120ms",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
       }}
     >
       <div
-        className="truncate"
         style={{
-          fontFamily: "var(--font-pixel)",
-          fontSize: "var(--t-small)",
-          letterSpacing: "0.06em",
+          fontSize: 13,
+          fontWeight: 500,
           color: "var(--fg)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
         }}
       >
         {agent.name}
       </div>
-      <div className="flex items-center justify-between mt-1.5">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-micro)",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            padding: "1px 6px",
-            border: `1px solid ${border}`,
-            color: tone,
+            fontSize: 10,
+            padding: "2px 6px",
+            background: bg,
+            borderRadius: "var(--r-1)",
+            color: DIR_COLOR[agent.last],
           }}
         >
-          {agent.last}
+          {DIR_LABEL[agent.last]}
         </span>
         <span
           title="rolling PnL %"
-          style={{
-            fontFamily: "var(--font-pixel)",
-            fontSize: "var(--t-small)",
-            letterSpacing: "0.04em",
-            color: agent.pnl >= 0 ? "var(--long)" : "var(--short)",
-          }}
+          className="num"
+          style={{ fontSize: 12, color: agent.pnl >= 0 ? "var(--up)" : "var(--down)" }}
         >
           {agent.pnl >= 0 ? "+" : ""}
           {agent.pnl.toFixed(2)}%
         </span>
       </div>
-      <div
-        className="mt-1"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-micro)",
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: "var(--fg-faintest)",
-        }}
-      >
-        SHARPE <span style={{ color: "var(--fg-faint)" }}>{agent.sharpe.toFixed(2)}</span>
+      <div style={{ marginTop: 4, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}>
+        Sharpe <span style={{ color: "var(--fg-2)" }}>{agent.sharpe.toFixed(2)}</span>
       </div>
     </Link>
   );

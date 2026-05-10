@@ -13,37 +13,47 @@ type Response = {
   agents: { short_id: string; name: string; owner_handle: string | null };
 };
 
-const DIR_LABEL = { buy: "BUY", sell: "SELL", hold: "HOLD" } as const;
-const DIR_COLOR = { buy: "var(--long)", sell: "var(--short)", hold: "var(--hold)" } as const;
-const DIR_BORDER = {
-  buy: "var(--line-mint)",
-  sell: "var(--line-magenta)",
-  hold: "rgba(200,204,220,0.35)",
-} as const;
+const DIR_LABEL = { buy: "▲ LONG", sell: "▼ SHORT", hold: "· HOLD" } as const;
+const DIR_COLOR = { buy: "var(--up)", sell: "var(--down)", hold: "var(--hold)" } as const;
+const DIR_BG    = { buy: "var(--up-bg)", sell: "var(--down-bg)", hold: "var(--hold-bg)" } as const;
+
+function fmtCountdown(deadline: string): string {
+  const ms = new Date(deadline).getTime() - Date.now();
+  if (ms <= 0) return "00:00";
+  const total = Math.floor(ms / 1000);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  return `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+}
 
 export default async function RoundPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  let round: any = null;
+  type RoundRow = {
+    id: string;
+    short_id: string;
+    asked_at: string;
+    deadline_at: string;
+    pyth_price_at_ask: number;
+    token_mint: string;
+    supported_tokens: { symbol: string; name: string };
+  };
+  let round: RoundRow | null = null;
   let responses: Response[] = [];
   try {
     const db = dbAdmin();
     const { data: q } = await db
       .from("queries")
-      .select(`
-        id, short_id, asked_at, deadline_at, pyth_price_at_ask, token_mint,
-        supported_tokens!inner(symbol, name)
-      `)
+      .select(`id, short_id, asked_at, deadline_at, pyth_price_at_ask, token_mint, supported_tokens!inner(symbol, name)`)
       .eq("short_id", id)
       .maybeSingle();
-    round = q;
+    round = (q as unknown as RoundRow) ?? null;
     if (round) {
       const { data: r } = await db
         .from("responses")
-        .select(`
-          id, answer, confidence, reasoning, responded_at, pyth_price_at_response,
-          agents!inner(short_id, name, owner_handle)
-        `)
+        .select(`id, answer, confidence, reasoning, responded_at, pyth_price_at_response, agents!inner(short_id, name, owner_handle)`)
         .eq("query_id", round.id)
         .order("responded_at", { ascending: true });
       responses = (r ?? []) as unknown as Response[];
@@ -52,37 +62,18 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
 
   if (!round) {
     return (
-      <main className="max-w-3xl mx-auto px-5 py-12">
-        <div className="tf-term">
-          <div className="tf-term-head">
-            <div className="flex items-center gap-3">
-              <div className="dots">
-                <span />
-                <span />
-                <span />
-              </div>
-              <span>404 · ROUND NOT FOUND</span>
-            </div>
-          </div>
-          <div className="tf-term-body" style={{ padding: "32px 20px", textAlign: "center" }}>
-            <div className="t-label" style={{ color: "var(--fg-faint)" }}>
-              ▸ NO ROUND WITH ID "{id}"
-            </div>
-            <Link
-              href="/arena"
-              className="tf-cta-ghost mt-5 inline-flex"
-              style={{ marginTop: 20 }}
-            >
-              ← BACK TO ARENA
-            </Link>
-          </div>
+      <div className="page" style={{ paddingTop: 80, paddingBottom: 120, textAlign: "center" }}>
+        <h1 className="t-h1">Round not found</h1>
+        <p className="t-body" style={{ marginTop: 12 }}>No round with id <code style={{ background: "var(--bg-2)", padding: "2px 6px", borderRadius: 4 }}>{id}</code>.</p>
+        <div style={{ marginTop: 24 }}>
+          <Link href="/arena" className="btn">← Back to arena</Link>
         </div>
-      </main>
+      </div>
     );
   }
 
   const isOpen = new Date(round.deadline_at) > new Date();
-  const symbol = (round as any).supported_tokens.symbol as string;
+  const symbol = round.supported_tokens.symbol;
   const total = responses.length;
 
   const counts = {
@@ -90,316 +81,235 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
     sell: responses.filter((r) => r.answer === "sell").length,
     hold: responses.filter((r) => r.answer === "hold").length,
   };
-  const pct = (n: number) => (total === 0 ? 0 : Math.round((n / total) * 100));
+  const pct = (n: number) => (total === 0 ? 0 : (n / total) * 100);
   const longPct = pct(counts.buy);
   const holdPct = pct(counts.hold);
   const shortPct = pct(counts.sell);
 
-  const closeTime = new Date(round.deadline_at).toLocaleTimeString();
+  const minutesAgo = Math.max(1, Math.floor((Date.now() - new Date(round.asked_at).getTime()) / 60000));
 
   return (
-    <main className="max-w-4xl mx-auto px-5 py-12">
-      {/* QHEAD */}
-      <div
-        className="px-5 py-4"
-        style={{
-          borderBottom: "1px solid var(--line)",
-        }}
-      >
-        <div
-          className="flex flex-wrap items-center gap-2"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-mini)",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "var(--fg-faint)",
-          }}
-        >
-          <span style={{ color: "var(--cyan)" }}>▸ R-{round.short_id}</span>
-          <span style={{ color: "var(--fg-faintest)" }}>·</span>
-          <span
-            className="tf-chip"
-            style={{
-              padding: "1px 6px",
-              fontSize: "var(--t-micro)",
-              color: "var(--c-solana)",
-              borderColor: "rgba(156,92,232,0.40)",
-            }}
-          >
-            SOLANA
-          </span>
-          <span style={{ color: "var(--fg-faintest)" }}>·</span>
-          <span style={{ color: "var(--fg-faintest)", fontSize: "var(--t-micro)" }}>
-            {round.token_mint?.slice(0, 6)}…{round.token_mint?.slice(-4)}
-          </span>
-          <span style={{ color: "var(--fg-faintest)" }}>·</span>
-          <span>
-            ASKED {new Date(round.asked_at).toLocaleTimeString()}
-          </span>
-        </div>
-
-        <h1
-          className="m-0 mt-3"
-          style={{
-            fontFamily: "var(--font-pixel)",
-            fontSize: "var(--t-h1)",
-            letterSpacing: "0.02em",
-            color: "var(--fg)",
-            lineHeight: 1.25,
-          }}
-        >
-          Should I buy or sell <span style={{ color: "var(--cyan)" }}>${symbol}</span> right now?
-        </h1>
-
-        <div
-          className="mt-4 flex flex-wrap gap-5"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-mini)",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "var(--fg-faint)",
-          }}
-        >
-          <span>
-            ENTRY{" "}
-            <span style={{ color: "var(--fg)", marginLeft: 4 }}>
-              ${Number(round.pyth_price_at_ask).toFixed(6)}
-            </span>
-          </span>
-          <span>
-            ORACLE <span style={{ color: "var(--fg)", marginLeft: 4 }}>PYTH</span>
-          </span>
-          <span>
-            STATUS{" "}
-            {isOpen ? (
-              <span className="tf-live ml-1" style={{ color: "var(--cyan)" }}>
-                OPEN · CLOSES {closeTime}
-              </span>
-            ) : (
-              <span style={{ color: "var(--fg)", marginLeft: 4 }}>CLOSED · {closeTime}</span>
-            )}
-          </span>
-        </div>
-      </div>
-
-      {/* BAR-BLOCK · vote distribution */}
-      <div
-        className="px-5 py-5"
-        style={{
-          borderBottom: "1px solid var(--line)",
-          background:
-            "linear-gradient(180deg, rgba(76,216,232,0.025), transparent)",
-        }}
-      >
-        <div className="grid gap-3" style={{ gridTemplateColumns: "minmax(120px,140px) 1fr minmax(140px,180px)" }}>
-          <span
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--fg-faint)",
-            }}
-          >
-            ▸ RAW VOTE{" "}
-            <span style={{ color: "var(--fg-faintest)", marginLeft: 4 }}>
-              {total} {total === 1 ? "agent" : "agents"}
-            </span>
-          </span>
-
-          <div className="tf-track">
-            <div className="seg long" style={{ width: `${longPct}%` }} />
-            <div className="seg hold" style={{ width: `${holdPct}%` }} />
-            <div className="seg short" style={{ width: `${shortPct}%` }} />
+    <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
+      <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+        <div>
+          <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · ROUND</div>
+          <h1 className="t-h1" style={{ margin: 0 }}>Round detail.</h1>
+          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
+            Question header, live Pyth price, chronological agent timeline.
           </div>
-
-          <span
-            className="text-right"
-            style={{
-              fontFamily: "var(--font-pixel)",
-              fontSize: "var(--t-small)",
-              letterSpacing: "0.04em",
-              color: "var(--fg)",
-            }}
-          >
-            <span style={{ color: "var(--long)" }}>L {longPct}%</span>
-            <span style={{ color: "var(--fg-faintest)", margin: "0 4px" }}>·</span>
-            <span style={{ color: "var(--hold)" }}>H {holdPct}%</span>
-            <span style={{ color: "var(--fg-faintest)", margin: "0 4px" }}>·</span>
-            <span style={{ color: "var(--short)" }}>S {shortPct}%</span>
-          </span>
         </div>
-      </div>
+        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/round/{round.short_id}</div>
+      </header>
 
-      {/* TIMELINE · responses */}
-      <div className="px-2 py-6">
-        <div className="t-label mb-4 px-3" style={{ color: "var(--cyan)" }}>
-          ▸ RESPONSES{" "}
-          <span style={{ color: "var(--fg-faintest)", marginLeft: 8 }}>{responses.length}</span>
-        </div>
-
-        {responses.length === 0 ? (
-          <div className="tf-term mx-3">
-            <div className="tf-term-body" style={{ textAlign: "center", padding: "32px 20px" }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "var(--t-body)",
-                  color: "var(--fg-faint)",
-                }}
-              >
-                No agents have responded yet.
-              </div>
+      <div
+        style={{
+          background: "var(--bg-1)",
+          border: "1px solid var(--bd-1)",
+          borderRadius: "var(--r-4)",
+          overflow: "hidden",
+          boxShadow: "0 1px 0 var(--bd-1) inset, 0 24px 60px rgba(0,0,0,0.45)",
+        }}
+      >
+        {/* Round head */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, padding: "32px 32px 24px", borderBottom: "1px solid var(--bd-1)" }}>
+          <div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+              {isOpen ? (
+                <span className="chip chip-live"><span className="dot" />LIVE</span>
+              ) : (
+                <span className="chip">SETTLED</span>
+              )}
+              <span className="chip">Round #{round.short_id}</span>
+              <span className="chip">{symbol}/USD</span>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.2 }}>
+              Buy or sell <span className="t-grad">{symbol}</span> right now?
+            </div>
+            <div style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 10, display: "flex", gap: 14, flexWrap: "wrap" }}>
+              <span>opened {minutesAgo}m ago</span>
+              <span>·</span>
+              <span><span className="num">{total}</span> agent{total === 1 ? "" : "s"} responding</span>
+              <span>·</span>
+              <span>Pyth feed <span className="num" style={{ color: "var(--cyan)" }}>{symbol}/USD</span></span>
             </div>
           </div>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-            {responses.map((r, i) => {
-              const a = r.answer;
-              const isFirst = i === 0;
-              const isLast = i === responses.length - 1;
-              return (
-                <li
-                  key={r.id}
-                  className="relative px-12 py-4"
-                  style={{
-                    borderLeft: 0,
-                  }}
-                >
-                  {/* timeline rail */}
-                  <span
-                    aria-hidden
-                    className="absolute"
-                    style={{
-                      left: 32,
-                      top: isFirst ? 24 : 0,
-                      bottom: isLast ? "calc(100% - 24px)" : 0,
-                      width: 1,
-                      background: "var(--line)",
-                    }}
-                  />
-                  {/* marker */}
-                  <span
-                    aria-hidden
-                    className="absolute"
-                    style={{
-                      left: 27,
-                      top: 22,
-                      width: 11,
-                      height: 11,
-                      background: "var(--bg-0)",
-                      border: `1px solid ${DIR_COLOR[a]}`,
-                    }}
-                  />
+          <div style={{ textAlign: "right" }}>
+            <div className="t-mini">{isOpen ? "Settles in" : "Closed"}</div>
+            <div className="num" style={{ fontSize: 24, fontWeight: 500, marginTop: 4, color: isOpen ? "var(--up)" : "var(--fg)" }}>
+              {fmtCountdown(round.deadline_at)}
+            </div>
+            <div className="num" style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>
+              + 4h, 24h windows
+            </div>
+          </div>
+        </div>
 
-                  {/* header */}
-                  <div
-                    className="flex flex-wrap items-baseline gap-2"
-                    style={{ fontFamily: "var(--font-mono)", fontSize: "var(--t-small)" }}
-                  >
-                    <Link
-                      href={`/agents/${r.agents.short_id}`}
-                      style={{
-                        fontFamily: "var(--font-pixel)",
-                        fontSize: "var(--t-body)",
-                        letterSpacing: "0.04em",
-                        color: "var(--fg)",
-                        textDecoration: "none",
-                      }}
-                    >
-                      {r.agents.name}
-                    </Link>
-                    {r.agents.owner_handle && (
-                      <span
-                        style={{
-                          fontSize: "var(--t-micro)",
-                          letterSpacing: "0.16em",
-                          color: "var(--fg-faintest)",
-                          textTransform: "uppercase",
-                        }}
-                      >
-                        {r.agents.owner_handle}
-                      </span>
-                    )}
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--t-mini)",
-                        letterSpacing: "0.18em",
-                        textTransform: "uppercase",
-                        color: DIR_COLOR[a],
-                        marginLeft: 4,
-                      }}
-                    >
-                      ▸ {DIR_LABEL[a]} @ ${Number(r.pyth_price_at_response).toFixed(6)}
-                    </span>
-                    <span
-                      className="ml-auto"
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "var(--t-mini)",
-                        letterSpacing: "0.04em",
-                        color: "var(--fg-faintest)",
-                      }}
-                    >
-                      {new Date(r.responded_at).toLocaleTimeString()}
-                    </span>
-                  </div>
+        {/* Round bar — 4 cells */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", background: "var(--bg-1)", borderBottom: "1px solid var(--bd-1)" }}>
+          <Cell label={`${symbol} / USD · open`} value={`$${Number(round.pyth_price_at_ask).toFixed(6)}`} />
+          <Cell label="Now (Pyth)" value="—" hint="server-side render" />
+          <Cell label="Tally" value={
+            <>
+              <span className="up">▲ {counts.buy}</span>{" "}
+              <span style={{ color: "var(--fg-4)", margin: "0 6px" }}>·</span>{" "}
+              <span className="down">▼ {counts.sell}</span>{" "}
+              <span style={{ color: "var(--fg-4)", margin: "0 6px" }}>·</span>{" "}
+              <span className="hold">· {counts.hold}</span>
+            </>
+          } />
+          <Cell label="Responses" value={String(total)} last />
+        </div>
 
-                  {/* prediction card */}
+        {/* Body — timeline + rail */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", minHeight: 600 }} className="round-body">
+          <div style={{ padding: "24px 32px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+              <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>Agent timeline</h3>
+              <div style={{ display: "flex", gap: 6, fontSize: 12 }}>
+                <button className="btn btn-sm">All <span style={{ color: "var(--fg-3)" }}>{total}</span></button>
+                <button className="btn btn-sm btn-ghost">▲ <span style={{ color: "var(--fg-3)" }}>{counts.buy}</span></button>
+                <button className="btn btn-sm btn-ghost">▼ <span style={{ color: "var(--fg-3)" }}>{counts.sell}</span></button>
+                <button className="btn btn-sm btn-ghost">· <span style={{ color: "var(--fg-3)" }}>{counts.hold}</span></button>
+              </div>
+            </div>
+
+            {responses.length === 0 ? (
+              <div style={{ padding: "48px 16px", textAlign: "center", fontSize: 14, color: "var(--fg-3)" }}>
+                No agents have responded yet.
+              </div>
+            ) : (
+              responses.map((r) => {
+                const a = r.answer;
+                const offsetMs = new Date(r.responded_at).getTime() - new Date(round!.asked_at).getTime();
+                const offset = formatOffset(offsetMs);
+                const initials = r.agents.name.slice(0, 2).toUpperCase();
+                return (
                   <div
-                    className="mt-2 px-3 py-3"
+                    key={r.id}
                     style={{
-                      border: "1px solid var(--line)",
-                      borderLeft: `2px solid ${DIR_COLOR[a]}`,
-                      background: "rgba(20,20,42,0.4)",
+                      display: "grid",
+                      gridTemplateColumns: "80px 32px 1fr",
+                      gap: 16,
+                      padding: "16px 0",
+                      borderBottom: "1px solid var(--bd-1)",
                     }}
                   >
-                    <div className="flex flex-wrap gap-2">
-                      <span
-                        className="tf-chip"
+                    <div className="num" style={{ fontSize: 11, color: "var(--fg-3)", paddingTop: 6 }}>{offset}</div>
+                    <div className="av" style={{ width: 32, height: 32 }}>{initials}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 500 }}>
+                        <Link href={`/agents/${r.agents.short_id}`} style={{ color: "var(--fg)" }}>
+                          {r.agents.name}
+                        </Link>
+                        {r.agents.owner_handle && (
+                          <span style={{ color: "var(--fg-3)", fontSize: 11, marginLeft: 6 }}>
+                            @{r.agents.owner_handle}
+                          </span>
+                        )}
+                      </div>
+                      <div
                         style={{
-                          color: DIR_COLOR[a],
-                          borderColor: DIR_BORDER[a],
-                        }}
-                      >
-                        {DIR_LABEL[a]}
-                      </span>
-                      <span
-                        className="tf-chip"
-                        style={{
-                          color: "var(--cyan)",
-                          borderColor: "var(--line-cyan)",
-                        }}
-                      >
-                        <span style={{ color: "var(--fg-faintest)", fontSize: "var(--t-micro)" }}>
-                          CONF
-                        </span>
-                        {(Number(r.confidence) * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    {r.reasoning && (
-                      <p
-                        className="mt-2 m-0"
-                        style={{
+                          display: "inline-flex",
+                          gap: 8,
+                          alignItems: "center",
+                          marginTop: 6,
+                          padding: "4px 10px",
+                          borderRadius: "var(--r-2)",
                           fontFamily: "var(--font-mono)",
-                          fontSize: "var(--t-small)",
-                          lineHeight: 1.55,
-                          color: "var(--fg-dim)",
+                          fontSize: 12,
+                          color: DIR_COLOR[a],
+                          background: DIR_BG[a],
                         }}
                       >
-                        {r.reasoning}
-                      </p>
-                    )}
+                        <span>{DIR_LABEL[a]}</span>
+                        <span>·</span>
+                        <span>{Number(r.confidence).toFixed(2)} conf</span>
+                        <span>·</span>
+                        <span>@ ${Number(r.pyth_price_at_response).toFixed(6)}</span>
+                      </div>
+                      {r.reasoning && (
+                        <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 8, lineHeight: 1.5, maxWidth: 580 }}>
+                          {r.reasoning}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                );
+              })
+            )}
+          </div>
+
+          {/* Rail */}
+          <aside style={{ background: "var(--bg-1)", borderLeft: "1px solid var(--bd-1)", padding: "24px", display: "flex", flexDirection: "column", gap: 24 }}>
+            <TallyPane
+              title="Live tally"
+              rows={[
+                { label: "▲ LONG",  bar: longPct,  count: counts.buy,  color: "var(--up)",   chipClass: "up" },
+                { label: "▼ SHORT", bar: shortPct, count: counts.sell, color: "var(--down)", chipClass: "down" },
+                { label: "· HOLD",  bar: holdPct,  count: counts.hold, color: "var(--hold)", chipClass: "hold" },
+              ]}
+            />
+            <div>
+              <h4 className="t-mini" style={{ marginBottom: 12 }}>Settlement windows</h4>
+              <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg-2)", lineHeight: 1.9 }}>
+                <Row left="1h" right={isOpen ? fmtCountdown(round.deadline_at) : "settled"} accent={isOpen} />
+                <Row left="4h" right="—" />
+                <Row left="24h" right="—" />
+              </div>
+            </div>
+          </aside>
+        </div>
       </div>
-    </main>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .round-body { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+    </div>
   );
+}
+
+function Cell({ label, value, hint, last }: { label: string; value: React.ReactNode; hint?: string; last?: boolean }) {
+  return (
+    <div style={{ padding: "18px 24px", borderRight: last ? "none" : "1px solid var(--bd-1)" }}>
+      <div className="t-mini" style={{ marginBottom: 6 }}>{label}</div>
+      <div className="num" style={{ fontSize: 18, fontWeight: 500 }}>{value}</div>
+      {hint && <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>{hint}</div>}
+    </div>
+  );
+}
+
+function TallyPane({ title, rows }: { title: string; rows: { label: string; bar: number; count: number; color: string; chipClass: string }[] }) {
+  return (
+    <div>
+      <h4 className="t-mini" style={{ marginBottom: 12 }}>{title}</h4>
+      {rows.map((r) => (
+        <div key={r.label} style={{ display: "grid", gridTemplateColumns: "72px 1fr 40px", gap: 8, alignItems: "center", padding: "8px 0" }}>
+          <span className="num" style={{ fontSize: 12, color: r.color }}>{r.label}</span>
+          <div style={{ height: 6, borderRadius: 3, background: "var(--bg-3)", overflow: "hidden" }}>
+            <div style={{ width: `${r.bar}%`, height: "100%", background: r.color }} />
+          </div>
+          <span className="num" style={{ fontSize: 12, textAlign: "right", color: "var(--fg-2)" }}>{r.count}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Row({ left, right, accent }: { left: string; right: string; accent?: boolean }) {
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <span>{left}</span>
+      <span style={{ color: accent ? "var(--up)" : "var(--fg-3)" }}>{right}</span>
+    </div>
+  );
+}
+
+function formatOffset(ms: number): string {
+  const t = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(t / 3600);
+  const m = Math.floor((t % 3600) / 60);
+  const s = t % 60;
+  return `+${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
 }

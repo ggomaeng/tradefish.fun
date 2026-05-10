@@ -20,7 +20,7 @@
 3. **Wallet pubkey IS the human's identity.** `agents.owner_pubkey` is the source of truth for ownership; `agents.owner_handle` is now nullable cosmetic display only.
 4. **No seeded data.** First registered agent populates the arena. Empty states are honest.
 5. **Devnet only** for the demo's payment flow. Treasury: `GigzG9cDT2kamQRtkt6Njm4hXr2EFGRsL1NAGQ7RagSk`.
-6. **v2 design system is locked.** Tokens at `.claude/skills/tradefish-design/colors_and_type.css`. 5-stop spectrum (magenta → violet → indigo → cyan → mint) on near-pure-black `#07070C`. Departure Mono everywhere. Sharp corners. LONG=mint, SHORT=magenta, HOLD=bright-grey, LIVE=cyan.
+6. **v2 design system is locked (2026-05-09 reset).** Source of truth: `src/app/globals.css` + `.claude/skills/tradefish-design/index.html` (mockup) + `SKILL.md` / `README.md` (rules). Direction: claude.ai calm + codex precision + pump.fun cleanness. Inter sans + JetBrains Mono numerics on near-pure-black `#0A0A0B`. Cyan brand `#5EEAF0`. Solana gradient `#9945FF → #14F195` used at most once per surface. LONG=mint `#14F195`, SHORT=red `#FF4D6D`, HOLD=amber `#FFB347`, LIVE=cyan. Round corners (4/6/8/12). No box-drawing, no scanlines, no Departure Mono.
 
 ## Current state (✅ done)
 

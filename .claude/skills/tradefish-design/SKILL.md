@@ -1,58 +1,62 @@
 ---
 name: tradefish-design
-description: Generate well-branded interfaces for TradeFish — a Solana-native open prediction arena where AI trading agents stake answers as paper trades, build PnL-based reputation, and contribute to a shared TradeWiki memory layer. Use when designing landing pages, live market / swarm-decision screens, swarm boards, TradeWiki entries, agent builder CTAs, or any TradeFish surface.
+description: Generate well-branded interfaces for TradeFish — a Solana-native arena where AI trading agents stake answers as paper trades, build PnL-based reputation, and the market keeps score. Use when designing landing pages, live arena / round screens, leaderboard, agent dashboards, claim flows, or any TradeFish surface.
 ---
 
-# TradeFish — Design System v2 skill
+# TradeFish — Design System v2 (post-zip)
+
+> **2026-05-09** — System replaced. Old "cool-black ocean / Departure Mono / pixel-terminal" lock superseded by the v2 zip handoff. Reference HTML: `tradefish-platform/.claude/skills/tradefish-design/index.html` (mirrors `/tmp/tradefish-v2-extract/`).
 
 ## Brand essence
-Pixel-glitch candlestick fish in cyan→magenta gradient on near-pure-black. Terminal-aesthetic, Departure Mono everywhere, sharp pixel corners. **Cooperative swarm intelligence, not winner-take-all.** Solana-native. Paper trades for the MVP.
+**claude.ai calm + codex precision + pump.fun cleanness.** Dark default. Cyan brand (derived from the TradeFish logo). Solana gradient as a one-shot accent — never solid. No terminal chrome, no scanlines, no box-drawing. Inter sans + JetBrains Mono numerics.
 
 ## Voice
-- Lowercase product name: `tradeFish`
-- Imperative, technical, sparse. "Plug your agent into the swarm." "Every answer becomes a trade."
-- Avoid: "AI memory" (vague), "proof of alpha", "best trading bot", "guaranteed alpha", winner-take-all leaderboard framing, generic SaaS landing copy
+- "TradeFish" — title-case product name (not lowercase, not all-caps).
+- "An arena where AI agents trade and the market keeps score."
+- "The platform is a contract." "Wallet pubkey is identity."
+- Avoid: terminal jargon, "pixel-glitch", "swarm intelligence" (use "arena" or "agents"), all-caps body copy.
 
 ## Visual rules
-- Background: `--bg-0` (`#07070C`). Cards: `--bg-2` (`#14142A`). Always.
-- One full `--grad-spectrum` moment per surface (wordmark, hero number, single CTA). Never on body copy.
-- Direction colors: LONG = mint (`--spec-5`), SHORT = magenta (`--spec-1`), HOLD = bright grey (`--hold` `#C8CCDC`). LIVE / primary = cyan (`--spec-4`). Violet (`--spec-2`) is for reasoning / Solana chain accents, not HOLD.
-- No drop shadows. Use `--glow-cyan / --glow-magenta / --glow-mint` (+ halo / bloom).
-- All-caps labels with 0.18em tracking. Tabular numerics. Box-drawing chrome (`┌─`, `━`, `═`).
-- Sharp corners (`--r-0`). Soft radius (`--r-icon`) reserved for the app-icon lockup container only.
+- **Backgrounds:** dark scale `#0A0A0B → #25252C` (`--bg-0..bg-4`). Cards on `--bg-2`. Light parity: opt-in `[data-theme="light"]`.
+- **Brand cyan** `#5EEAF0` is the only solid brand color. Use for active links, the primary CTA hover state, `LIVE` chip, verified marks.
+- **Solana gradient** `linear-gradient(135deg, #9945FF 0%, #14F195 100%)` appears at most **once per page** — typically the live badge in the hero or a single key word in a headline (`<span class="t-grad">`). Never on body copy. Never as a chip background.
+- **Trading semantic**: LONG = `#14F195` (mint/up), SHORT = `#FF4D6D` (red/down), HOLD = `#FFB347` (amber). All have soft `*-bg` translucent variants for chip backgrounds.
+- **Radii**: 4 / 6 / 8 / 12 / 999px. Buttons use `--r-2` (6px), cards use `--r-3` (8px), modals + panels use `--r-4` (12px). Sharp corners are out.
+- **Borders**: subtle `rgba(255,255,255,0.06 / 0.10 / 0.18)` (`--bd-1..bd-3`). Never use brand color for default borders.
+- **Shadows**: low-key, dark — `0 24px 60px rgba(0,0,0,0.45)` for raised panels. No glow halos.
 
 ## Type
-Departure Mono only. Hero 64 / display 36 / h1 26 / h2 20 / body 14 / small 12 / mini 10 / micro 9.
+- Family: **Inter** (sans, body) + **JetBrains Mono** (numerics, code, pubkeys). Loaded via `next/font/google` in root `layout.tsx`.
+- Scale: `display 56 / h1 32 / h2 22 / h3 16 / body 14 / small 13 / mini 11`.
+- Display + h1 use tight tracking (`-0.025 to -0.04em`). Body line-height 1.5.
+- `.num` class for any tabular numeric — switches to JetBrains Mono with `tabular-nums`.
 
 ## Iconography
-Unicode + box-drawing only. ◆ ◇ ▸ ● ◉ ↺ ┌─ ━ ═. No icon font, no emoji.
+Use real SF-Symbols-equivalent geometric glyphs sparingly: `▲ ▼ · ◆ ◈ ◉` for trade direction / claim affordances. Avoid box-drawing (`┌─ ━ ═`). No emoji.
 
-## Files to load
-- `colors_and_type.css` first (tokens)
-- `styles.css` second (component classes)
-- `fonts/DepartureMono-Regular.woff2` is bundled via `@font-face`
-- `assets/tradefish-logo-v2.png` is the primary mark
+## Component primitives
+- `.btn` / `.btn-primary` / `.btn-ghost` / `.btn-sol` (gradient — rare) / `.btn-sm` / `.btn-lg`
+- `.chip` / `.chip-up` / `.chip-down` / `.chip-hold` / `.chip-cyan` / `.chip-live` (with `<span class="dot" />` pulse)
+- `.card` / `.card-hover`
+- `.wallet` (pubkey chip with avatar gradient)
+- `.token` + `.token-{bonk,sol,jup,wif,pyth,jto}` (28px circle markers)
+- `.av` + `.av-{2..8}` (avatar gradients)
+- `.appnav` (sticky top nav with logo + nav + WalletWidget + CTA)
+- `.codeblock` (syntax-tinted code)
 
-## Solana ecosystem chips
-Map each tool to a spectrum stop, not its vendor color:
-- Solana / SOL → `--c-solana` (violet)
-- Jupiter → `--c-jupiter` (magenta)
-- Helius → `--c-helius` (indigo)
-- DexScreener → `--c-dexscreener` (cyan)
-- RugCheck → `--c-rugcheck` (magenta)
-- Phantom → `--c-phantom` (violet)
-- Solana Agent Kit → `--c-agentkit` (mint)
+## Surfaces
+1. **Waitlist landing** (root `/`) — hero with logo flourish (right-side), Solana-gradient live badge, headline with one `t-grad` word, lede, WaitlistForm, 4-stat strip, 3 persona cards.
+2. **/arena** — left canvas (orbiting agent nodes on radial-gradient backdrop with overlay chips/CTA) + right activity feed sidebar.
+3. **/ask** — left main (token grid + composer with typed question + Open round CTA) + right rail (balance card + scoring explainer).
+4. **/round/[id]** — round head (chips + question + countdown) + 4-cell price bar + 2-col body (timeline + tally rail).
+5. **/agents** — leaderboard table with rank / agent / tier / score / sharpe / N / PnL / status.
+6. **/agents/[id]** — agent hero (80px tile + name + verified chip) + 4-stat strip + body (3 perf cards + persona + OwnerControls) + onboarding rail.
+7. **/agents/register** — docs-shell (left nav + main with 3 numbered steps + codeblocks).
+8. **/claim/[token]** — 2-col: orbital wallet stage (left) + claim pane (stepper + message preview + cards + CTAs).
+9. **/docs** — light-mode docs-shell mirror of `/skill.md`.
+10. **TopupModal** — 3-amount picker (0.01 / 0.05 / 0.1 SOL) + breakdown rows + Sign & send CTA.
 
-## Surfaces (when asked to design product screens)
-1. **Landing** — hero with logo + spectrum wordmark, the swarm thesis, Solana ecosystem chips, agent-builder CTA
-2. **Live Market / Swarm Decision** (priority) — single live question, agent prediction cards, weighted UP/DOWN bar, "Paper trade opened"
-3. **Swarm Board** — contribution board (NOT leaderboard): weekly PnL, reputation, swarm weight, reward share, tools used. USDC pool card with "Simulated for demo" disclaimer.
-4. **TradeWiki** (priority) — settled-prediction knowledge entries: market, signal, tools, reasoning, outcome, PnL, lesson. "The trade is over, but the swarm got smarter."
-5. **Agent Builder CTA** — solana.new / Agent Kit waitlist form
-
-Demo asset: SOL/USDC main pair.
-
-Microcopy anchors:
-- "Every answer becomes a paper trade."
-- "You don't buy influence. You earn it through useful signal."
-- "Shared market memory for trading agents."
+## Source of truth
+- Tokens + components live in `src/app/globals.css` (this layer is canonical — the `colors_and_type.css` and `styles.css` in this skill folder are reference snapshots, not consumed at build).
+- Hero/marketing reference: `index.html` (extracted from the v2 zip handoff).
+- Logo: `public/logo.png`.

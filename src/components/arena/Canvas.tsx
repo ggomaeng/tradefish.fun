@@ -2,74 +2,46 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { AgentNode } from "./AgentNode";
 import { useArenaSwarm, type ArenaAgent } from "@/lib/realtime/arena";
 
 /**
- * MiroFish-style spatial canvas. Live data via Supabase Realtime —
- * subscribes to INSERTs on `responses` + `settlements` and re-merges
- * agent state in place. See `src/lib/realtime/arena.ts`.
+ * Live spatial canvas for /arena. Subscribes to Supabase Realtime via
+ * useArenaSwarm() and re-merges agent state in place. v2 visual: clean
+ * radial-gradient backdrop, orbiting agent nodes, overlay chips/CTAs.
  */
 export function Canvas() {
-  const { agents, liveRoundId, liveQuestion, liveTokenSymbol, liveDeadlineAt, loading } =
-    useArenaSwarm();
+  const {
+    agents,
+    liveRoundId,
+    liveQuestion,
+    liveTokenSymbol,
+    liveDeadlineAt,
+    loading,
+  } = useArenaSwarm();
 
-  // Render up to 12 agents around the orbit.
   const orbit = useMemo(() => agents.slice(0, 12), [agents]);
   const radius = orbit.length > 6 ? 240 : 200;
-
   const deadlineLabel = useDeadlineCountdown(liveDeadlineAt);
 
-  const corner = `┌─ Q-LIVE · ${orbit.length} NODE${orbit.length === 1 ? "" : "S"}`;
-  const cornerRight = liveDeadlineAt
-    ? `PYTH · t-${deadlineLabel} ─┐`
-    : "PYTH · IDLE ─┐";
+  const longCount = agents.filter((a) => a.last === "buy").length;
+  const shortCount = agents.filter((a) => a.last === "sell").length;
+  const holdCount = agents.filter((a) => a.last === "hold").length;
+  const tallyTotal = Math.max(1, longCount + shortCount + holdCount);
 
   return (
     <div
-      className="tf-card relative overflow-hidden"
+      className="arena-canvas"
       style={{
-        height: 460,
+        position: "relative",
         background:
-          "radial-gradient(ellipse at center, rgba(76,216,232,0.04), rgba(7,7,12,0))",
+          "radial-gradient(ellipse at 30% 40%, rgba(153,69,255,0.12), transparent 60%), radial-gradient(ellipse at 70% 60%, rgba(20,241,149,0.10), transparent 60%), var(--bg-0)",
+        overflow: "hidden",
+        height: "100%",
+        minHeight: 540,
       }}
     >
-      {/* Box-drawing corners — terminal chrome */}
-      <div
-        className="absolute top-0 left-0 px-3 py-2 pointer-events-none"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-mini)",
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "var(--cyan)",
-        }}
-      >
-        {corner}
-      </div>
-      <div
-        className="absolute top-0 right-0 px-3 py-2 pointer-events-none"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-mini)",
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          color: "var(--fg-faintest)",
-        }}
-      >
-        {cornerRight}
-      </div>
-
-      {/* Center — three states: live round / idle / loading */}
-      <CenterNode
-        loading={loading}
-        liveRoundId={liveRoundId}
-        liveQuestion={liveQuestion}
-        liveTokenSymbol={liveTokenSymbol}
-        deadlineLabel={deadlineLabel}
-        agentCount={agents.length}
-      />
-
       {/* Orbiting agent nodes */}
       {orbit.map((agent, i) => {
         const angle = (i / orbit.length) * Math.PI * 2 - Math.PI / 2;
@@ -78,7 +50,7 @@ export function Canvas() {
         return (
           <motion.div
             key={agent.id}
-            className="absolute left-1/2 top-1/2"
+            style={{ position: "absolute", left: "50%", top: "50%", zIndex: 5 }}
             initial={{ x: 0, y: 0, opacity: 0 }}
             animate={{ x: x - 75, y: y - 30, opacity: 1 }}
             transition={{ delay: i * 0.07, type: "spring", stiffness: 120, damping: 18 }}
@@ -88,204 +60,124 @@ export function Canvas() {
         );
       })}
 
-      {/* Dot lattice — terminal grid */}
+      {/* Overlay grid */}
       <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage:
-            "radial-gradient(circle, rgba(76,216,232,0.10) 1px, transparent 1px)",
-          backgroundSize: "24px 24px",
-          maskImage:
-            "radial-gradient(ellipse at center, black 30%, transparent 90%)",
-          WebkitMaskImage:
-            "radial-gradient(ellipse at center, black 30%, transparent 90%)",
-        }}
-      />
-
-      {/* Legend bottom-left */}
-      <div
-        className="absolute bottom-3 left-3 px-3 py-2 pointer-events-none"
-        style={{
-          background: "rgba(7,7,12,0.7)",
-          border: "1px solid var(--line)",
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--t-micro)",
-          letterSpacing: "0.16em",
-          textTransform: "uppercase",
-          color: "var(--fg-faint)",
-          lineHeight: 1.7,
+          position: "absolute",
+          inset: 0,
+          padding: 24,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          pointerEvents: "none",
+          zIndex: 10,
         }}
       >
-        <div className="flex items-center gap-2">
-          <span style={{ width: 6, height: 6, background: "var(--long)", display: "inline-block" }} />
-          <span>BUY agent</span>
+        {/* Top status chips */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", pointerEvents: "auto" }}>
+          <span className="chip chip-live">
+            <span className="dot" />
+            STREAMING · Supabase Realtime
+          </span>
+          {liveRoundId && (
+            <span className="chip">
+              Round{liveTokenSymbol ? ` · ${liveTokenSymbol}` : ""}
+            </span>
+          )}
+          {!liveRoundId && !loading && (
+            <span className="chip">Arena idle</span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <span style={{ width: 6, height: 6, background: "var(--short)", display: "inline-block" }} />
-          <span>SELL agent</span>
+
+        {/* Centered big question */}
+        <div style={{ position: "absolute", left: 24, right: 24, top: "50%", transform: "translateY(-50%)", textAlign: "center", pointerEvents: "none" }}>
+          {agents.length === 0 && !loading ? (
+            <>
+              <div className="t-mini" style={{ marginBottom: 12 }}>No agents live</div>
+              <div className="t-h1" style={{ fontWeight: 600 }}>
+                Waiting for the first agent.
+              </div>
+              <div className="t-small" style={{ marginTop: 12, color: "var(--fg-3)" }}>
+                Builders: point your AI at <Link href="/skill.md" style={{ color: "var(--cyan)" }}>/skill.md</Link>
+              </div>
+            </>
+          ) : liveRoundId ? (
+            <>
+              <div className="t-mini" style={{ marginBottom: 12 }}>Live question</div>
+              <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
+                {liveTokenSymbol ? (
+                  <>
+                    Buy or sell{" "}
+                    <span className="t-grad">{liveTokenSymbol}</span>{" "}
+                    right now?
+                  </>
+                ) : (
+                  liveQuestion ?? "Buy or sell now?"
+                )}
+              </div>
+              <div
+                style={{
+                  display: "inline-flex",
+                  gap: 8,
+                  alignItems: "center",
+                  marginTop: 24,
+                  padding: "8px 16px",
+                  background: "var(--bg-2)",
+                  border: "1px solid var(--bd-2)",
+                  borderRadius: "var(--r-pill)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ color: "var(--fg-3)" }}>Settles in</span>
+                <span className="num up">{deadlineLabel}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="t-mini" style={{ marginBottom: 12 }}>Arena ready</div>
+              <div className="t-h1" style={{ fontWeight: 600 }}>
+                Open a round at <Link href="/ask" style={{ color: "var(--cyan)" }}>/ask</Link>
+              </div>
+            </>
+          )}
         </div>
-        <div className="flex items-center gap-2">
-          <span style={{ width: 6, height: 6, background: "var(--hold)", display: "inline-block" }} />
-          <span>HOLD agent</span>
+
+        {/* Bottom: tally + CTAs */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", paddingTop: 16, pointerEvents: "auto", flexWrap: "wrap", gap: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 16,
+              alignItems: "center",
+              background: "rgba(15,15,17,0.7)",
+              backdropFilter: "blur(14px)",
+              border: "1px solid var(--bd-1)",
+              borderRadius: "var(--r-3)",
+              padding: "12px 16px",
+            }}
+          >
+            <span className="num up">▲ {longCount}</span>
+            <div style={{ height: 6, width: 200, borderRadius: 3, background: "var(--bg-3)", overflow: "hidden", display: "flex" }}>
+              <div style={{ height: "100%", width: `${(longCount / tallyTotal) * 100}%`, background: "var(--up)" }} />
+              <div style={{ height: "100%", width: `${(shortCount / tallyTotal) * 100}%`, background: "var(--down)" }} />
+              <div style={{ height: "100%", width: `${(holdCount / tallyTotal) * 100}%`, background: "var(--hold)" }} />
+            </div>
+            <span className="num down">▼ {shortCount}</span>
+            <span className="num hold">· {holdCount}</span>
+            <span style={{ color: "var(--fg-3)", fontSize: 11, marginLeft: 8 }}>
+              {agents.length} {agents.length === 1 ? "agent" : "agents"}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Link href="/agents" className="btn btn-ghost">Watch only</Link>
+            <Link href="/ask" className="btn btn-primary">Ask the swarm →</Link>
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
-// ─── Subcomponents ────────────────────────────────────────────────
-
-function CenterNode({
-  loading,
-  liveRoundId,
-  liveQuestion,
-  liveTokenSymbol,
-  deadlineLabel,
-  agentCount,
-}: {
-  loading: boolean;
-  liveRoundId?: string;
-  liveQuestion?: string;
-  liveTokenSymbol?: string;
-  deadlineLabel: string;
-  agentCount: number;
-}) {
-  // Empty agent state (loaded but no agents)
-  if (!loading && agentCount === 0) {
-    return (
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
-      >
-        <div
-          className="text-center min-w-[280px]"
-          style={{
-            background: "rgba(7,7,12,0.85)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-0)",
-            padding: "14px 18px",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <div className="t-label" style={{ color: "var(--fg-faint)" }}>
-            ▸ NO AGENTS LIVE
-          </div>
-          <div
-            className="mt-1"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--fg-faintest)",
-            }}
-          >
-            OPEN A ROUND AT <span style={{ color: "var(--cyan)" }}>/ASK</span>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // No live round — arena idle
-  if (!loading && !liveRoundId) {
-    return (
-      <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
-      >
-        <div
-          className="text-center min-w-[280px]"
-          style={{
-            background: "rgba(7,7,12,0.85)",
-            border: "1px solid var(--line)",
-            borderRadius: "var(--r-0)",
-            padding: "14px 18px",
-            backdropFilter: "blur(6px)",
-          }}
-        >
-          <div className="t-label" style={{ color: "var(--fg-faint)" }}>
-            ▸ ARENA IDLE
-          </div>
-          <div
-            className="mt-1"
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "var(--t-mini)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              color: "var(--fg-faintest)",
-            }}
-          >
-            ASK A QUESTION TO OPEN A ROUND →{" "}
-            <span style={{ color: "var(--cyan)" }}>/ASK</span>
-          </div>
-        </div>
-      </motion.div>
-    );
-  }
-
-  // Live round — full center node
-  return (
-    <motion.div
-      initial={{ scale: 0.95, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
-    >
-      <div
-        className="text-center min-w-[280px]"
-        style={{
-          background: "rgba(7,7,12,0.85)",
-          border: "1px solid var(--cyan)",
-          borderRadius: "var(--r-0)",
-          padding: "14px 18px",
-          boxShadow: "var(--halo-cyan)",
-          backdropFilter: "blur(6px)",
-        }}
-      >
-        <div className="t-label" style={{ color: "var(--cyan)" }}>
-          ▸ LIVE ROUND
-        </div>
-        <div
-          className="mt-1"
-          style={{
-            fontFamily: "var(--font-pixel)",
-            fontSize: "var(--t-h2)",
-            color: "var(--fg)",
-            letterSpacing: "0.02em",
-          }}
-        >
-          {liveTokenSymbol ? (
-            <>
-              buy or sell{" "}
-              <span style={{ color: "var(--cyan)" }}>${liveTokenSymbol}</span>{" "}
-              now?
-            </>
-          ) : (
-            (liveQuestion ?? "buy or sell now?")
-          )}
-        </div>
-        <div
-          className="mt-2"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "var(--t-mini)",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            color: "var(--fg-faint)",
-          }}
-        >
-          DEADLINE <span style={{ color: "var(--fg)" }}>{deadlineLabel}</span>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────
 
 function toNodeShape(a: ArenaAgent) {
   return {
@@ -298,7 +190,6 @@ function toNodeShape(a: ArenaAgent) {
   };
 }
 
-/** Returns "MM:SS" countdown to the deadline. Updates every second. */
 function useDeadlineCountdown(deadlineAt?: string): string {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
