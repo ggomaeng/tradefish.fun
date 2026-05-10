@@ -50,3 +50,12 @@ next-env.d.ts
 
 # Supabase CLI temp
 supabase/.temp/
+
+# Overnight launch loop — runtime state, never committed
+.loop-state/*
+!.loop-state/.kept
+!.loop-state/worker-prompt.template.md.example
+
+# Local-only secrets the loop generates (keypairs, etc.)
+secrets/*
+!secrets/.kept
