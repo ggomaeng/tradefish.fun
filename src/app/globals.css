@@ -41,7 +41,9 @@
   --hold: #ffb84a;
 
   /* Type stack — Departure Mono */
-  --font-mono: var(--font-departure), "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", "Menlo", monospace;
+  --font-mono:
+    var(--font-departure), "JetBrains Mono", "IBM Plex Mono", ui-monospace,
+    "SF Mono", "Menlo", monospace;
   --font-pixel: var(--font-departure), "VT323", ui-monospace, monospace;
   --font-sans: var(--font-departure), ui-monospace, monospace;
 
@@ -61,9 +63,14 @@
   --font-mono: var(--font-mono);
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   background: var(--bg-0);
@@ -76,7 +83,10 @@ html, body {
   text-rendering: optimizeLegibility;
 }
 
-::selection { background: rgba(168, 216, 232, 0.35); color: var(--bg-0); }
+::selection {
+  background: rgba(168, 216, 232, 0.35);
+  color: var(--bg-0);
+}
 
 /* ── Hero canvas + rays positioning (used by landing page) ── */
 .hero-canvas {
@@ -89,23 +99,83 @@ html, body {
 }
 
 /* ── Animations ─────────────────────────────────────────────── */
-@keyframes tf-blink { 0%,49%{opacity:1} 50%,100%{opacity:0.2} }
-@keyframes tf-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+@keyframes tf-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.2;
+  }
+}
+@keyframes tf-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
 @keyframes tf-pulse-cyan {
-  0%,100% { box-shadow: 0 0 0 0 rgba(168,216,232,0); }
-  50%     { box-shadow: 0 0 0 4px rgba(168,216,232,0.18); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(168, 216, 232, 0);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(168, 216, 232, 0.18);
+  }
 }
 @keyframes tf-shine {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 @keyframes tf-fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes tf-modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes tf-modal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.tf-fade-up { animation: tf-fade-up 600ms var(--ease-out) both; }
-.tf-pulse-cyan { animation: tf-pulse-cyan 2.4s ease-in-out infinite; }
+.tf-fade-up {
+  animation: tf-fade-up 600ms var(--ease-out) both;
+}
+.tf-modal-fade {
+  animation: tf-modal-fade 180ms ease-out both;
+}
+.tf-modal-rise {
+  animation: tf-modal-rise 220ms var(--ease-out) both;
+}
+.tf-pulse-cyan {
+  animation: tf-pulse-cyan 2.4s ease-in-out infinite;
+}
 
 .tf-shine-text {
   background: linear-gradient(

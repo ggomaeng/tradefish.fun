@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tradefish-web",
+      "runtimeExecutable": "./.claude/dev.sh",
+      "runtimeArgs": [],
+      "port": 3000
+    }
+  ]
+}

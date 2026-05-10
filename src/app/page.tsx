@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { WaitlistForm } from "@/components/WaitlistForm";
+import { WaitlistCTA } from "@/components/WaitlistCTA";
 import { HeroSwarm } from "@/components/HeroSwarm";
 import LightRays from "@/components/LightRays";
 
@@ -9,7 +9,10 @@ import LightRays from "@/components/LightRays";
 
 export default function HomePage() {
   return (
-    <main className="relative min-h-screen overflow-hidden" style={{ background: "var(--bg-0)" }}>
+    <main
+      className="relative min-h-screen overflow-hidden"
+      style={{ background: "var(--bg-0)" }}
+    >
       {/* ── Background layers ─────────────────────────────────── */}
       <div
         aria-hidden
@@ -48,12 +51,11 @@ export default function HomePage() {
       >
         <Link href="/" className="flex items-center gap-3 group">
           <Image
-            src="/logo.png"
+            src="/logo-mark.png"
             alt="TradeFish"
             width={36}
             height={36}
             priority
-            className="rounded-md"
             style={{ filter: "drop-shadow(0 0 12px rgba(168,216,232,0.35))" }}
           />
           <span
@@ -91,16 +93,17 @@ export default function HomePage() {
         className="relative flex flex-col items-center justify-center text-center px-5 min-h-[100dvh] py-24"
         style={{ zIndex: 10 }}
       >
-        <div className="max-w-[820px] flex flex-col items-center gap-6 sm:gap-8">
+        <div className="max-w-[860px] flex flex-col items-center gap-5 sm:gap-7">
           <Image
-            src="/logo.png"
+            src="/logo-mark.png"
             alt="TradeFish"
-            width={140}
-            height={140}
+            width={108}
+            height={108}
             priority
-            className="rounded-2xl tf-fade-up"
+            className="tf-fade-up"
             style={{
-              filter: "drop-shadow(0 0 32px rgba(217,107,170,0.35)) drop-shadow(0 0 24px rgba(168,216,232,0.25))",
+              filter:
+                "drop-shadow(0 0 32px rgba(217,107,170,0.35)) drop-shadow(0 0 24px rgba(168,216,232,0.25))",
             }}
           />
 
@@ -108,49 +111,41 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 text-[10px] tracking-[0.32em] uppercase text-[var(--fg-faint)] tf-fade-up"
             style={{ fontFamily: "var(--font-mono)", animationDelay: "60ms" }}
           >
-            <span style={{ color: "var(--cyan)" }}>▣</span> SWARM TRADING INTELLIGENCE · SOLANA
+            <span style={{ color: "var(--cyan)" }}>▣</span> SWARM TRADING
+            INTELLIGENCE · CLOSED BETA
           </div>
 
           <h1
-            className="m-0 leading-[0.95] tracking-[0.02em] tf-fade-up"
+            className="m-0 leading-[0.98] tracking-[0.02em] tf-fade-up"
             style={{
               fontFamily: "var(--font-pixel)",
-              fontSize: "clamp(40px, 7vw, 88px)",
+              fontSize: "clamp(30px, 4.4vw, 56px)",
               color: "var(--cream)",
               animationDelay: "80ms",
             }}
           >
-            <span className="block whitespace-nowrap">DON&apos;T BUILD ONE BOT.</span>
             <span className="block whitespace-nowrap">
-              JOIN THE <span className="tf-shine-text">SWARM</span>.
+              DON&apos;T TRUST ONE BOT.
+            </span>
+            <span className="block whitespace-nowrap">
+              TRADE WITH THE <span className="tf-shine-text">SWARM</span>.
             </span>
           </h1>
 
           <p
-            className="m-0 max-w-[560px] text-[var(--fg-dim)] text-[14px] sm:text-[15px] leading-[1.7] tracking-[0.01em] tf-fade-up"
-            style={{ fontFamily: "var(--font-mono)", animationDelay: "100ms" }}
+            className="m-0 max-w-[560px] text-[var(--fg)] text-[15px] sm:text-[16px] leading-[1.6] tracking-[0.01em] tf-fade-up"
+            style={{
+              fontFamily: "var(--font-mono)",
+              animationDelay: "100ms",
+              opacity: 0.86,
+            }}
           >
-            Plug in your trading agent. Every answer becomes a paper trade,
-            settled on-chain via Pyth. Build a public PnL track record on Solana.
-            Earn revenue share when your agent contributes useful signal.
+            Specialized trading agents answer live market questions together.
+            Every answer becomes a paper trade, every outcome updates agent
+            reputation, and every settlement teaches the swarm.
           </p>
 
-          <WaitlistForm />
-
-          <div
-            className="mt-2 inline-flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)] tf-fade-up"
-            style={{ fontFamily: "var(--font-mono)", animationDelay: "180ms" }}
-          >
-            <span className="inline-flex items-center gap-2">
-              <span style={{ color: "var(--cyan)" }}>◆</span> SOLANA-NATIVE
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span style={{ color: "var(--cyan)" }}>◆</span> PYTH SETTLEMENT
-            </span>
-            <span className="inline-flex items-center gap-2">
-              <span style={{ color: "var(--cyan)" }}>◆</span> AGENT-AGNOSTIC
-            </span>
-          </div>
+          <WaitlistCTA />
         </div>
 
         {/* ── Bottom status bar ──────────────────────────────── */}
@@ -158,11 +153,16 @@ export default function HomePage() {
           className="absolute bottom-6 left-0 right-0 flex justify-between px-6 sm:px-10 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faintest)] pointer-events-none"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <span>NETWORK ▸ SOLANA</span>
-          <span style={{ color: "var(--fg-faint)" }} className="hidden sm:inline">
+          <span>ACCESS ▸ INVITE-ONLY</span>
+          <span
+            style={{ color: "var(--fg-faint)" }}
+            className="hidden sm:inline"
+          >
             BUILD ▸ WAITLIST.0.1
           </span>
-          <span>STATUS ▸ <span style={{ color: "var(--cyan)" }}>● PRELAUNCH</span></span>
+          <span>
+            STATUS ▸ <span style={{ color: "var(--cyan)" }}>● PRELAUNCH</span>
+          </span>
         </div>
       </section>
     </main>

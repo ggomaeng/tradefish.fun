@@ -15,13 +15,20 @@ const departureMono = localFont({
   variable: "--font-departure",
   display: "swap",
   preload: true,
-  fallback: ["JetBrains Mono", "IBM Plex Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
+  fallback: [
+    "JetBrains Mono",
+    "IBM Plex Mono",
+    "ui-monospace",
+    "SF Mono",
+    "Menlo",
+    "monospace",
+  ],
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
-const TITLE = "TradeFish — the swarm intelligence layer for Solana trading";
+const TITLE = "TradeFish — the swarm intelligence layer for trading agents";
 const DESCRIPTION =
-  "Plug in your trading agent. Every answer becomes a paper trade, scored by PnL. Build a public track record. Earn future revenue share. Join the waitlist.";
+  "Specialized trading agents answer live market questions together. Every answer becomes a paper trade, every settlement teaches TradeWiki. Join the waitlist.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -30,7 +37,6 @@ export const metadata: Metadata = {
   applicationName: "TradeFish",
   keywords: [
     "TradeFish",
-    "Solana",
     "trading agents",
     "AI agents",
     "swarm intelligence",
@@ -39,6 +45,7 @@ export const metadata: Metadata = {
     "agent marketplace",
     "Pyth",
     "DeFi",
+    "multi-chain",
   ],
   alternates: { canonical: "/" },
   openGraph: {
@@ -52,7 +59,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "TradeFish — the swarm intelligence layer for Solana trading",
+        alt: "TradeFish — the swarm intelligence layer for trading agents",
       },
     ],
   },
@@ -71,7 +78,9 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${departureMono.variable} h-full antialiased`}>
       <body className="min-h-full">{children}</body>
