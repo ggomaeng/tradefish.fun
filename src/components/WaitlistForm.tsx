@@ -30,40 +30,26 @@ export function WaitlistForm() {
 
   if (state === "success" || state === "already") {
     return (
-      <div className="w-full max-w-[520px] mx-auto tf-fade-up">
+      <div style={{ maxWidth: 520 }}>
         <div
-          className="border border-[var(--line-strong)] bg-[var(--surface-deep)] backdrop-blur-md p-6 text-center"
-          style={{ borderRadius: 0 }}
+          style={{
+            background: "var(--bg-1)",
+            border: "1px solid var(--up-bd)",
+            borderRadius: "var(--r-3)",
+            padding: 20,
+          }}
         >
-          <div
-            className="text-[10px] tracking-[0.32em] uppercase mb-2"
-            style={{ color: "var(--cyan)" }}
-          >
-            ▣ {state === "already" ? "ALREADY ON THE LIST" : "YOU'RE IN"}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <span className="chip chip-up">✓ {state === "already" ? "ALREADY ON THE LIST" : "YOU'RE IN"}</span>
           </div>
-          <div className="text-[var(--cream)] text-base">
+          <div style={{ color: "var(--fg)", fontSize: 15 }}>
             {state === "already"
               ? "You're already on the waitlist. Your free launch credits are reserved."
               : "Welcome to the swarm. We'll email you when the arena opens."}
           </div>
-          <div
-            className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 border text-[11px] tracking-[0.18em] uppercase"
-            style={{
-              borderColor: "rgba(127, 224, 168, 0.4)",
-              color: "var(--long)",
-              borderRadius: 0,
-            }}
-          >
-            ◆ free launch credits reserved
-          </div>
-          <div className="mt-4 text-[11px] text-[var(--fg-faint)]">
+          <div style={{ marginTop: 12, fontSize: 12, color: "var(--fg-3)" }}>
             Follow{" "}
-            <a
-              href="https://x.com/tradefish_fun"
-              target="_blank"
-              rel="noreferrer"
-              className="text-[var(--cyan)] hover:text-[var(--cyan-bright)]"
-            >
+            <a href="https://x.com/tradefish_fun" target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
               @tradefish_fun
             </a>{" "}
             for launch updates.
@@ -74,21 +60,19 @@ export function WaitlistForm() {
   }
 
   return (
-    <form
-      onSubmit={submit}
-      className="w-full max-w-[520px] mx-auto tf-fade-up"
-      style={{ animationDelay: "120ms" }}
-    >
+    <form onSubmit={submit} style={{ maxWidth: 520 }}>
       <div
-        className="flex items-center gap-3 border border-[var(--line-strong)] bg-[var(--surface-deep)] backdrop-blur-md p-3 transition-colors focus-within:border-[var(--cyan)] focus-within:[box-shadow:0_0_0_3px_rgba(168,216,232,0.08)]"
-        style={{ borderRadius: 0 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0,
+          background: "var(--bg-2)",
+          border: "1px solid var(--bd-2)",
+          borderRadius: "var(--r-3)",
+          padding: 4,
+          transition: "border-color 120ms",
+        }}
       >
-        <span
-          className="text-[10px] tracking-[0.22em] uppercase pl-2 pr-3 border-r border-[var(--line)]"
-          style={{ color: "var(--cyan)" }}
-        >
-          ▸ EMAIL
-        </span>
         <input
           type="email"
           required
@@ -97,26 +81,35 @@ export function WaitlistForm() {
           placeholder="you@somewhere.fun"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="flex-1 bg-transparent border-0 outline-none text-[var(--cream)] text-[14px] tracking-[0.01em] placeholder:text-[var(--fg-faintest)]"
-          style={{ fontFamily: "var(--font-mono)" }}
+          style={{
+            flex: 1,
+            background: "transparent",
+            border: 0,
+            outline: "none",
+            color: "var(--fg)",
+            fontSize: 14,
+            padding: "10px 14px",
+            fontFamily: "var(--font-sans)",
+          }}
         />
         <button
           type="submit"
           disabled={state === "submitting"}
-          className="px-4 py-2 text-[12px] tracking-[0.18em] uppercase text-[var(--bg-0)] bg-[var(--cyan)] hover:bg-[var(--cyan-bright)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-          style={{ borderRadius: 0, fontFamily: "var(--font-pixel)" }}
+          className="btn btn-primary"
+          style={{ padding: "9px 16px" }}
         >
-          {state === "submitting" ? "JOINING…" : "JOIN WAITLIST →"}
+          {state === "submitting" ? "Joining…" : "Join waitlist"}
+          <span style={{ opacity: 0.6 }}>→</span>
         </button>
       </div>
       {state === "error" && errMsg && (
-        <div className="mt-3 text-[11px] tracking-[0.16em] uppercase text-[var(--short)]">
+        <div style={{ marginTop: 10, fontSize: 12, color: "var(--down)" }}>
           ⚠ {errMsg.replaceAll("_", " ")}
         </div>
       )}
-      <div className="mt-3 text-[10px] tracking-[0.2em] uppercase text-[var(--fg-faintest)] text-center">
-        <span style={{ color: "var(--long)" }}>◆ free credits at launch</span>
-        {" · "}no spam · unsubscribe anytime
+      <div style={{ marginTop: 10, fontSize: 12, color: "var(--fg-3)" }}>
+        <span style={{ color: "var(--up)" }}>◆ free launch credits</span>
+        {" · no spam · unsubscribe anytime"}
       </div>
     </form>
   );

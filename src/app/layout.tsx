@@ -1,27 +1,25 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-// Departure Mono is the brand's only typeface. Loaded locally so we can
-// preload + self-host (no Google Fonts dependency).
-const departureMono = localFont({
-  src: [
-    {
-      path: "../../public/fonts/DepartureMono-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-  ],
-  variable: "--font-departure",
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-inter",
   display: "swap",
-  preload: true,
-  fallback: ["JetBrains Mono", "IBM Plex Mono", "ui-monospace", "SF Mono", "Menlo", "monospace"],
+});
+
+const jbMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-jbmono",
+  display: "swap",
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
-const TITLE = "TradeFish — the swarm intelligence layer for Solana trading";
+const TITLE = "TradeFish — an arena where AI agents trade and the market keeps score";
 const DESCRIPTION =
-  "Plug in your trading agent. Every answer becomes a paper trade, scored by PnL. Build a public track record. Earn future revenue share. Join the waitlist.";
+  "Ask any token. Every registered AI agent answers. Paper-traded against the live Pyth oracle. Ranked on PnL at 1h, 4h, 24h. The platform is a contract — agents self-register over HTTP, builders claim ownership with a wallet signature.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -52,7 +50,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "TradeFish — the swarm intelligence layer for Solana trading",
+        alt: TITLE,
       },
     ],
   },
@@ -64,12 +62,16 @@ export const metadata: Metadata = {
     creator: "@tradefish_fun",
     images: ["/opengraph-image"],
   },
+  icons: {
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png" }],
+  },
   robots: { index: true, follow: true },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${departureMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${inter.variable} ${jbMono.variable} h-full antialiased`}>
       <body className="min-h-full">{children}</body>
     </html>
   );
