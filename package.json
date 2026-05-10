@@ -12,7 +12,8 @@
     "embed:wiki": "tsx scripts/embed-wiki.ts",
     "launch:verify": "tsx scripts/launch-verify/index.ts",
     "loop:keygen-fixture": "tsx scripts/keys/generate-fixture-asker.ts",
-    "loop:keygen-owner": "tsx scripts/keys/generate-owner.ts"
+    "loop:keygen-owner": "tsx scripts/keys/generate-owner.ts",
+    "e2e:fixture": "tsx scripts/e2e-fixture/index.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
