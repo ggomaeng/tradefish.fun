@@ -4,23 +4,92 @@
  * Cron config (vercel.json):
  *   { "path": "/api/settle", "schedule": "*\/5 * * * *" }   // every 5 min
  *
- * Auth: Vercel sends `Authorization: Bearer <CRON_SECRET>` automatically when configured.
- * We accept either Vercel's header or our own SETTLEMENT_CRON_SECRET.
+ * Auth: caller must send `Authorization: Bearer <SETTLEMENT_CRON_SECRET>`.
+ * Vercel Cron sends this header automatically once the env var is configured
+ * on the project (Preview + Production scopes).
+ *
+ * Failure modes:
+ *  - SETTLEMENT_CRON_SECRET unset on the server  → 500 misconfigured.
+ *  - Authorization header missing / not Bearer   → 401 unauthorized.
+ *  - Bearer value mismatches secret              → 401 unauthorized.
+ *
+ * Comparison is constant-time via `crypto.timingSafeEqual`. Length mismatch
+ * is short-circuited to a fixed-length compare so we don't leak the secret
+ * length via timing.
  */
 import { type NextRequest } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { dbAdmin } from "@/lib/db";
 import { getPythPrices } from "@/lib/clients/pyth";
 import { computeSettlement, WINDOWS, WINDOW_MS, type Window, type Answer } from "@/lib/settlement";
+import { requestId } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-export async function GET(request: NextRequest) {
-  const auth = request.headers.get("authorization") ?? "";
-  const expected = `Bearer ${process.env.SETTLEMENT_CRON_SECRET ?? ""}`;
-  if (!process.env.SETTLEMENT_CRON_SECRET || auth !== expected) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
+type AuthOk = { ok: true };
+type AuthErr = { ok: false; response: Response };
+
+/**
+ * Gate Vercel Cron callers. Constant-time secret compare. Returns either
+ * `{ ok: true }` (let the handler run) or `{ ok: false, response }` (return
+ * the response immediately).
+ */
+function authorize(request: NextRequest): AuthOk | AuthErr {
+  const rid = requestId();
+  const secret = process.env.SETTLEMENT_CRON_SECRET;
+  if (!secret) {
+    return {
+      ok: false,
+      response: Response.json(
+        {
+          error: "misconfigured",
+          code: "missing_secret",
+          message: "SETTLEMENT_CRON_SECRET is not set on the server.",
+          request_id: rid,
+        },
+        { status: 500, headers: { "X-Request-Id": rid } },
+      ),
+    };
   }
+
+  const header = request.headers.get("authorization") ?? "";
+  // Both header and `Bearer <secret>` must match exactly. We use timingSafeEqual
+  // over equal-length buffers; on length mismatch we still run a fixed-length
+  // compare (against the expected value) so timing doesn't disclose length.
+  const expected = `Bearer ${secret}`;
+  const expectedBuf = Buffer.from(expected, "utf8");
+  const headerBuf = Buffer.from(header, "utf8");
+
+  let matches = false;
+  if (headerBuf.length === expectedBuf.length) {
+    matches = timingSafeEqual(headerBuf, expectedBuf);
+  } else {
+    // Length mismatch — run a dummy compare against expected with itself to
+    // keep the timing path roughly constant, then force false.
+    timingSafeEqual(expectedBuf, expectedBuf);
+    matches = false;
+  }
+
+  if (!matches) {
+    return {
+      ok: false,
+      response: Response.json(
+        {
+          error: "unauthorized",
+          code: "invalid_settlement_secret",
+          request_id: rid,
+        },
+        { status: 401, headers: { "X-Request-Id": rid } },
+      ),
+    };
+  }
+  return { ok: true };
+}
+
+export async function GET(request: NextRequest) {
+  const auth = authorize(request);
+  if (!auth.ok) return auth.response;
 
   const db = dbAdmin();
   const now = Date.now();
