@@ -4,7 +4,8 @@
  * SolanaProvider — wraps the post-waitlist app in the wallet-adapter context
  * so any client component under (platform)/* can call useWallet() / useConnection().
  *
- * - ConnectionProvider points at NEXT_PUBLIC_SOLANA_RPC (devnet for the demo).
+ * - ConnectionProvider points at the RPC chosen by `lib/solana-config`
+ *   (per-network default; devnet unless NEXT_PUBLIC_SOLANA_NETWORK opts into mainnet).
  * - WalletProvider registers Phantom + Solflare, autoConnects when previously approved.
  * - WalletModalProvider renders the wallet-picker portal.
  *
@@ -27,10 +28,10 @@ import type { Adapter } from "@solana/wallet-adapter-base";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-const DEFAULT_RPC = "https://api.devnet.solana.com";
+import { getRpcUrl } from "@/lib/solana-config";
 
 export function SolanaProvider({ children }: { children: ReactNode }) {
-  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC || DEFAULT_RPC;
+  const endpoint = useMemo(() => getRpcUrl(), []);
 
   const wallets = useMemo<Adapter[]>(
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],

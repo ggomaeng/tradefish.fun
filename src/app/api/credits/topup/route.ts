@@ -26,6 +26,11 @@ import {
 import { dbAdmin } from "@/lib/db";
 import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
 import { apiError, logError, requestId } from "@/lib/api-error";
+import {
+  explorerClusterQuery,
+  getRpcUrl,
+  getTreasuryPubkey,
+} from "@/lib/solana-config";
 
 const ROUTE = "/api/credits/topup";
 
@@ -61,31 +66,29 @@ export async function POST(request: NextRequest) {
   });
   if (!rl.ok) return rateLimitedResponse(rl);
 
-  const treasuryEnv = process.env.NEXT_PUBLIC_TRADEFISH_TREASURY;
-  const rpcEnv = process.env.NEXT_PUBLIC_SOLANA_RPC;
-  if (!treasuryEnv) {
-    logError({ route: ROUTE, code: "treasury_unconfigured", request_id: rid });
+  // Network-aware config (lib/solana-config). Falls back to per-network
+  // defaults from RUNBOOK §1 if env overrides aren't set, so this never
+  // returns 500 just because the deployer didn't set NEXT_PUBLIC_SOLANA_RPC.
+  let treasuryStr: string;
+  let rpcUrl: string;
+  try {
+    treasuryStr = getTreasuryPubkey();
+    rpcUrl = getRpcUrl();
+  } catch (err) {
+    logError({ route: ROUTE, code: "solana_config_invalid", request_id: rid, err });
     return apiError({
-      error: "treasury_unconfigured",
-      code: "treasury_unconfigured",
+      error: "solana_config_invalid",
+      code: "solana_config_invalid",
       status: 500,
       request_id: rid,
-    });
-  }
-  if (!rpcEnv) {
-    logError({ route: ROUTE, code: "rpc_unconfigured", request_id: rid });
-    return apiError({
-      error: "rpc_unconfigured",
-      code: "rpc_unconfigured",
-      status: 500,
-      request_id: rid,
+      extra: { detail: err instanceof Error ? err.message : "unknown" },
     });
   }
 
   let treasury: PublicKey;
   let payer: PublicKey;
   try {
-    treasury = new PublicKey(treasuryEnv);
+    treasury = new PublicKey(treasuryStr);
     payer = new PublicKey(wallet_pubkey);
   } catch {
     return apiError({
@@ -126,7 +129,7 @@ export async function POST(request: NextRequest) {
 
   // Fetch the on-chain transaction. Parsed form is easier to inspect for the
   // SystemProgram.transfer instruction.
-  const connection = new Connection(rpcEnv, "confirmed");
+  const connection = new Connection(rpcUrl, "confirmed");
   let tx: ParsedTransactionWithMeta | null = null;
   try {
     tx = await connection.getParsedTransaction(signature, {
@@ -282,7 +285,7 @@ async function fetchBalance(wallet_pubkey: string): Promise<number> {
 }
 
 function explorerUrl(signature: string) {
-  return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+  return `https://explorer.solana.com/tx/${signature}${explorerClusterQuery()}`;
 }
 
 /**

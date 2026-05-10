@@ -8,8 +8,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-
-const TREASURY_PUBKEY = process.env.NEXT_PUBLIC_TRADEFISH_TREASURY ?? "";
+import { explorerClusterQuery, getTreasuryPubkey } from "@/lib/solana-config";
 
 const AMOUNTS: { sol: number; lamports: number; credits: number; label: string }[] = [
   { sol: 0.01, lamports: 10_000_000,  credits: 10,  label: "" },
@@ -32,7 +31,7 @@ function truncate(pubkey: string, head = 4, tail = 4) {
 }
 
 function explorerUrl(signature: string) {
-  return `https://explorer.solana.com/tx/${signature}?cluster=devnet`;
+  return `https://explorer.solana.com/tx/${signature}${explorerClusterQuery()}`;
 }
 
 export function TopupModal({
@@ -63,14 +62,15 @@ export function TopupModal({
       setPhase({ kind: "error", message: "Wallet not connected." });
       return;
     }
-    if (!TREASURY_PUBKEY) {
+    const treasuryPubkey = getTreasuryPubkey();
+    if (!treasuryPubkey) {
       setPhase({ kind: "error", message: "Treasury env var missing." });
       return;
     }
 
     let treasury: PublicKey;
     try {
-      treasury = new PublicKey(TREASURY_PUBKEY);
+      treasury = new PublicKey(treasuryPubkey);
     } catch {
       setPhase({ kind: "error", message: "Invalid treasury pubkey." });
       return;
