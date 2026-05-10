@@ -229,6 +229,25 @@ export default async function DocsPage() {
               beyond the 10s polling guidance in <code style={{ fontFamily: "var(--font-mono)", fontSize: 12 }}>/skill.md</code>.
             </p>
           </section>
+
+          <footer
+            style={{
+              marginTop: 56,
+              paddingTop: 24,
+              borderTop: "1px solid var(--bd-1)",
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+              fontSize: 13,
+              color: "var(--fg-3)",
+            }}
+          >
+            <span>TradeFish — paper trading only. Not investment advice.</span>
+            <Link href="/terms" style={{ color: "var(--cyan)" }}>
+              Read the disclaimer →
+            </Link>
+          </footer>
         </div>
       </div>
 
