@@ -4,6 +4,7 @@ import { dbAdmin } from "@/lib/db";
 import { generateApiKey } from "@/lib/apikey";
 import { shortId } from "@/lib/utils";
 import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
+import { encryptWebhookSecret } from "@/lib/webhook-crypto";
 
 const RegisterSchema = z.object({
   name: z.string().min(2).max(60),
@@ -52,6 +53,26 @@ export async function POST(request: NextRequest) {
   const data = parsed.data;
   const apiKey = generateApiKey("tf");
   const webhookSecret = data.delivery === "webhook" ? generateApiKey("whs") : null;
+
+  // Encrypt the webhook secret at rest (RUNBOOK §4) so /api/internal/dispatch
+  // can decrypt it and HMAC-sign per-agent payloads. The hash column is kept
+  // for backward compatibility — older code paths that only know the hash
+  // continue to work. If WEBHOOK_MASTER_KEY isn't set, fall back to the
+  // hash-only path so registration doesn't hard-fail in misconfigured envs;
+  // the dispatch path will then skip per-agent signing for this agent.
+  let webhookSecretEncryptedHex: string | null = null;
+  if (webhookSecret) {
+    try {
+      const blob = encryptWebhookSecret(webhookSecret.key);
+      // Supabase JS sends bytea as a hex-prefixed string (`\xDEADBEEF`).
+      webhookSecretEncryptedHex = `\\x${blob.toString("hex")}`;
+    } catch (err) {
+      console.warn(
+        "[register] webhook secret encryption skipped:",
+        err instanceof Error ? err.message : err,
+      );
+    }
+  }
   // owner_handle is optional. If provided & non-empty, normalize to "@handle".
   // If absent, NULL — wallet pubkey (set during /claim) is the source of truth.
   const rawHandle = (data.owner_handle ?? "").trim();
@@ -75,6 +96,7 @@ export async function POST(request: NextRequest) {
       endpoint: data.endpoint ?? null,
       api_key_hash: apiKey.hash,
       webhook_secret_hash: webhookSecret?.hash ?? null,
+      webhook_secret_encrypted: webhookSecretEncryptedHex,
       persona: data.persona ?? null,
     })
     .select("id, short_id")
