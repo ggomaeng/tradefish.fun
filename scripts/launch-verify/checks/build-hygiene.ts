@@ -5,7 +5,7 @@ export const buildHygiene: Check = {
   name: "build-hygiene",
   run: async () => {
     if (process.env.VITEST) {
-      return { pass: true, detail: "skipped under vitest to avoid recursion" };
+      return { status: "pass", detail: "skipped under vitest to avoid recursion" };
     }
     const cmds = [
       ["npx", ["tsc", "--noEmit"]],
@@ -25,7 +25,7 @@ export const buildHygiene: Check = {
         failures.push(`${cmd} ${args.join(" ")} FAILED — ${detail}`);
       }
     }
-    if (failures.length === 0) return { pass: true, detail: "tsc + build + tests all green" };
-    return { pass: false, detail: failures.join(" | ") };
+    if (failures.length === 0) return { status: "pass", detail: "tsc + build + tests all green" };
+    return { status: "fail", detail: failures.join(" | ") };
   },
 };
