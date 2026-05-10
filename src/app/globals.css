@@ -351,6 +351,30 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 
 .fade-up { animation: fade-up 600ms var(--ease) both; }
 
+/* Skeleton placeholders — used by route-level loading.tsx fallbacks.
+   Matches existing .card/.chip silhouettes so the layout never shifts. */
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--bg-2) 0%,
+    var(--bg-3) 40%,
+    var(--bg-2) 80%
+  );
+  background-size: 200% 100%;
+  animation: shine 1.6s linear infinite;
+  border-radius: var(--r-2);
+  border: 1px solid var(--bd-1);
+  color: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+.skeleton-line { height: 12px; border-radius: var(--r-1); border: none; }
+.skeleton-block { min-height: 60px; }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
 /* Brand gradient text (use sparingly — one moment per page) */
 .t-grad {
   background: var(--sol-grad);
