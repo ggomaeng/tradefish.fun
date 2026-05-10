@@ -16,6 +16,20 @@
  * Comparison is constant-time via `crypto.timingSafeEqual`. Length mismatch
  * is short-circuited to a fixed-length compare so we don't leak the secret
  * length via timing.
+ *
+ * Test-mode override (SETTLE_TEST_MODE):
+ *  - When `SETTLE_TEST_MODE` env is truthy ("1" / "true", case-insensitive)
+ *    AND the deployment is non-production (`VERCEL_ENV !== 'production'`),
+ *    the handler will accept an explicit `as_of_ts` from the request body
+ *    or query string, overriding `Date.now()` for window-eligibility checks.
+ *  - Production NEVER honors `as_of_ts`, even if `SETTLE_TEST_MODE` is set
+ *    on the production env. A warning is logged in that case.
+ *  - When the override is honored, the response carries the response header
+ *    `X-TradeFish-Test-Mode: 1` so callers (e2e fixture) can confirm.
+ *  - When test mode is inactive, an `as_of_ts` payload field is silently
+ *    ignored (no 400) — same behaviour as if it weren't there.
+ *  - When test mode IS active and `as_of_ts` is malformed (not parseable as
+ *    Unix epoch seconds OR ISO-8601), the handler returns 400 + invalid_as_of_ts.
  */
 import { type NextRequest } from "next/server";
 import { timingSafeEqual } from "node:crypto";
@@ -86,13 +100,118 @@ function authorize(request: NextRequest): AuthOk | AuthErr {
   return { ok: true };
 }
 
+/** Truthy = "1" or "true" (case-insensitive). Anything else is false. */
+function isEnvTruthy(v: string | undefined): boolean {
+  if (!v) return false;
+  const s = v.trim().toLowerCase();
+  return s === "1" || s === "true";
+}
+
+/**
+ * Parse `as_of_ts` as either a Unix epoch seconds integer (or numeric string)
+ * or an ISO-8601 datetime string. Returns null if the value is unparseable
+ * or yields an invalid Date.
+ */
+function parseAsOfTs(value: unknown): Date | null {
+  if (value == null) return null;
+  // Numeric (or all-digits string) → treat as Unix epoch seconds.
+  if (typeof value === "number" && Number.isFinite(value)) {
+    const d = new Date(value * 1000);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return null;
+    // All-digits → epoch seconds. Reject leading zeros / signs / decimals.
+    if (/^\d+$/.test(trimmed)) {
+      const n = Number(trimmed);
+      if (!Number.isFinite(n)) return null;
+      const d = new Date(n * 1000);
+      return isNaN(d.getTime()) ? null : d;
+    }
+    // Otherwise try ISO-8601.
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+/**
+ * Read `as_of_ts` from either query string (`?as_of_ts=...`) or JSON body.
+ * GET requests typically use the query string; we also tolerate a JSON body
+ * for parity with how the e2e fixture might POST-shaped overrides through
+ * the same endpoint in test rigs. Body parse errors are swallowed (treat as
+ * absent) — the per-spec rule is "silently ignored when test mode inactive";
+ * when test mode IS active, an absent value still means "use Date.now()".
+ */
+async function readAsOfTsRaw(request: NextRequest): Promise<unknown> {
+  const url = new URL(request.url);
+  const qs = url.searchParams.get("as_of_ts");
+  if (qs !== null) return qs;
+  // GET typically has no body; guard so we don't throw.
+  const ct = request.headers.get("content-type") ?? "";
+  if (!ct.toLowerCase().includes("application/json")) return null;
+  try {
+    const body = await request.json();
+    if (body && typeof body === "object" && "as_of_ts" in body) {
+      return (body as Record<string, unknown>).as_of_ts;
+    }
+  } catch {
+    // Malformed JSON — treat as if no override was sent.
+  }
+  return null;
+}
+
 export async function GET(request: NextRequest) {
   const auth = authorize(request);
   if (!auth.ok) return auth.response;
 
   const rid = requestId(request);
+
+  // ── Test-mode override gate ────────────────────────────────────────────────
+  // Non-prod iff VERCEL_ENV is anything other than the literal "production".
+  // (`'preview'`, `'development'`, undefined → non-prod.)
+  const isProd = process.env.VERCEL_ENV === "production";
+  const envFlag = isEnvTruthy(process.env.SETTLE_TEST_MODE);
+  const testModeActive = envFlag && !isProd;
+
+  if (envFlag && isProd) {
+    // Defensive: the env flag was set on a production deploy. We refuse to
+    // honor as_of_ts but want loud signal that someone misconfigured.
+    logError({
+      route: ROUTE,
+      code: "settle_test_mode_ignored_in_prod",
+      request_id: rid,
+      extra: {
+        message:
+          "SETTLE_TEST_MODE is set on a production deployment and is being ignored. Remove it from the production env.",
+      },
+    });
+  }
+
+  let asOfOverride: Date | null = null;
+  if (testModeActive) {
+    const raw = await readAsOfTsRaw(request);
+    if (raw != null && raw !== "") {
+      const parsed = parseAsOfTs(raw);
+      if (parsed === null) {
+        return apiError({
+          error: "invalid as_of_ts",
+          code: "invalid_as_of_ts",
+          status: 400,
+          request_id: rid,
+          extra: {
+            message:
+              "as_of_ts must be a Unix epoch seconds integer or an ISO-8601 datetime string.",
+          },
+        });
+      }
+      asOfOverride = parsed;
+    }
+  }
+
   const db = dbAdmin();
-  const now = Date.now();
+  const now = asOfOverride !== null ? asOfOverride.getTime() : Date.now();
   const summary: Record<Window, number> = { "1h": 0, "4h": 0, "24h": 0 };
 
   for (const window of WINDOWS) {
@@ -167,5 +286,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return Response.json({ ok: true, settled: summary, ran_at: new Date().toISOString() });
+  const headers: Record<string, string> = {};
+  if (asOfOverride !== null) {
+    // Only set when the override was actually honored — production paths
+    // never see this header even if SETTLE_TEST_MODE was set.
+    headers["X-TradeFish-Test-Mode"] = "1";
+  }
+  return Response.json(
+    { ok: true, settled: summary, ran_at: new Date(now).toISOString() },
+    { headers },
+  );
 }
