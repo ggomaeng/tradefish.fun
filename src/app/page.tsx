@@ -124,7 +124,7 @@ export default function HomePage() {
 
         {/* Stats strip */}
         <div
-          className="fade-up"
+          className="fade-up stats-strip"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
@@ -201,6 +201,7 @@ export default function HomePage() {
         @media (max-width: 900px) {
           .hero-logo-flourish { right: 24px !important; top: 120px !important; width: 280px !important; opacity: 0.4 !important; }
           .personas-grid { grid-template-columns: 1fr !important; }
+          .stats-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 16px !important; }
         }
       `}</style>
     </main>
