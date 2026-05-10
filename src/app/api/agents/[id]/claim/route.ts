@@ -29,6 +29,9 @@ import nacl from "tweetnacl";
 import bs58 from "bs58";
 
 import { dbAdmin } from "@/lib/db";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/agents/[id]/claim";
 
 const Schema = z.object({
   token: z.string().min(1),
@@ -46,20 +49,29 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
+  const rid = requestId(req);
 
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return Response.json({ error: "invalid_json" }, { status: 400 });
+    return apiError({
+      error: "invalid_json",
+      code: "invalid_json",
+      status: 400,
+      request_id: rid,
+    });
   }
 
   const parsed = Schema.safeParse(body);
   if (!parsed.success) {
-    return Response.json(
-      { error: "validation_failed", issues: parsed.error.issues },
-      { status: 400 },
-    );
+    return apiError({
+      error: "validation_failed",
+      code: "validation_failed",
+      status: 400,
+      request_id: rid,
+      extra: { issues: parsed.error.issues },
+    });
   }
   const { token, wallet_pubkey, signature, demo } = parsed.data;
 
@@ -72,23 +84,35 @@ export async function POST(
     .maybeSingle();
 
   if (lookupErr) {
-    console.error("[claim] lookup failed:", lookupErr);
-    return Response.json({ error: "lookup_failed" }, { status: 500 });
+    logError({ route: ROUTE, code: "lookup_failed", request_id: rid, err: lookupErr });
+    return apiError({
+      error: "lookup_failed",
+      code: "lookup_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
   if (!existing) {
-    return Response.json({ error: "not_found" }, { status: 404 });
+    return apiError({
+      error: "not_found",
+      code: "not_found",
+      status: 404,
+      request_id: rid,
+    });
   }
 
   // 2) Reject if already claimed (idempotency: caller can re-poll GET /api/agents/<id>).
   if (existing.claimed) {
-    return Response.json(
-      {
-        error: "already_claimed",
+    return apiError({
+      error: "already_claimed",
+      code: "already_claimed",
+      status: 409,
+      request_id: rid,
+      extra: {
         agent_id: existing.short_id,
         owner_pubkey: existing.owner_pubkey ?? null,
       },
-      { status: 409 },
-    );
+    });
   }
 
   // 3) Verify ownership: wallet signature, OR demo bypass.
@@ -97,10 +121,13 @@ export async function POST(
     viaDemo = true;
   } else {
     if (!signature) {
-      return Response.json(
-        { error: "signature_required", message: "Provide signature, or demo=true." },
-        { status: 400 },
-      );
+      return apiError({
+        error: "signature_required",
+        code: "signature_required",
+        status: 400,
+        request_id: rid,
+        extra: { message: "Provide signature, or demo=true." },
+      });
     }
     const message = buildClaimMessage(token, existing.short_id);
     let messageBytes: Uint8Array;
@@ -111,25 +138,34 @@ export async function POST(
       signatureBytes = bs58.decode(signature);
       pubkeyBytes = bs58.decode(wallet_pubkey);
     } catch (e) {
-      console.error("[claim] decode error:", e);
-      return Response.json(
-        { error: "bad_encoding", message: "signature/pubkey must be valid base58" },
-        { status: 400 },
-      );
+      logError({ route: ROUTE, code: "bad_encoding", request_id: rid, err: e });
+      return apiError({
+        error: "bad_encoding",
+        code: "bad_encoding",
+        status: 400,
+        request_id: rid,
+        extra: { message: "signature/pubkey must be valid base58" },
+      });
     }
     if (pubkeyBytes.length !== 32) {
-      return Response.json(
-        { error: "bad_pubkey", message: "wallet_pubkey must decode to 32 bytes" },
-        { status: 400 },
-      );
+      return apiError({
+        error: "bad_pubkey",
+        code: "bad_pubkey",
+        status: 400,
+        request_id: rid,
+        extra: { message: "wallet_pubkey must decode to 32 bytes" },
+      });
     }
 
     const ok = nacl.sign.detached.verify(messageBytes, signatureBytes, pubkeyBytes);
     if (!ok) {
-      return Response.json(
-        { error: "signature_rejected", message: `expected signed payload "${message}"` },
-        { status: 401 },
-      );
+      return apiError({
+        error: "signature_rejected",
+        code: "signature_rejected",
+        status: 401,
+        request_id: rid,
+        extra: { message: `expected signed payload "${message}"` },
+      });
     }
   }
 
@@ -147,8 +183,13 @@ export async function POST(
     .maybeSingle();
 
   if (updErr || !updated) {
-    console.error("[claim] update failed:", updErr);
-    return Response.json({ error: "claim_failed" }, { status: 500 });
+    logError({ route: ROUTE, code: "claim_failed", request_id: rid, err: updErr });
+    return apiError({
+      error: "claim_failed",
+      code: "claim_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
 
   return Response.json({

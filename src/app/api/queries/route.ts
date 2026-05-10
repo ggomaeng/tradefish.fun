@@ -21,6 +21,9 @@ import { dbAdmin } from "@/lib/db";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { shortId } from "@/lib/utils";
 import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/queries";
 
 const QUERY_DEADLINE_MS = 60 * 1000;     // agents have 60s to respond
 const CREDITS_PER_QUERY = 10;
@@ -40,19 +43,26 @@ function isValidSolanaPubkey(s: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  const rid = requestId(request);
+
   // 1. Wallet auth required — humans pay for every question.
   const walletPubkey = request.headers.get("x-wallet-pubkey")?.trim() || null;
   if (!walletPubkey) {
-    return Response.json(
-      { error: "wallet_required", message: "Connect a Solana wallet to ask a question." },
-      { status: 401 },
-    );
+    return apiError({
+      error: "wallet_required",
+      code: "wallet_required",
+      status: 401,
+      request_id: rid,
+      extra: { message: "Connect a Solana wallet to ask a question." },
+    });
   }
   if (!isValidSolanaPubkey(walletPubkey)) {
-    return Response.json(
-      { error: "invalid_wallet_pubkey" },
-      { status: 400 },
-    );
+    return apiError({
+      error: "invalid_wallet_pubkey",
+      code: "invalid_wallet_pubkey",
+      status: 400,
+      request_id: rid,
+    });
   }
 
   // Rate limit: 10 RPM per wallet on /api/queries (RUNBOOK §3).
@@ -66,7 +76,13 @@ export async function POST(request: NextRequest) {
 
   const parsed = Schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: "validation_failed", issues: parsed.error.issues }, { status: 400 });
+    return apiError({
+      error: "validation_failed",
+      code: "validation_failed",
+      status: 400,
+      request_id: rid,
+      extra: { issues: parsed.error.issues },
+    });
   }
   const { token_mint, question_type, asker_id } = parsed.data;
 
@@ -80,7 +96,12 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!token || !token.active) {
-    return Response.json({ error: "unsupported_token" }, { status: 400 });
+    return apiError({
+      error: "unsupported_token",
+      code: "unsupported_token",
+      status: 400,
+      request_id: rid,
+    });
   }
 
   // 3. Wallet credit gating + atomic debit. We do this BEFORE the Pyth call
@@ -94,14 +115,13 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   const balance = walletRow?.credits ?? 0;
   if (balance < CREDITS_PER_QUERY) {
-    return Response.json(
-      {
-        error: "insufficient_credits",
-        needed: CREDITS_PER_QUERY,
-        balance,
-      },
-      { status: 402 },
-    );
+    return apiError({
+      error: "insufficient_credits",
+      code: "insufficient_credits",
+      status: 402,
+      request_id: rid,
+      extra: { needed: CREDITS_PER_QUERY, balance },
+    });
   }
   const newBalance = balance - CREDITS_PER_QUERY;
   const { data: updated, error: debitErr } = await db
@@ -116,17 +136,29 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (debitErr || !updated) {
     // Another query beat us to the credits.
-    return Response.json(
-      { error: "insufficient_credits_race", needed: CREDITS_PER_QUERY },
-      { status: 402 },
-    );
+    if (debitErr) {
+      logError({ route: ROUTE, code: "insufficient_credits_race", request_id: rid, err: debitErr });
+    }
+    return apiError({
+      error: "insufficient_credits_race",
+      code: "insufficient_credits_race",
+      status: 402,
+      request_id: rid,
+      extra: { needed: CREDITS_PER_QUERY },
+    });
   }
 
   // 3. Snapshot Pyth price as round reference
   const pythPrice = await getPythPrice(token.pyth_feed_id);
   if (pythPrice === null) {
     await refundWalletCredits(walletPubkey);
-    return Response.json({ error: "oracle_unavailable" }, { status: 503 });
+    logError({ route: ROUTE, code: "oracle_unavailable", request_id: rid });
+    return apiError({
+      error: "oracle_unavailable",
+      code: "oracle_unavailable",
+      status: 503,
+      request_id: rid,
+    });
   }
 
   // 4. Insert query
@@ -148,9 +180,14 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error || !query) {
-    console.error("[queries] insert failed:", error);
+    logError({ route: ROUTE, code: "create_failed", request_id: rid, err: error });
     await refundWalletCredits(walletPubkey);
-    return Response.json({ error: "create_failed" }, { status: 500 });
+    return apiError({
+      error: "create_failed",
+      code: "create_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
 
   // 5. Debit credits

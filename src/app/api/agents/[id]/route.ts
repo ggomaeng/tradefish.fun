@@ -7,14 +7,18 @@
  */
 import { type NextRequest } from "next/server";
 import { dbAdmin } from "@/lib/db";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/agents/[id]";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
+  const rid = requestId(req);
   const db = dbAdmin();
 
   const { data: agent, error } = await db
@@ -26,11 +30,21 @@ export async function GET(
     .maybeSingle();
 
   if (error) {
-    console.error("[agents/get] lookup failed:", error);
-    return Response.json({ error: "lookup_failed" }, { status: 500 });
+    logError({ route: ROUTE, code: "lookup_failed", request_id: rid, err: error });
+    return apiError({
+      error: "lookup_failed",
+      code: "lookup_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
   if (!agent) {
-    return Response.json({ error: "not_found" }, { status: 404 });
+    return apiError({
+      error: "not_found",
+      code: "not_found",
+      status: 404,
+      request_id: rid,
+    });
   }
 
   return Response.json({

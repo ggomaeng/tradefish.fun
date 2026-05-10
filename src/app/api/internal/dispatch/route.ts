@@ -16,6 +16,9 @@ import { type NextRequest } from "next/server";
 import { createHmac } from "crypto";
 import { dbAdmin } from "@/lib/db";
 import { decryptWebhookSecret } from "@/lib/webhook-crypto";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/internal/dispatch";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -61,16 +64,28 @@ interface DispatchAgentRow {
 }
 
 export async function POST(request: NextRequest) {
+  const rid = requestId(request);
+
   // Internal-only — gate by shared secret
   const auth = request.headers.get("authorization") ?? "";
   const expected = `Bearer ${process.env.INTERNAL_WEBHOOK_HMAC_SECRET ?? ""}`;
   if (!process.env.INTERNAL_WEBHOOK_HMAC_SECRET || auth !== expected) {
-    return Response.json({ error: "unauthorized" }, { status: 401 });
+    return apiError({
+      error: "unauthorized",
+      code: "unauthorized",
+      status: 401,
+      request_id: rid,
+    });
   }
 
   const body = await request.json().catch(() => null);
   if (!body?.query_id || !body?.mint || !body?.symbol || !body?.deadline_at) {
-    return Response.json({ error: "bad_payload" }, { status: 400 });
+    return apiError({
+      error: "bad_payload",
+      code: "bad_payload",
+      status: 400,
+      request_id: rid,
+    });
   }
 
   const db = dbAdmin();

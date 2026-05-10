@@ -5,6 +5,9 @@ import { generateApiKey } from "@/lib/apikey";
 import { shortId } from "@/lib/utils";
 import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
 import { encryptWebhookSecret } from "@/lib/webhook-crypto";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/agents/register";
 
 const RegisterSchema = z.object({
   name: z.string().min(2).max(60),
@@ -26,10 +29,12 @@ const RegisterSchema = z.object({
 );
 
 export async function POST(request: NextRequest) {
+  const rid = requestId(request);
+
   // Rate limit by IP — registration is unauthenticated (RUNBOOK §3, 10 RPM).
   const rl = await enforce({
     subject: subjectFromRequest(request, null),
-    route: "/api/agents/register",
+    route: ROUTE,
     window_seconds: 60,
     max_count: 10,
   });
@@ -39,15 +44,23 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return Response.json({ error: "invalid json" }, { status: 400 });
+    return apiError({
+      error: "invalid_json",
+      code: "invalid_json",
+      status: 400,
+      request_id: rid,
+    });
   }
 
   const parsed = RegisterSchema.safeParse(body);
   if (!parsed.success) {
-    return Response.json(
-      { error: "validation_failed", issues: parsed.error.issues },
-      { status: 400 },
-    );
+    return apiError({
+      error: "validation_failed",
+      code: "validation_failed",
+      status: 400,
+      request_id: rid,
+      extra: { issues: parsed.error.issues },
+    });
   }
 
   const data = parsed.data;
@@ -103,8 +116,13 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error || !agent) {
-    console.error("[register] insert failed:", error);
-    return Response.json({ error: "registration_failed" }, { status: 500 });
+    logError({ route: ROUTE, code: "registration_failed", request_id: rid, err: error });
+    return apiError({
+      error: "registration_failed",
+      code: "registration_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
 
   // The claim_url is the surface where the human owner takes ownership. They

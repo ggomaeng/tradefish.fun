@@ -1,11 +1,13 @@
 import { type NextRequest } from "next/server";
 import { dbAdmin } from "@/lib/db";
+import { apiError, requestId } from "@/lib/api-error";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id } = await ctx.params;
+  const rid = requestId(req);
   const db = dbAdmin();
 
   const { data: agent } = await db
@@ -14,7 +16,14 @@ export async function GET(
     .eq("short_id", id)
     .maybeSingle();
 
-  if (!agent) return Response.json({ error: "not_found" }, { status: 404 });
+  if (!agent) {
+    return apiError({
+      error: "not_found",
+      code: "not_found",
+      status: 404,
+      request_id: rid,
+    });
+  }
 
   const { data: stats } = await db
     .from("leaderboard")

@@ -22,7 +22,9 @@ import { timingSafeEqual } from "node:crypto";
 import { dbAdmin } from "@/lib/db";
 import { getPythPrices } from "@/lib/clients/pyth";
 import { computeSettlement, WINDOWS, WINDOW_MS, type Window, type Answer } from "@/lib/settlement";
-import { requestId } from "@/lib/rate-limit";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/settle";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -36,20 +38,19 @@ type AuthErr = { ok: false; response: Response };
  * the response immediately).
  */
 function authorize(request: NextRequest): AuthOk | AuthErr {
-  const rid = requestId();
+  const rid = requestId(request);
   const secret = process.env.SETTLEMENT_CRON_SECRET;
   if (!secret) {
+    logError({ route: ROUTE, code: "missing_secret", request_id: rid });
     return {
       ok: false,
-      response: Response.json(
-        {
-          error: "misconfigured",
-          code: "missing_secret",
-          message: "SETTLEMENT_CRON_SECRET is not set on the server.",
-          request_id: rid,
-        },
-        { status: 500, headers: { "X-Request-Id": rid } },
-      ),
+      response: apiError({
+        error: "misconfigured",
+        code: "missing_secret",
+        status: 500,
+        request_id: rid,
+        extra: { message: "SETTLEMENT_CRON_SECRET is not set on the server." },
+      }),
     };
   }
 
@@ -74,14 +75,12 @@ function authorize(request: NextRequest): AuthOk | AuthErr {
   if (!matches) {
     return {
       ok: false,
-      response: Response.json(
-        {
-          error: "unauthorized",
-          code: "invalid_settlement_secret",
-          request_id: rid,
-        },
-        { status: 401, headers: { "X-Request-Id": rid } },
-      ),
+      response: apiError({
+        error: "unauthorized",
+        code: "invalid_settlement_secret",
+        status: 401,
+        request_id: rid,
+      }),
     };
   }
   return { ok: true };
@@ -91,6 +90,7 @@ export async function GET(request: NextRequest) {
   const auth = authorize(request);
   if (!auth.ok) return auth.response;
 
+  const rid = requestId(request);
   const db = dbAdmin();
   const now = Date.now();
   const summary: Record<Window, number> = { "1h": 0, "4h": 0, "24h": 0 };
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
       .limit(200);
 
     if (error) {
-      console.error(`[settle:${window}] fetch failed:`, error);
+      logError({ route: ROUTE, code: "settle_fetch_failed", request_id: rid, err: error, extra: { window } });
       continue;
     }
     if (!due || due.length === 0) continue;
@@ -160,7 +160,7 @@ export async function GET(request: NextRequest) {
     if (rows.length > 0) {
       const { error: insErr } = await db.from("settlements").insert(rows);
       if (insErr) {
-        console.error(`[settle:${window}] insert failed:`, insErr);
+        logError({ route: ROUTE, code: "settle_insert_failed", request_id: rid, err: insErr, extra: { window } });
       } else {
         summary[window] = rows.length;
       }

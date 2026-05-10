@@ -25,6 +25,9 @@ import {
 } from "@solana/web3.js";
 import { dbAdmin } from "@/lib/db";
 import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/credits/topup";
 
 const LAMPORTS_PER_CREDIT = 1_000_000;
 const MIN_LAMPORTS = 10_000_000; // 0.01 SOL minimum (= 10 credits)
@@ -35,19 +38,24 @@ const Body = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const rid = requestId(request);
+
   const parsed = Body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json(
-      { error: "validation_failed", issues: parsed.error.issues },
-      { status: 400 },
-    );
+    return apiError({
+      error: "validation_failed",
+      code: "validation_failed",
+      status: 400,
+      request_id: rid,
+      extra: { issues: parsed.error.issues },
+    });
   }
   const { signature, wallet_pubkey } = parsed.data;
 
   // Rate limit: 10 RPM keyed on the topping-up wallet (RUNBOOK §3).
   const rl = await enforce({
     subject: subjectFromRequest(request, wallet_pubkey),
-    route: "/api/credits/topup",
+    route: ROUTE,
     window_seconds: 60,
     max_count: 10,
   });
@@ -56,13 +64,22 @@ export async function POST(request: NextRequest) {
   const treasuryEnv = process.env.NEXT_PUBLIC_TRADEFISH_TREASURY;
   const rpcEnv = process.env.NEXT_PUBLIC_SOLANA_RPC;
   if (!treasuryEnv) {
-    return Response.json(
-      { error: "treasury_unconfigured" },
-      { status: 500 },
-    );
+    logError({ route: ROUTE, code: "treasury_unconfigured", request_id: rid });
+    return apiError({
+      error: "treasury_unconfigured",
+      code: "treasury_unconfigured",
+      status: 500,
+      request_id: rid,
+    });
   }
   if (!rpcEnv) {
-    return Response.json({ error: "rpc_unconfigured" }, { status: 500 });
+    logError({ route: ROUTE, code: "rpc_unconfigured", request_id: rid });
+    return apiError({
+      error: "rpc_unconfigured",
+      code: "rpc_unconfigured",
+      status: 500,
+      request_id: rid,
+    });
   }
 
   let treasury: PublicKey;
@@ -71,7 +88,12 @@ export async function POST(request: NextRequest) {
     treasury = new PublicKey(treasuryEnv);
     payer = new PublicKey(wallet_pubkey);
   } catch {
-    return Response.json({ error: "invalid_pubkey" }, { status: 400 });
+    return apiError({
+      error: "invalid_pubkey",
+      code: "invalid_pubkey",
+      status: 400,
+      request_id: rid,
+    });
   }
 
   const db = dbAdmin();
@@ -84,10 +106,12 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
   if (existing) {
     if (existing.wallet_pubkey !== wallet_pubkey) {
-      return Response.json(
-        { error: "signature_owned_by_other_wallet" },
-        { status: 409 },
-      );
+      return apiError({
+        error: "signature_owned_by_other_wallet",
+        code: "signature_owned_by_other_wallet",
+        status: 409,
+        request_id: rid,
+      });
     }
     const balance = await fetchBalance(wallet_pubkey);
     return Response.json({
@@ -110,43 +134,53 @@ export async function POST(request: NextRequest) {
       commitment: "confirmed",
     });
   } catch (err) {
-    console.error("[credits/topup] rpc error:", err);
-    return Response.json(
-      { error: "rpc_error", detail: err instanceof Error ? err.message : "unknown" },
-      { status: 502 },
-    );
+    logError({ route: ROUTE, code: "rpc_error", request_id: rid, err });
+    return apiError({
+      error: "rpc_error",
+      code: "rpc_error",
+      status: 502,
+      request_id: rid,
+      extra: { detail: err instanceof Error ? err.message : "unknown" },
+    });
   }
 
   if (!tx) {
-    return Response.json(
-      { error: "tx_not_found", retry: true },
-      { status: 404 },
-    );
+    return apiError({
+      error: "tx_not_found",
+      code: "tx_not_found",
+      status: 404,
+      request_id: rid,
+      extra: { retry: true },
+    });
   }
   if (tx.meta?.err) {
-    return Response.json(
-      { error: "tx_failed_on_chain", detail: tx.meta.err },
-      { status: 400 },
-    );
+    return apiError({
+      error: "tx_failed_on_chain",
+      code: "tx_failed_on_chain",
+      status: 400,
+      request_id: rid,
+      extra: { detail: tx.meta.err },
+    });
   }
 
   // Walk parsed instructions for a SystemProgram.transfer that matches.
   const transfer = findMatchingTransfer(tx, payer, treasury);
   if (!transfer) {
-    return Response.json(
-      { error: "no_matching_transfer" },
-      { status: 400 },
-    );
+    return apiError({
+      error: "no_matching_transfer",
+      code: "no_matching_transfer",
+      status: 400,
+      request_id: rid,
+    });
   }
   if (transfer.lamports < MIN_LAMPORTS) {
-    return Response.json(
-      {
-        error: "insufficient_lamports",
-        required: MIN_LAMPORTS,
-        actual: transfer.lamports,
-      },
-      { status: 400 },
-    );
+    return apiError({
+      error: "insufficient_lamports",
+      code: "insufficient_lamports",
+      status: 400,
+      request_id: rid,
+      extra: { required: MIN_LAMPORTS, actual: transfer.lamports },
+    });
   }
 
   const credits_added = Math.floor(transfer.lamports / LAMPORTS_PER_CREDIT);
@@ -170,11 +204,14 @@ export async function POST(request: NextRequest) {
     // 23505 = unique_violation (Postgres). Anything else is real.
     const code = (insertErr as { code?: string }).code;
     if (code !== "23505") {
-      console.error("[credits/topup] topup insert failed:", insertErr);
-      return Response.json(
-        { error: "topup_insert_failed", detail: insertErr.message },
-        { status: 500 },
-      );
+      logError({ route: ROUTE, code: "topup_insert_failed", request_id: rid, err: insertErr });
+      return apiError({
+        error: "topup_insert_failed",
+        code: "topup_insert_failed",
+        status: 500,
+        request_id: rid,
+        extra: { detail: insertErr.message },
+      });
     }
     // Lost the race — another request already credited. Return current balance.
     const balance = await fetchBalance(wallet_pubkey);
@@ -214,11 +251,14 @@ export async function POST(request: NextRequest) {
     );
 
   if (upsertErr) {
-    console.error("[credits/topup] wallet_credits upsert failed:", upsertErr);
-    return Response.json(
-      { error: "credit_grant_failed", detail: upsertErr.message },
-      { status: 500 },
-    );
+    logError({ route: ROUTE, code: "credit_grant_failed", request_id: rid, err: upsertErr });
+    return apiError({
+      error: "credit_grant_failed",
+      code: "credit_grant_failed",
+      status: 500,
+      request_id: rid,
+      extra: { detail: upsertErr.message },
+    });
   }
 
   return Response.json({
