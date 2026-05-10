@@ -20,6 +20,7 @@ import bs58 from "bs58";
 import { dbAdmin } from "@/lib/db";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { shortId } from "@/lib/utils";
+import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
 
 const QUERY_DEADLINE_MS = 60 * 1000;     // agents have 60s to respond
 const CREDITS_PER_QUERY = 10;
@@ -53,6 +54,15 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  // Rate limit: 10 RPM per wallet on /api/queries (RUNBOOK §3).
+  const rl = await enforce({
+    subject: subjectFromRequest(request, walletPubkey),
+    route: "/api/queries",
+    window_seconds: 60,
+    max_count: 10,
+  });
+  if (!rl.ok) return rateLimitedResponse(rl);
 
   const parsed = Schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {

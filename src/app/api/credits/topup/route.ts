@@ -24,6 +24,7 @@ import {
   type ParsedTransactionWithMeta,
 } from "@solana/web3.js";
 import { dbAdmin } from "@/lib/db";
+import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
 
 const LAMPORTS_PER_CREDIT = 1_000_000;
 const MIN_LAMPORTS = 10_000_000; // 0.01 SOL minimum (= 10 credits)
@@ -42,6 +43,15 @@ export async function POST(request: NextRequest) {
     );
   }
   const { signature, wallet_pubkey } = parsed.data;
+
+  // Rate limit: 10 RPM keyed on the topping-up wallet (RUNBOOK §3).
+  const rl = await enforce({
+    subject: subjectFromRequest(request, wallet_pubkey),
+    route: "/api/credits/topup",
+    window_seconds: 60,
+    max_count: 10,
+  });
+  if (!rl.ok) return rateLimitedResponse(rl);
 
   const treasuryEnv = process.env.NEXT_PUBLIC_TRADEFISH_TREASURY;
   const rpcEnv = process.env.NEXT_PUBLIC_SOLANA_RPC;

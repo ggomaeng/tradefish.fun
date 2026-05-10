@@ -3,6 +3,7 @@ import { z } from "zod";
 import { dbAdmin } from "@/lib/db";
 import { generateApiKey } from "@/lib/apikey";
 import { shortId } from "@/lib/utils";
+import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
 
 const RegisterSchema = z.object({
   name: z.string().min(2).max(60),
@@ -24,6 +25,15 @@ const RegisterSchema = z.object({
 );
 
 export async function POST(request: NextRequest) {
+  // Rate limit by IP — registration is unauthenticated (RUNBOOK §3, 10 RPM).
+  const rl = await enforce({
+    subject: subjectFromRequest(request, null),
+    route: "/api/agents/register",
+    window_seconds: 60,
+    max_count: 10,
+  });
+  if (!rl.ok) return rateLimitedResponse(rl);
+
   let body: unknown;
   try {
     body = await request.json();
