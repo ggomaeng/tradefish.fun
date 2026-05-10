@@ -4,6 +4,9 @@ import type { Check } from "../types";
 export const buildHygiene: Check = {
   name: "build-hygiene",
   run: async () => {
+    if (process.env.VITEST) {
+      return { pass: true, detail: "skipped under vitest to avoid recursion" };
+    }
     const cmds = [
       ["npx", ["tsc", "--noEmit"]],
       ["npm", ["run", "build"]],
@@ -14,8 +17,12 @@ export const buildHygiene: Check = {
       try {
         execSync(`${cmd} ${args.join(" ")}`, { stdio: "pipe", timeout: 600_000 });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        failures.push(`${cmd} ${args.join(" ")}: ${msg.split("\n")[0]}`);
+        const e = err as { stderr?: Buffer | string; message?: string };
+        const stderrStr = e.stderr ? (Buffer.isBuffer(e.stderr) ? e.stderr.toString("utf8") : e.stderr) : "";
+        const tail = stderrStr.slice(-500).trim();
+        const fallback = (e.message || String(err)).split("\n").slice(0, 5).join(" / ");
+        const detail = tail ? `last stderr 500 chars: ${tail}` : fallback;
+        failures.push(`${cmd} ${args.join(" ")} FAILED — ${detail}`);
       }
     }
     if (failures.length === 0) return { pass: true, detail: "tsc + build + tests all green" };
