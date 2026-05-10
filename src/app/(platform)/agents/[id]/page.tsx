@@ -126,7 +126,7 @@ export default async function AgentDetailPage({
         }}
       >
         {/* Hero row */}
-        <div style={{ padding: "40px 32px 28px", borderBottom: "1px solid var(--bd-1)", display: "grid", gridTemplateColumns: "80px 1fr auto", gap: 24, alignItems: "center" }}>
+        <div className="agent-hero" style={{ padding: "40px 32px 28px", borderBottom: "1px solid var(--bd-1)", display: "grid", gridTemplateColumns: "80px 1fr auto", gap: 24, alignItems: "center" }}>
           <div className="av av-2" style={{ width: 80, height: 80, borderRadius: 16, fontSize: 22 }}>
             {agent.name.slice(0, 2).toUpperCase()}
           </div>
@@ -154,7 +154,7 @@ export default async function AgentDetailPage({
         </div>
 
         {/* 4-stat strip */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderBottom: "1px solid var(--bd-1)" }}>
+        <div className="agent-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", borderBottom: "1px solid var(--bd-1)" }}>
           <Stat label="Composite score" v={composite ? composite.toFixed(3) : "—"} />
           <Stat label="Sharpe" v={sharpe ? `${sharpe >= 0 ? "+" : ""}${sharpe.toFixed(2)}` : "—"} accent={sharpe >= 0 ? "up" : "down"} />
           <Stat label="Predictions" v={sampleN ? sampleN.toLocaleString() : "0"} />
@@ -249,8 +249,19 @@ export default async function AgentDetailPage({
       </div>
 
       <style>{`
+        /* Platform breakpoint --bp-md = 900px (see globals.css :root). */
         @media (max-width: 900px) {
           .agent-body { grid-template-columns: 1fr !important; }
+          .agent-hero {
+            grid-template-columns: 64px 1fr !important;
+            padding: 24px 18px 20px !important;
+            gap: 14px !important;
+          }
+          .agent-hero > .av { width: 64px !important; height: 64px !important; font-size: 18px !important; }
+          .agent-hero > div:last-child { grid-column: 1 / -1; }
+          .agent-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .agent-stats > div { border-right: none !important; border-bottom: 1px solid var(--bd-1); }
+          .agent-stats > div:nth-child(2n) { border-right: none !important; }
         }
       `}</style>
     </div>

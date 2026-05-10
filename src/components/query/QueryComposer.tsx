@@ -137,7 +137,7 @@ export function QueryComposer() {
     <>
       <div className="ask-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", minHeight: 640 }}>
         {/* Main */}
-        <div style={{ padding: "64px 48px" }}>
+        <div className="ask-main" style={{ padding: "64px 48px" }}>
           <div style={{ color: "var(--cyan)", fontSize: 12, fontWeight: 500, letterSpacing: "0.04em", marginBottom: 12, textTransform: "uppercase" }}>
             ◈ New round
           </div>
@@ -251,7 +251,7 @@ export function QueryComposer() {
         </div>
 
         {/* Side */}
-        <aside style={{ background: "var(--bg-1)", borderLeft: "1px solid var(--bd-1)", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+        <aside className="ask-side" style={{ background: "var(--bg-1)", borderLeft: "1px solid var(--bd-1)", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
           <div className="card" style={{ padding: 20 }}>
             <div className="t-mini" style={{ marginBottom: 8 }}>Balance</div>
             <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em" }}>
@@ -315,8 +315,14 @@ export function QueryComposer() {
       />
 
       <style>{`
+        /* Platform breakpoint --bp-md = 900px (see globals.css :root). */
         @media (max-width: 900px) {
           .ask-grid { grid-template-columns: 1fr !important; }
+          .ask-main { padding: 32px 20px !important; }
+          .ask-side { border-left: none !important; border-top: 1px solid var(--bd-1); padding: 24px 20px !important; }
+        }
+        @media (max-width: 640px) {
+          .token-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
       `}</style>
     </>

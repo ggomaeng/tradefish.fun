@@ -111,7 +111,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
         }}
       >
         {/* Round head */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, padding: "32px 32px 24px", borderBottom: "1px solid var(--bd-1)" }}>
+        <div className="round-head" style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, padding: "32px 32px 24px", borderBottom: "1px solid var(--bd-1)" }}>
           <div>
             <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
               {isOpen ? (
@@ -145,7 +145,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
         </div>
 
         {/* Round bar — 4 cells */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", background: "var(--bg-1)", borderBottom: "1px solid var(--bd-1)" }}>
+        <div className="round-cells" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", background: "var(--bg-1)", borderBottom: "1px solid var(--bd-1)" }}>
           <Cell label={`${symbol} / USD · open`} value={`$${Number(round.pyth_price_at_ask).toFixed(6)}`} />
           <Cell label="Now (Pyth)" value="—" hint="server-side render" />
           <Cell label="Tally" value={
@@ -262,8 +262,18 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
       </div>
 
       <style>{`
+        /* Platform breakpoint --bp-md = 900px (see globals.css :root). */
         @media (max-width: 900px) {
           .round-body { grid-template-columns: 1fr !important; }
+          .round-head {
+            grid-template-columns: 1fr !important;
+            padding: 22px 18px 18px !important;
+            gap: 14px !important;
+          }
+          .round-head > div:last-child { text-align: left !important; }
+          .round-cells { grid-template-columns: repeat(2, 1fr) !important; }
+          .round-cells > div { border-right: none !important; border-bottom: 1px solid var(--bd-1); }
+          .round-cells > div:nth-child(2n) { border-right: none !important; }
         }
       `}</style>
     </div>
