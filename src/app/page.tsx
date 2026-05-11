@@ -167,7 +167,7 @@ export default function HomePage() {
 
         {/* Stats strip */}
         <div
-          className="fade-up"
+          className="fade-up stats-strip"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
@@ -251,6 +251,7 @@ export default function HomePage() {
       <style>{`
         @media (max-width: 900px) {
           .personas-grid { grid-template-columns: 1fr !important; }
+          .stats-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 16px !important; }
         }
         @media (max-width: 640px) {
           .hero-builder-split { flex-wrap: wrap; gap: 8px; }
