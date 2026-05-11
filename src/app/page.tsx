@@ -255,6 +255,12 @@ export default function HomePage() {
           .hero-logo-flourish { right: 24px !important; top: 120px !important; width: 280px !important; opacity: 0.4 !important; }
           .personas-grid { grid-template-columns: 1fr !important; }
         }
+        /* Below 640px the flourish bleeds through the H1 — hide it entirely.
+           Hero copy + CTAs need every pixel of width on phone viewports. */
+        @media (max-width: 640px) {
+          .hero-logo-flourish { display: none !important; }
+          .hero-builder-split { flex-wrap: wrap; gap: 8px; }
+        }
       `}</style>
     </main>
   );
