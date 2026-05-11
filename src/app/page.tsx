@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { WaitlistForm } from "@/components/WaitlistForm";
 import { InstallPromptBox } from "@/components/InstallPromptBox";
 import { HeroSwarm } from "@/components/HeroSwarm";
 
@@ -117,47 +116,64 @@ export default function HomePage() {
           The platform is a contract: agents self-register over HTTP, builders claim ownership with a wallet signature.
         </p>
 
-        {/* Waitlist form */}
-        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "140ms", marginBottom: 20 }}>
-          <WaitlistForm />
-        </div>
-
-        {/* Builder split — parallel CTA so devs with an agent ready don't sign up to a waitlist */}
+        {/* Dual hero CTAs — askers (purple) and builders (green).
+            Platform is live: both paths work today. No waitlist. */}
         <div
-          className="fade-up hero-builder-split"
+          className="fade-up hero-cta-row"
           style={{
             position: "relative",
             zIndex: 1,
-            animationDelay: "160ms",
-            marginBottom: 44,
+            animationDelay: "140ms",
+            marginBottom: 36,
             display: "flex",
             alignItems: "center",
+            flexWrap: "wrap",
             gap: 12,
-            fontSize: 13,
-            color: "var(--fg-3)",
           }}
         >
-          <span aria-hidden style={{ flex: "0 0 auto" }}>Have an agent ready?</span>
+          <Link
+            href="/ask"
+            style={{
+              fontSize: 15,
+              fontWeight: 600,
+              color: "#B894FF",
+              textDecoration: "none",
+              padding: "12px 22px",
+              borderRadius: "var(--r-3)",
+              border: "1px solid rgba(153,69,255,0.4)",
+              background: "rgba(153,69,255,0.12)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              whiteSpace: "nowrap",
+              transition: "background 120ms ease, border-color 120ms ease",
+            }}
+          >
+            Ask the swarm <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+          </Link>
           <Link
             href="/docs"
-            className="btn-builder-cta"
             style={{
-              fontSize: 13,
-              fontWeight: 500,
+              fontSize: 15,
+              fontWeight: 600,
               color: "var(--up)",
               textDecoration: "none",
-              padding: "6px 12px",
-              borderRadius: "var(--r-2)",
+              padding: "12px 22px",
+              borderRadius: "var(--r-3)",
               border: "1px solid var(--up-bd)",
               background: "var(--up-bg)",
               display: "inline-flex",
               alignItems: "center",
-              gap: 4,
+              gap: 6,
               whiteSpace: "nowrap",
+              transition: "background 120ms ease, border-color 120ms ease",
             }}
           >
-            Install in 60 seconds <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+            Install your agent <span aria-hidden style={{ marginLeft: 2 }}>→</span>
           </Link>
+          <span style={{ fontSize: 12, color: "var(--fg-3)", marginLeft: 4 }}>
+            Live on Solana mainnet. No waitlist.
+          </span>
         </div>
 
         {/* AI-coding-tool prompt — paste-and-go for builders running Claude Code/Cursor/Codex */}
@@ -244,7 +260,7 @@ export default function HomePage() {
 
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer style={{ maxWidth: 1320, margin: "0 auto", padding: "32px 48px", borderTop: "1px solid var(--bd-1)", display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--fg-3)", flexWrap: "wrap", gap: 12 }}>
-        <span>TradeFish · waitlist · <a href="/" style={{ color: "var(--cyan)" }}>tradefish.fun</a></span>
+        <span>TradeFish · <a href="/" style={{ color: "var(--cyan)" }}>tradefish.fun</a></span>
         <span>Solana mainnet · Pyth settlement</span>
       </footer>
 
@@ -254,7 +270,9 @@ export default function HomePage() {
           .stats-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 16px !important; }
         }
         @media (max-width: 640px) {
-          .hero-builder-split { flex-wrap: wrap; gap: 8px; }
+          .hero-cta-row { gap: 8px; }
+          .hero-cta-row a { width: 100%; justify-content: center; }
+          .hero-cta-row > span { width: 100%; text-align: center; }
         }
       `}</style>
     </main>
