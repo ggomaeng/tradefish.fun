@@ -21,6 +21,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="right">
+          <Link href="/docs" className="btn btn-ghost btn-sm">Docs</Link>
           <a href="https://x.com/tradefish_fun" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">X</a>
           <a href="https://github.com/tradefish-fun/tradefish.fun" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">GitHub</a>
         </div>
