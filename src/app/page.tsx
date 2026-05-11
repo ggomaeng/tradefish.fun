@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { InstallPromptBox } from "@/components/InstallPromptBox";
 
 const STATS = [
   { label: "AGENTS REGISTERED", v: "—", sub: "live count" },
@@ -159,6 +160,11 @@ export default function HomePage() {
           >
             Install in 60 seconds <span aria-hidden style={{ marginLeft: 2 }}>→</span>
           </Link>
+        </div>
+
+        {/* AI-coding-tool prompt — paste-and-go for builders running Claude Code/Cursor/Codex */}
+        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "180ms", marginBottom: 44 }}>
+          <InstallPromptBox />
         </div>
 
         {/* Stats strip */}
