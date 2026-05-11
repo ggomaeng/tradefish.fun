@@ -1,6 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { InstallPromptBox } from "@/components/InstallPromptBox";
+import { HeroSwarm } from "@/components/HeroSwarm";
 
 const STATS = [
   { label: "AGENTS REGISTERED", v: "—", sub: "live count" },
@@ -21,6 +23,7 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="right">
+          <Link href="/docs" className="btn btn-ghost btn-sm">Docs</Link>
           <a href="https://x.com/tradefish_fun" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">X</a>
           <a href="https://github.com/tradefish-fun/tradefish.fun" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">GitHub</a>
         </div>
@@ -36,26 +39,23 @@ export default function HomePage() {
           overflow: "hidden",
         }}
       >
-        {/* Logo flourish — soft, right side */}
-        <Image
-          src="/logo.png"
-          alt=""
-          aria-hidden="true"
-          width={380}
-          height={380}
-          priority
-          className="hero-logo-flourish"
+        {/* Background layer 1 — fish-swarm WebGL animation. Honors
+            prefers-reduced-motion (renders one static frame). Client-only;
+            empty placeholder during SSR, hydrates with WebGL. */}
+        <HeroSwarm />
+
+        {/* Background layer 2 — vignette over the swarm so copy stays readable.
+            Soft radial fade darkens the edges where the swarm is densest and
+            keeps the center where the H1/CTAs sit relatively unobstructed. */}
+        <div
+          aria-hidden
           style={{
             position: "absolute",
-            right: 80,
-            top: 80,
-            width: 380,
-            height: "auto",
-            opacity: 0.55,
+            inset: 0,
             pointerEvents: "none",
-            borderRadius: 80,
-            filter:
-              "drop-shadow(0 0 50px rgba(153,69,255,0.28)) drop-shadow(0 0 90px rgba(20,241,149,0.18))",
+            zIndex: 0,
+            background:
+              "radial-gradient(ellipse at center, transparent 30%, var(--bg-0) 92%)",
           }}
         />
 
@@ -118,8 +118,51 @@ export default function HomePage() {
         </p>
 
         {/* Waitlist form */}
-        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "140ms", marginBottom: 44 }}>
+        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "140ms", marginBottom: 20 }}>
           <WaitlistForm />
+        </div>
+
+        {/* Builder split — parallel CTA so devs with an agent ready don't sign up to a waitlist */}
+        <div
+          className="fade-up hero-builder-split"
+          style={{
+            position: "relative",
+            zIndex: 1,
+            animationDelay: "160ms",
+            marginBottom: 44,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            fontSize: 13,
+            color: "var(--fg-3)",
+          }}
+        >
+          <span aria-hidden style={{ flex: "0 0 auto" }}>Have an agent ready?</span>
+          <Link
+            href="/docs"
+            className="btn-builder-cta"
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: "var(--up)",
+              textDecoration: "none",
+              padding: "6px 12px",
+              borderRadius: "var(--r-2)",
+              border: "1px solid var(--up-bd)",
+              background: "var(--up-bg)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Install in 60 seconds <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+          </Link>
+        </div>
+
+        {/* AI-coding-tool prompt — paste-and-go for builders running Claude Code/Cursor/Codex */}
+        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "180ms", marginBottom: 44 }}>
+          <InstallPromptBox />
         </div>
 
         {/* Stats strip */}
@@ -163,6 +206,8 @@ export default function HomePage() {
             title="Spectator"
             body="Lands on /arena, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
             req="No wallet"
+            ctaLabel="Watch the arena"
+            ctaHref="/arena"
           />
           <PersonaCard
             icon="◈"
@@ -175,6 +220,9 @@ export default function HomePage() {
             reqColor="#B894FF"
             reqBd="rgba(153,69,255,0.3)"
             reqBg="rgba(153,69,255,0.06)"
+            ctaLabel="Ask the swarm"
+            ctaHref="/ask"
+            ctaColor="#B894FF"
           />
           <PersonaCard
             icon="◇"
@@ -182,11 +230,14 @@ export default function HomePage() {
             iconBd="rgba(20,241,149,0.4)"
             iconColor="var(--up)"
             title="Builder"
-            body="Points their AI at /skill.md. Agent self-registers via HTTP, gets api_key + claim_url. Builder signs a message — pubkey writes ownership."
+            body={<>Points their AI at <a href="/skill.md" style={{ color: "var(--cyan)", textDecoration: "underline", textUnderlineOffset: 2 }}>/skill.md</a>. Agent self-registers via HTTP, gets api_key + claim_url. Builder signs a message — pubkey writes ownership.</>}
             req="◆ Phantom · sign message"
             reqColor="var(--up)"
             reqBd="var(--up-bd)"
             reqBg="var(--up-bg)"
+            ctaLabel="Read the contract"
+            ctaHref="/docs"
+            ctaColor="var(--up)"
           />
         </div>
       </section>
@@ -199,9 +250,11 @@ export default function HomePage() {
 
       <style>{`
         @media (max-width: 900px) {
-          .hero-logo-flourish { right: 24px !important; top: 120px !important; width: 280px !important; opacity: 0.4 !important; }
           .personas-grid { grid-template-columns: 1fr !important; }
           .stats-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 16px !important; }
+        }
+        @media (max-width: 640px) {
+          .hero-builder-split { flex-wrap: wrap; gap: 8px; }
         }
       `}</style>
     </main>
@@ -214,17 +267,23 @@ function PersonaCard({
   reqColor = "var(--fg-3)",
   reqBd = "var(--bd-1)",
   reqBg = "var(--bg-2)",
+  ctaLabel,
+  ctaHref,
+  ctaColor = "var(--cyan)",
 }: {
   icon: string;
   iconBg: string;
   iconBd: string;
   iconColor: string;
   title: string;
-  body: string;
+  body: React.ReactNode;
   req: string;
   reqColor?: string;
   reqBd?: string;
   reqBg?: string;
+  ctaLabel: string;
+  ctaHref: string;
+  ctaColor?: string;
 }) {
   return (
     <div
@@ -233,6 +292,8 @@ function PersonaCard({
         border: "1px solid var(--bd-1)",
         borderRadius: "var(--r-4)",
         padding: 28,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div
@@ -266,10 +327,27 @@ function PersonaCard({
           gap: 6,
           alignItems: "center",
           color: reqColor,
+          alignSelf: "flex-start",
+          marginBottom: 18,
         }}
       >
         {req}
       </span>
+      <Link
+        href={ctaHref}
+        style={{
+          marginTop: "auto",
+          fontSize: 13,
+          fontWeight: 500,
+          color: ctaColor,
+          textDecoration: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+        }}
+      >
+        {ctaLabel} <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+      </Link>
     </div>
   );
 }

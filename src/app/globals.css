@@ -99,6 +99,19 @@
 
   /* ── Layout ─────────────────────────────────────────── */
   --max-w: 1320px;
+
+  /* ── Breakpoints ────────────────────────────────────────
+     Note: CSS custom properties are not usable inside @media
+     queries — these vars exist as documentation / single source
+     of truth so that inline <style> blocks across the platform
+     can reference the same values. If you change a value here,
+     also update every `@media (max-width: <px>)` rule that
+     references it.
+       --bp-md = stack two-column platform shells to single col
+       --bp-sm = phone-portrait collapse (appnav, table cards)
+     ───────────────────────────────────────────────────── */
+  --bp-md: 900px;
+  --bp-sm: 640px;
 }
 
 /* ── Light-mode parity — opt in on any subtree ────────── */
@@ -351,6 +364,30 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 
 .fade-up { animation: fade-up 600ms var(--ease) both; }
 
+/* Skeleton placeholders — used by route-level loading.tsx fallbacks.
+   Matches existing .card/.chip silhouettes so the layout never shifts. */
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--bg-2) 0%,
+    var(--bg-3) 40%,
+    var(--bg-2) 80%
+  );
+  background-size: 200% 100%;
+  animation: shine 1.6s linear infinite;
+  border-radius: var(--r-2);
+  border: 1px solid var(--bd-1);
+  color: transparent;
+  user-select: none;
+  pointer-events: none;
+}
+.skeleton-line { height: 12px; border-radius: var(--r-1); border: none; }
+.skeleton-block { min-height: 60px; }
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
 /* Brand gradient text (use sparingly — one moment per page) */
 .t-grad {
   background: var(--sol-grad);
@@ -386,3 +423,61 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 :root { --cream: var(--fg); --fg-dim: var(--fg-2); --fg-faint: var(--fg-3); --fg-faintest: var(--fg-4); }
 :root { --line: var(--bd-1); --line-strong: var(--bd-2); --line-bright: var(--bd-3); }
 :root { --surface: var(--bg-2); --surface-deep: rgba(15,15,17,0.92); --surface-glass: rgba(94,234,240,0.04); }
+
+/* Prevent body horizontal scroll on narrow viewports. Long mints/sigs
+   should wrap or be wrapped in `.no-scrollbar` containers. */
+html, body { overflow-x: hidden; max-width: 100vw; }
+
+/* ═══ Mobile responsive layer ═══════════════════════════════════════════
+   Single source of truth for platform breakpoints. See --bp-md / --bp-sm
+   in :root. Anything route-local should also use these px values so that
+   "the platform stacks at 900px" is true everywhere.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* Page shell — tighter side gutters on narrow viewports */
+  .page { padding: 0 var(--s-4); }
+
+  /* App top nav: allow wrapping rather than overflowing.
+     Logo + a slightly compressed nav stay on row 1; right-side
+     wallet + CTA reflow onto row 2 if needed. */
+  .appnav {
+    height: auto;
+    min-height: 56px;
+    padding: 8px 14px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .appnav .left { gap: 14px; flex-wrap: wrap; }
+  .appnav nav { gap: 0; }
+  .appnav nav a { padding: 6px 8px; font-size: 12px; }
+  .appnav .right { gap: 6px; }
+
+  /* Wallet pill — keep readable but compact. */
+  .wallet { padding: 6px 8px; font-size: 11px; }
+}
+
+@media (max-width: 640px) {
+  /* Phone portrait: hide secondary nav links to avoid wrapping the
+     header into 3+ rows. Primary CTA + wallet stay visible. */
+  .appnav nav { display: none; }
+  .appnav .left { gap: 10px; }
+  .appnav .logo span { font-size: 14px; }
+
+  /* Cards — slightly less padding on phones */
+  .card { padding: 14px; }
+
+  /* Tables in narrow viewports: allow horizontal scroll inside the
+     parent card rather than overflowing the page. Used by /agents
+     leaderboard. */
+  .card table, table { display: block; overflow-x: auto; max-width: 100%; }
+}
+
+/* Tap-target floor: 44x44 CSS px on every interactive control on
+   phone-sized viewports. Buttons stay visually compact via padding,
+   but min-height ensures comfortable touch. */
+@media (max-width: 640px) and (pointer: coarse) {
+  .btn, .wallet, .chip {
+    min-height: 40px;
+  }
+  .btn-sm { min-height: 36px; }
+}

@@ -1,322 +1,116 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   TRADEFISH — Foundation tokens (color + type) · v2
-   The single source of truth for the brand. Import this before any
-   product CSS. styles.css consumes these and adds component classes.
-
-   v2 SHIFT: away from soft cool-black + lone cyan accent → toward
-   the new logo palette: a 5-stop spectrum (MAGENTA → VIOLET → INDIGO
-   → CYAN → MINT) on near-pure-black, with semantic mappings that
-   match: LONG = mint, SHORT = magenta, HOLD = violet, LIVE = cyan.
-   Solana-native (was Base).
+   TRADEFISH v2 — Foundation tokens
+   Direction: claude.ai calm + codex precision + pump.fun cleanness.
+   Dark default, light parity via [data-theme="light"] on any subtree.
+   Logo cyan = brand. Solana gradient = one-shot decisive flourish.
+   Inter sans + JetBrains Mono numerics.
    ═══════════════════════════════════════════════════════════════════════ */
 
-@font-face {
-  font-family: 'Departure Mono';
-  src: url('fonts/DepartureMono-Regular.woff2') format('woff2'),
-       url('fonts/DepartureMono-Regular.otf') format('opentype');
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 :root {
-  /* ── Backgrounds ─────────────────────────────────────────
-     Near-pure-black with a faint blue cast. The new logo
-     sits on full black, so the canvas leans deeper. bg-0 is
-     where the glow happens — keep it dark. */
-  --bg-0:  #07070C;   /* page — set on <body> */
-  --bg-1:  #0C0C16;   /* recessed */
-  --bg-2:  #14142A;   /* card surface */
-  --bg-3:  #1E1E3A;   /* raised */
+  /* ── Backgrounds (dark default) ─────────────────────── */
+  --bg-0: #0A0A0B;   /* canvas */
+  --bg-1: #0F0F11;   /* primary surface */
+  --bg-2: #15151A;   /* card surface */
+  --bg-3: #1C1C22;   /* hover / nested surface */
+  --bg-4: #25252C;   /* deepest surface — chips, dots */
 
-  /* ── Surfaces (translucent, layered over bg-0) ──────────
-     Cards lean on surface (low ink), surface-2 for emphasis,
-     surface-glass for hover/inset, surface-deep for modals. */
-  --surface:        rgba(20, 20, 42, 0.78);
-  --surface-2:      rgba(30, 30, 58, 0.85);
-  --surface-glass:  rgba(76, 216, 232, 0.04);   /* cyan tint */
-  --surface-glass-magenta: rgba(232, 76, 201, 0.05);
-  --surface-glass-mint:    rgba(76, 232, 172, 0.04);
-  --surface-deep:   rgba(0, 0, 4, 0.92);
+  /* ── Foreground ─────────────────────────────────────── */
+  --fg:   #F5F5F7;   /* primary text */
+  --fg-2: #A0A0A8;   /* secondary text */
+  --fg-3: #6E6E78;   /* tertiary / labels */
+  --fg-4: #404048;   /* faintest / disabled */
 
-  /* ── Hairlines ──────────────────────────────────────────
-     Always 1px. Default neutral. Strong/bright for emphasis.
-     Spectrum hairlines for brand moments. */
-  --line:         rgba(255, 255, 255, 0.10);
-  --line-strong:  rgba(255, 255, 255, 0.22);
-  --line-bright:  rgba(255, 255, 255, 0.45);
-  --line-cyan:    rgba(76, 216, 232, 0.32);
-  --line-magenta: rgba(232, 76, 201, 0.32);
-  --line-mint:    rgba(76, 232, 172, 0.32);
+  /* ── Borders ────────────────────────────────────────── */
+  --bd-1: rgba(255,255,255,0.06);
+  --bd-2: rgba(255,255,255,0.10);
+  --bd-3: rgba(255,255,255,0.18);
 
-  /* ── Foreground ─────────────────────────────────────────
-     fg = primary text (high-contrast cool white).
-     fg-dim = supporting copy. fg-faint = labels.
-     fg-faintest = ghost / disabled. */
-  --fg:          #F4F2F8;
-  --fg-dim:      #B0B4C8;
-  --fg-faint:    #6E7390;
-  --fg-faintest: #3D4160;
+  /* ── Brand cyan — derived from the TradeFish logo ───── */
+  --cyan:        #5EEAF0;
+  --cyan-bright: #A8F4F8;
+  --cyan-dim:    #2DA8B0;
+  --cyan-bg:     rgba(94,234,240,0.08);
+  --cyan-bd:     rgba(94,234,240,0.32);
 
-  /* ── Brand spectrum (THE 5 stops) ───────────────────────
-     The logo's gradient, sampled left-to-right. Every brand
-     moment is built from these. Use full spectrum for hero
-     gradients; use single stops for monochromatic accents.
-     spec-1 = pixel-tail (faintest) → spec-5 = head (brightest) */
-  --spec-1: #E84CC9;   /* magenta — risk, alert, SHORT */
-  --spec-2: #9C5CE8;   /* violet — neutral, HOLD, reasoning */
-  --spec-3: #5C7FE8;   /* indigo — links, info, depth */
-  --spec-4: #4CD8E8;   /* cyan — primary, LIVE, active */
-  --spec-5: #4CE8AC;   /* mint — success, LONG, settled */
+  /* ── Solana — used as ONE-SHOT gradient, never solid ── */
+  --sol-purple: #9945FF;
+  --sol-green:  #14F195;
+  --sol-grad:   linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+  --sol-grad-soft: linear-gradient(135deg, rgba(153,69,255,0.18), rgba(20,241,149,0.14));
 
-  /* Glow / soft variants (for headlines + hovers) */
-  --spec-1-soft: #F490DC;
-  --spec-2-soft: #BF95F0;
-  --spec-3-soft: #94B0F0;
-  --spec-4-soft: #8DE8F0;
-  --spec-5-soft: #8DEEC2;
+  /* ── Trading semantic ───────────────────────────────── */
+  --up:      #14F195;
+  --up-bg:   rgba(20,241,149,0.10);
+  --up-bd:   rgba(20,241,149,0.30);
+  --down:    #FF4D6D;
+  --down-bg: rgba(255,77,109,0.10);
+  --down-bd: rgba(255,77,109,0.30);
+  --hold:    #FFB347;
+  --hold-bg: rgba(255,179,71,0.10);
+  --hold-bd: rgba(255,179,71,0.30);
 
-  /* Dim / track variants (for tints + dim labels) */
-  --spec-1-dim: #6E2865;
-  --spec-2-dim: #4D2C70;
-  --spec-3-dim: #2D3F70;
-  --spec-4-dim: #246870;
-  --spec-5-dim: #247052;
+  /* ── Type stacks ────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, 'Menlo', monospace;
 
-  /* The hero gradient — exactly the logo, left → right */
-  --grad-spectrum: linear-gradient(
-    90deg,
-    var(--spec-1) 0%,
-    var(--spec-2) 28%,
-    var(--spec-3) 50%,
-    var(--spec-4) 75%,
-    var(--spec-5) 100%
-  );
-  /* Sweep direction for fish (tail → head) */
-  --grad-fish: linear-gradient(
-    90deg,
-    rgba(232, 76, 201, 0.0) 0%,
-    var(--spec-1) 8%,
-    var(--spec-2) 30%,
-    var(--spec-3) 52%,
-    var(--spec-4) 76%,
-    var(--spec-5) 100%
-  );
-  /* Reduced — for soft brand washes behind text */
-  --grad-spectrum-wash: linear-gradient(
-    90deg,
-    rgba(232, 76, 201, 0.18) 0%,
-    rgba(156, 92, 232, 0.14) 30%,
-    rgba(92, 127, 232, 0.12) 50%,
-    rgba(76, 216, 232, 0.16) 75%,
-    rgba(76, 232, 172, 0.20) 100%
-  );
-
-  /* ── Brand single accents (semantic primary aliases) ────
-     Keep code readable: prefer these names in components. */
-  --cyan:        var(--spec-4);   /* primary CTA · live · active */
-  --cyan-bright: var(--spec-4-soft);
-  --cyan-dim:    var(--spec-4-dim);
-
-  --magenta:        var(--spec-1);
-  --magenta-bright: var(--spec-1-soft);
-  --magenta-dim:    var(--spec-1-dim);
-
-  --mint:        var(--spec-5);
-  --mint-bright: var(--spec-5-soft);
-  --mint-dim:    var(--spec-5-dim);
-
-  --violet:        var(--spec-2);
-  --violet-bright: var(--spec-2-soft);
-  --violet-dim:    var(--spec-2-dim);
-
-  /* Legacy aliases — v1 surfaces (pitch deck, reels) still
-     reference these. Mapped to the closest v2 stop. */
-  --orange:        var(--spec-4);
-  --orange-bright: var(--spec-4-soft);
-  --orange-dim:    var(--spec-4-dim);
-  --coral:         var(--spec-1);
-  --cream:         var(--fg);
-  --rust:          var(--spec-1-dim);
-  --deep-blue:     var(--spec-3);
-
-  /* ── Trading semantic ───────────────────────────────────
-     Direction colors map to spectrum stops so charts and
-     prediction cards use the same vocabulary as the brand.
-       LONG  / UP    = mint        (was phosphor green)
-       SHORT / DOWN  = magenta     (was warm coral)
-       HOLD  / NEUT  = bright grey (was amber, briefly violet)
-     Bright grey for HOLD reads as truly neutral on near-
-     pure-black — it stays out of the spectrum so direction
-     calls can dominate visually.
-     -bg variants are 8–12% alpha tints for cell fills. */
-  --long:     var(--spec-5);
-  --long-bg:  rgba(76, 232, 172, 0.10);
-  --long-glow: rgba(76, 232, 172, 0.45);
-  --short:    var(--spec-1);
-  --short-bg: rgba(232, 76, 201, 0.10);
-  --short-glow: rgba(232, 76, 201, 0.45);
-  --hold:     #C8CCDC;
-  --hold-bg:  rgba(200, 204, 220, 0.08);
-  --hold-glow: rgba(200, 204, 220, 0.30);
-
-  /* ── Reputation / status accents ────────────────────────
-     verified  = X-verified agents (◉ glyph)        → cyan
-     revive    = bankroll revival count (↺ glyph)   → magenta
-     reput     = reputation_score badge             → mint
-     swarm-wt  = swarm weight emphasis              → spectrum */
-  --verified: var(--spec-4);
-  --revive:   var(--spec-1);
-  --reput:    var(--spec-5);
-
-  /* ── Phosphor accents (use rarely) ──────────────────────
-     For tier glyphs, leaderboard sparkle, easter eggs.
-     Kept names for back-compat; values point at the new
-     spectrum stops. */
-  --phosphor: var(--spec-5);
-  --amber:    var(--spec-1);
-
-  /* ── Solana ecosystem accents ───────────────────────────
-     For sponsor / tool chips. Each tool gets a spectrum
-     stop instead of its real brand color — this keeps the
-     UI on-palette while remaining identifiable via label
-     and 1-letter glyph. Use for chip border + text only;
-     never as a background. */
-  --c-solana:      var(--spec-2);   /* SOL purple-violet */
-  --c-jupiter:     var(--spec-1);   /* magenta — DEX */
-  --c-helius:      var(--spec-3);   /* indigo — RPC */
-  --c-dexscreener: var(--spec-4);   /* cyan — charts */
-  --c-rugcheck:    var(--spec-1);   /* magenta — risk */
-  --c-phantom:     var(--spec-2);   /* violet — wallet */
-  --c-agentkit:    var(--spec-5);   /* mint — sdk */
-
-  /* Legacy chain alias — points at SOL now */
-  --c-base:        var(--spec-2);
-
-  /* Legacy sponsor aliases — DEPRECATED */
-  --s-flock:     var(--spec-4);
-  --s-nansen:    var(--spec-5);
-  --s-virtuals:  var(--fg);
-  --s-pancake:   var(--spec-1);
-  --s-bananagun: var(--spec-1-soft);
-  --s-base:      var(--spec-2);
-  --s-risk:      var(--spec-1);
-
-  /* ── Event-type tokens (timeline) ───────────────────────
-     fire    = round fired / threshold crossed   → cyan
-     settle  = settlement / system messages      → mint
-     change  = decision change / position flip   → magenta
-     comment = plain comment / reply             → fg-faint
-     revive  = bankroll revival                  → magenta */
-  --ev-fire:    var(--spec-4);
-  --ev-settle:  var(--spec-5);
-  --ev-change:  var(--spec-1);
-  --ev-comment: var(--fg-faint);
-  --ev-revive:  var(--spec-1);
-
-  /* ── Type stack ─────────────────────────────────────────
-     Departure Mono is the brand face. Everything is
-     monospaced — TradeFish has no proportional fonts.
-     The pixel-glitch candlesticks in the logo speak the
-     same visual language. */
-  --font-mono:    "Departure Mono", "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", "Menlo", monospace;
-  --font-pixel:   "Departure Mono", "VT323", ui-monospace, monospace;
-  --font-display: "Departure Mono", "VT323", ui-monospace, monospace;
-  --font-sans:    "Departure Mono", "JetBrains Mono", ui-monospace, monospace;
-
-  /* ── Type scale ─────────────────────────────────────────
-     Mostly small. Hero numbers up to 64px; body sits at 14.
-     Tracking is wide on labels (0.16–0.22em uppercase). */
-  --t-hero:    64px;     /* live SOL price, big PnL */
-  --t-display: 36px;     /* slide titles */
-  --t-h1:      26px;     /* section headers */
-  --t-h2:      20px;
+  /* ── Type scale (display-down) ──────────────────────── */
+  --t-display: 56px;
+  --t-h1:      32px;
+  --t-h2:      22px;
+  --t-h3:      16px;
   --t-body:    14px;
-  --t-small:   12px;
-  --t-mini:    10px;     /* labels (ALL CAPS, 0.18em tracking) */
-  --t-micro:   9px;      /* tier glyphs */
+  --t-small:   13px;
+  --t-mini:    11px;
 
-  /* ── Spacing & radii ────────────────────────────────────
-     8px grid. Radii are 0 across the board — sharp pixel
-     corners are part of the brand. The single exception is
-     --r-pill for round dots / live indicators. The logo's
-     containing app-icon uses a soft radius — that's
-     reserved for the lockup and never used in product UI. */
+  /* ── Radii — codex sharpness, restrained ─────────────── */
+  --r-1: 4px;
+  --r-2: 6px;
+  --r-3: 8px;
+  --r-4: 12px;
+  --r-pill: 999px;
+
+  /* ── Spacing (4-based) ──────────────────────────────── */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
   --s-4: 16px;
-  --s-5: 24px;
-  --s-6: 32px;
-  --s-7: 48px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 48px;
+  --s-9: 64px;
 
-  --r-0:    0;          /* default — sharp */
-  --r-pill: 999px;      /* dots only */
-  --r-icon: 22%;        /* logo lockup container only */
+  /* ── Motion ─────────────────────────────────────────── */
+  --t-fast: 120ms;
+  --t-med:  220ms;
+  --t-slow: 360ms;
+  --ease:   cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* ── Glow system ────────────────────────────────────────
-     No drop shadows. Three brand glows for emphasis: cyan
-     (live/CTA), magenta (alert/risk), mint (success/PnL).
-     Compose via box-shadow or filter:drop-shadow.
-     Halo = soft outer; Bloom = strong outer; Inset = subtle
-     interior light for active panels. */
-  --glow-cyan:    0 0 20px rgba(76, 216, 232, 0.45);
-  --glow-magenta: 0 0 20px rgba(232, 76, 201, 0.45);
-  --glow-mint:    0 0 20px rgba(76, 232, 172, 0.45);
-  --glow-violet:  0 0 20px rgba(156, 92, 232, 0.40);
+  /* ── Elevation (low-key on dark) ────────────────────── */
+  --shadow-1: 0 1px 0 var(--bd-1) inset;
+  --shadow-2: 0 4px 16px rgba(0,0,0,0.40);
+  --shadow-3: 0 12px 32px rgba(0,0,0,0.55);
+  --shadow-4: 0 24px 60px rgba(0,0,0,0.65);
 
-  --halo-cyan:    0 0 32px rgba(76, 216, 232, 0.30);
-  --halo-magenta: 0 0 32px rgba(232, 76, 201, 0.30);
-  --halo-mint:    0 0 32px rgba(76, 232, 172, 0.30);
-
-  --bloom-cyan:    0 0 8px rgba(76, 216, 232, 0.6), 0 0 32px rgba(76, 216, 232, 0.4), 0 0 80px rgba(76, 216, 232, 0.25);
-  --bloom-magenta: 0 0 8px rgba(232, 76, 201, 0.6), 0 0 32px rgba(232, 76, 201, 0.4), 0 0 80px rgba(232, 76, 201, 0.25);
-  --bloom-mint:    0 0 8px rgba(76, 232, 172, 0.6), 0 0 32px rgba(76, 232, 172, 0.4), 0 0 80px rgba(76, 232, 172, 0.25);
-
-  /* ── Motion ─────────────────────────────────────────────
-     Two speeds: 150ms for hovers, 280ms for state changes.
-     Easing is steps or out — no soft bounces. Steps for
-     pixel-perfect transitions; out for color/glow fades. */
-  --ease-step: steps(1);
-  --ease-out:  cubic-bezier(0.2, 0.8, 0.2, 1);
-  --t-fast:    150ms;
-  --t-med:     280ms;
+  /* ── Layout ─────────────────────────────────────────── */
+  --max-w: 1320px;
 }
 
-/* ── Base reset ──────────────────────────────────────────── */
-* { box-sizing: border-box; }
-
-html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg-0);
-  color: var(--fg);
-  font-family: var(--font-mono);
-  font-size: var(--t-body);
-  font-feature-settings: "tnum", "zero";
-  font-variant-numeric: tabular-nums;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+/* ── Light-mode parity — opt in on any subtree ────────── */
+[data-theme="light"] {
+  --bg-0: #FAFAFA;
+  --bg-1: #FFFFFF;
+  --bg-2: #F5F5F7;
+  --bg-3: #ECECEE;
+  --bg-4: #E0E0E4;
+  --fg:   #0A0A0B;
+  --fg-2: #4A4A52;
+  --fg-3: #8A8A92;
+  --fg-4: #C0C0C8;
+  --bd-1: rgba(0,0,0,0.06);
+  --bd-2: rgba(0,0,0,0.10);
+  --bd-3: rgba(0,0,0,0.18);
+  --cyan-bg: rgba(45,168,176,0.10);
+  --cyan-bd: rgba(45,168,176,0.32);
 }
-
-/* ── Semantic role classes ───────────────────────────────── */
-.t-hero    { font-family: var(--font-pixel); font-size: var(--t-hero);    letter-spacing: 0.04em; color: var(--fg); }
-.t-display { font-family: var(--font-pixel); font-size: var(--t-display); letter-spacing: 0.04em; color: var(--fg); }
-.t-h1      { font-family: var(--font-pixel); font-size: var(--t-h1);      letter-spacing: 0.04em; color: var(--fg); }
-.t-h2      { font-family: var(--font-pixel); font-size: var(--t-h2);      letter-spacing: 0.04em; color: var(--fg); }
-.t-body    { font-family: var(--font-mono);  font-size: var(--t-body);    color: var(--fg-dim); }
-.t-small   { font-family: var(--font-mono);  font-size: var(--t-small);   color: var(--fg-dim); }
-.t-label   { font-family: var(--font-mono);  font-size: var(--t-mini);    letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
-.t-tier    { font-family: var(--font-mono);  font-size: var(--t-micro);   letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); }
-
-/* Brand gradient text — use for the wordmark and one hero
-   moment per surface. Never on body copy. */
-.t-spectrum {
-  background: var(--grad-spectrum);
-  -webkit-background-clip: text;
-          background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-
-::selection { background: rgba(76, 216, 232, 0.35); color: var(--bg-0); }

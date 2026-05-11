@@ -10,6 +10,9 @@ import { z } from "zod";
 import { dbAdmin } from "@/lib/db";
 import { bearerFromAuth, sha256 } from "@/lib/apikey";
 import { getPythPrice } from "@/lib/clients/pyth";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/queries/[id]/respond";
 
 const Schema = z.object({
   answer: z.enum(["buy", "sell", "hold"]),
@@ -22,13 +25,27 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> },
 ) {
   const { id: queryShortId } = await ctx.params;
+  const rid = requestId(request);
 
   const apiKey = bearerFromAuth(request.headers.get("authorization"));
-  if (!apiKey) return Response.json({ error: "missing_auth" }, { status: 401 });
+  if (!apiKey) {
+    return apiError({
+      error: "missing_auth",
+      code: "missing_auth",
+      status: 401,
+      request_id: rid,
+    });
+  }
 
   const parsed = Schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: "validation_failed", issues: parsed.error.issues }, { status: 400 });
+    return apiError({
+      error: "validation_failed",
+      code: "validation_failed",
+      status: 400,
+      request_id: rid,
+      extra: { issues: parsed.error.issues },
+    });
   }
 
   const db = dbAdmin();
@@ -38,22 +55,47 @@ export async function POST(
     .select("id")
     .eq("api_key_hash", sha256(apiKey))
     .maybeSingle();
-  if (!agent) return Response.json({ error: "invalid_key" }, { status: 401 });
+  if (!agent) {
+    return apiError({
+      error: "invalid_key",
+      code: "invalid_key",
+      status: 401,
+      request_id: rid,
+    });
+  }
 
   const { data: query } = await db
     .from("queries")
     .select(`id, deadline_at, token_mint, supported_tokens!inner(pyth_feed_id)`)
     .eq("short_id", queryShortId)
     .maybeSingle();
-  if (!query) return Response.json({ error: "query_not_found" }, { status: 404 });
+  if (!query) {
+    return apiError({
+      error: "query_not_found",
+      code: "query_not_found",
+      status: 404,
+      request_id: rid,
+    });
+  }
 
   if (new Date(query.deadline_at) < new Date()) {
-    return Response.json({ error: "deadline_passed" }, { status: 410 });
+    return apiError({
+      error: "deadline_passed",
+      code: "deadline_passed",
+      status: 410,
+      request_id: rid,
+    });
   }
 
   const pythPrice = await getPythPrice((query as any).supported_tokens.pyth_feed_id);
   if (pythPrice === null) {
-    return Response.json({ error: "oracle_unavailable" }, { status: 503 });
+    logError({ route: ROUTE, code: "oracle_unavailable", request_id: rid });
+    return apiError({
+      error: "oracle_unavailable",
+      code: "oracle_unavailable",
+      status: 503,
+      request_id: rid,
+    });
   }
 
   const { data: response, error } = await db
@@ -71,10 +113,20 @@ export async function POST(
 
   if (error) {
     if ((error as any).code === "23505") {
-      return Response.json({ error: "already_responded" }, { status: 409 });
+      return apiError({
+        error: "already_responded",
+        code: "already_responded",
+        status: 409,
+        request_id: rid,
+      });
     }
-    console.error("[respond] insert failed:", error);
-    return Response.json({ error: "insert_failed" }, { status: 500 });
+    logError({ route: ROUTE, code: "insert_failed", request_id: rid, err: error });
+    return apiError({
+      error: "insert_failed",
+      code: "insert_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
 
   await db.from("agents").update({ last_seen_at: new Date().toISOString() }).eq("id", agent.id);

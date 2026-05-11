@@ -5,6 +5,7 @@ import Link from "next/link";
 type Props = {
   agent: {
     id: string;
+    short_id?: string;
     name: string;
     sharpe: number;
     last: "buy" | "sell" | "hold";
@@ -12,32 +13,83 @@ type Props = {
   };
 };
 
-const TONE: Record<Props["agent"]["last"], string> = {
-  buy: "border-good/50 text-good",
-  sell: "border-bad/50 text-bad",
-  hold: "border-warn/50 text-warn",
+const DIR_BORDER: Record<Props["agent"]["last"], string> = {
+  buy: "var(--up-bd)",
+  sell: "var(--down-bd)",
+  hold: "var(--bd-2)",
+};
+const DIR_BG: Record<Props["agent"]["last"], string> = {
+  buy: "var(--up-bg)",
+  sell: "var(--down-bg)",
+  hold: "var(--bg-2)",
+};
+const DIR_LABEL: Record<Props["agent"]["last"], string> = {
+  buy: "▲ LONG",
+  sell: "▼ SHORT",
+  hold: "· HOLD",
+};
+const DIR_COLOR: Record<Props["agent"]["last"], string> = {
+  buy: "var(--up)",
+  sell: "var(--down)",
+  hold: "var(--hold)",
 };
 
 export function AgentNode({ agent }: Props) {
+  const border = DIR_BORDER[agent.last];
+  const bg = DIR_BG[agent.last];
   return (
     <Link
-      href={`/agents/${agent.id}`}
-      className="block w-[150px] px-3 py-2 rounded-lg border bg-panel/80 backdrop-blur hover:bg-panel-2 transition border-border"
+      href={`/agents/${agent.short_id ?? agent.id}`}
+      style={{
+        display: "block",
+        width: 150,
+        background: "rgba(15,15,17,0.85)",
+        border: `1px solid ${border}`,
+        borderRadius: "var(--r-3)",
+        padding: "10px 12px",
+        backdropFilter: "blur(6px)",
+        textDecoration: "none",
+        transition: "border-color 120ms, transform 120ms",
+        boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+      }}
     >
-      <div className="text-sm font-medium truncate">{agent.name}</div>
-      <div className="flex items-center justify-between mt-1">
-        <span className={`text-xs font-mono px-1.5 py-0.5 rounded border ${TONE[agent.last]}`}>
-          {agent.last}
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: "var(--fg)",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {agent.name}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 6 }}>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            padding: "2px 6px",
+            background: bg,
+            borderRadius: "var(--r-1)",
+            color: DIR_COLOR[agent.last],
+          }}
+        >
+          {DIR_LABEL[agent.last]}
         </span>
         <span
-          className={`text-xs font-mono ${agent.pnl >= 0 ? "text-good" : "text-bad"}`}
           title="rolling PnL %"
+          className="num"
+          style={{ fontSize: 12, color: agent.pnl >= 0 ? "var(--up)" : "var(--down)" }}
         >
           {agent.pnl >= 0 ? "+" : ""}
           {agent.pnl.toFixed(2)}%
         </span>
       </div>
-      <div className="text-[10px] text-muted mt-0.5 font-mono">sharpe {agent.sharpe.toFixed(2)}</div>
+      <div style={{ marginTop: 4, fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)" }}>
+        Sharpe <span style={{ color: "var(--fg-2)" }}>{agent.sharpe.toFixed(2)}</span>
+      </div>
     </Link>
   );
 }

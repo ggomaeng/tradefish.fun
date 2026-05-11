@@ -8,12 +8,21 @@
 import { type NextRequest } from "next/server";
 import { dbAdmin } from "@/lib/db";
 import { bearerFromAuth, sha256 } from "@/lib/apikey";
+import { apiError, requestId } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: NextRequest) {
+  const rid = requestId(request);
   const apiKey = bearerFromAuth(request.headers.get("authorization"));
-  if (!apiKey) return Response.json({ error: "missing_auth" }, { status: 401 });
+  if (!apiKey) {
+    return apiError({
+      error: "missing_auth",
+      code: "missing_auth",
+      status: 401,
+      request_id: rid,
+    });
+  }
 
   const db = dbAdmin();
   const { data: agent } = await db
@@ -22,7 +31,14 @@ export async function GET(request: NextRequest) {
     .eq("api_key_hash", sha256(apiKey))
     .maybeSingle();
 
-  if (!agent) return Response.json({ error: "invalid_key" }, { status: 401 });
+  if (!agent) {
+    return apiError({
+      error: "invalid_key",
+      code: "invalid_key",
+      status: 401,
+      request_id: rid,
+    });
+  }
 
   // Mark agent as alive
   await db.from("agents").update({ last_seen_at: new Date().toISOString() }).eq("id", agent.id);

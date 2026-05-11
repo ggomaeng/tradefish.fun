@@ -1,18 +1,29 @@
 /**
  * POST /api/queries — asker submits a question.
  * Body: { token_mint, question_type, asker_id? }
+ *
+ * Auth: a Solana wallet pubkey in `X-Wallet-Pubkey` header is REQUIRED.
+ * The wallet must hold ≥ 10 credits (top up via /api/credits/topup).
+ * Anonymous asks are intentionally not supported — every question is paid.
+ *
  * Side effects:
- *   1. Validate token is in supported_tokens
- *   2. Snapshot Pyth price as the round's reference
- *   3. Debit credits (if asker_id provided)
- *   4. Insert into queries
- *   5. Fan out to webhook agents (best-effort, async)
+ *   1. Validate wallet pubkey shape
+ *   2. Validate token is in supported_tokens
+ *   3. Atomic 10-credit debit on wallet_credits (race-safe via `gte`)
+ *   4. Snapshot Pyth price as the round's reference (refunds on failure)
+ *   5. Insert into queries (refunds on failure)
+ *   6. Fan out to webhook agents (best-effort, async)
  */
 import { type NextRequest } from "next/server";
 import { z } from "zod";
+import bs58 from "bs58";
 import { dbAdmin } from "@/lib/db";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { shortId } from "@/lib/utils";
+import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
+import { apiError, logError, requestId } from "@/lib/api-error";
+
+const ROUTE = "/api/queries";
 
 const QUERY_DEADLINE_MS = 60 * 1000;     // agents have 60s to respond
 const CREDITS_PER_QUERY = 10;
@@ -23,10 +34,55 @@ const Schema = z.object({
   asker_id: z.string().optional(),
 });
 
+function isValidSolanaPubkey(s: string): boolean {
+  try {
+    return bs58.decode(s).length === 32;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: NextRequest) {
+  const rid = requestId(request);
+
+  // 1. Wallet auth required — humans pay for every question.
+  const walletPubkey = request.headers.get("x-wallet-pubkey")?.trim() || null;
+  if (!walletPubkey) {
+    return apiError({
+      error: "wallet_required",
+      code: "wallet_required",
+      status: 401,
+      request_id: rid,
+      extra: { message: "Connect a Solana wallet to ask a question." },
+    });
+  }
+  if (!isValidSolanaPubkey(walletPubkey)) {
+    return apiError({
+      error: "invalid_wallet_pubkey",
+      code: "invalid_wallet_pubkey",
+      status: 400,
+      request_id: rid,
+    });
+  }
+
+  // Rate limit: 10 RPM per wallet on /api/queries (RUNBOOK §3).
+  const rl = await enforce({
+    subject: subjectFromRequest(request, walletPubkey),
+    route: "/api/queries",
+    window_seconds: 60,
+    max_count: 10,
+  });
+  if (!rl.ok) return rateLimitedResponse(rl);
+
   const parsed = Schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
-    return Response.json({ error: "validation_failed", issues: parsed.error.issues }, { status: 400 });
+    return apiError({
+      error: "validation_failed",
+      code: "validation_failed",
+      status: 400,
+      request_id: rid,
+      extra: { issues: parsed.error.issues },
+    });
   }
   const { token_mint, question_type, asker_id } = parsed.data;
 
@@ -40,25 +96,69 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (!token || !token.active) {
-    return Response.json({ error: "unsupported_token" }, { status: 400 });
+    return apiError({
+      error: "unsupported_token",
+      code: "unsupported_token",
+      status: 400,
+      request_id: rid,
+    });
   }
 
-  // 2. Check credits if asker is identified
-  if (asker_id) {
-    const { data: bal } = await db
-      .from("credits_balance")
-      .select("balance")
-      .eq("user_id", asker_id)
-      .maybeSingle();
-    if (!bal || bal.balance < CREDITS_PER_QUERY) {
-      return Response.json({ error: "insufficient_credits", required: CREDITS_PER_QUERY }, { status: 402 });
+  // 3. Wallet credit gating + atomic debit. We do this BEFORE the Pyth call
+  //    so a failed oracle doesn't burn credits. The atomicity guard is the
+  //    `where credits >= N` clause on the update — concurrent queries on
+  //    the same wallet can't both succeed.
+  const { data: walletRow } = await db
+    .from("wallet_credits")
+    .select("credits")
+    .eq("wallet_pubkey", walletPubkey)
+    .maybeSingle();
+  const balance = walletRow?.credits ?? 0;
+  if (balance < CREDITS_PER_QUERY) {
+    return apiError({
+      error: "insufficient_credits",
+      code: "insufficient_credits",
+      status: 402,
+      request_id: rid,
+      extra: { needed: CREDITS_PER_QUERY, balance },
+    });
+  }
+  const newBalance = balance - CREDITS_PER_QUERY;
+  const { data: updated, error: debitErr } = await db
+    .from("wallet_credits")
+    .update({
+      credits: newBalance,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("wallet_pubkey", walletPubkey)
+    .gte("credits", CREDITS_PER_QUERY) // race-safety: still has enough
+    .select("credits")
+    .maybeSingle();
+  if (debitErr || !updated) {
+    // Another query beat us to the credits.
+    if (debitErr) {
+      logError({ route: ROUTE, code: "insufficient_credits_race", request_id: rid, err: debitErr });
     }
+    return apiError({
+      error: "insufficient_credits_race",
+      code: "insufficient_credits_race",
+      status: 402,
+      request_id: rid,
+      extra: { needed: CREDITS_PER_QUERY },
+    });
   }
 
   // 3. Snapshot Pyth price as round reference
   const pythPrice = await getPythPrice(token.pyth_feed_id);
   if (pythPrice === null) {
-    return Response.json({ error: "oracle_unavailable" }, { status: 503 });
+    await refundWalletCredits(walletPubkey);
+    logError({ route: ROUTE, code: "oracle_unavailable", request_id: rid });
+    return apiError({
+      error: "oracle_unavailable",
+      code: "oracle_unavailable",
+      status: 503,
+      request_id: rid,
+    });
   }
 
   // 4. Insert query
@@ -80,8 +180,14 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error || !query) {
-    console.error("[queries] insert failed:", error);
-    return Response.json({ error: "create_failed" }, { status: 500 });
+    logError({ route: ROUTE, code: "create_failed", request_id: rid, err: error });
+    await refundWalletCredits(walletPubkey);
+    return apiError({
+      error: "create_failed",
+      code: "create_failed",
+      status: 500,
+      request_id: rid,
+    });
   }
 
   // 5. Debit credits
@@ -104,6 +210,32 @@ export async function POST(request: NextRequest) {
     deadline_at: query.deadline_at,
     pyth_price_at_ask: pythPrice,
   }, { status: 201 });
+}
+
+/**
+ * Refund credits previously debited from a wallet when a downstream step
+ * (oracle, insert) fails after the debit has happened. Best-effort — logs
+ * on failure but never throws to the caller. No-op when wallet is null.
+ */
+async function refundWalletCredits(walletPubkey: string | null) {
+  if (!walletPubkey) return;
+  const db = dbAdmin();
+  const { data: row } = await db
+    .from("wallet_credits")
+    .select("credits")
+    .eq("wallet_pubkey", walletPubkey)
+    .maybeSingle();
+  if (!row) return;
+  const { error } = await db
+    .from("wallet_credits")
+    .update({
+      credits: row.credits + CREDITS_PER_QUERY,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("wallet_pubkey", walletPubkey);
+  if (error) {
+    console.error("[queries] refund failed:", error);
+  }
 }
 
 async function dispatchToWebhookAgents(

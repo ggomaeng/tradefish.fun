@@ -3,14 +3,16 @@ import { dbAdmin } from "@/lib/db";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { getJupPrices } from "@/lib/clients/jupiter";
 import { getTokenOverview } from "@/lib/clients/birdeye";
+import { apiError, requestId } from "@/lib/api-error";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   ctx: { params: Promise<{ mint: string }> },
 ) {
   const { mint } = await ctx.params;
+  const rid = requestId(req);
   const db = dbAdmin();
 
   const { data: token } = await db
@@ -19,7 +21,14 @@ export async function GET(
     .eq("mint", mint)
     .maybeSingle();
 
-  if (!token) return Response.json({ error: "unsupported_token" }, { status: 404 });
+  if (!token) {
+    return apiError({
+      error: "unsupported_token",
+      code: "unsupported_token",
+      status: 404,
+      request_id: rid,
+    });
+  }
 
   const [pythPrice, jupPrices, overview] = await Promise.all([
     getPythPrice(token.pyth_feed_id),
