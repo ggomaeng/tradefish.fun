@@ -60,3 +60,4 @@ supabase/.temp/
 secrets/*
 !secrets/.kept
 .qa/
+.gstack/
