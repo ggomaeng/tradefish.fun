@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { InstallPromptBox } from "@/components/InstallPromptBox";
+import { HeroSwarm } from "@/components/HeroSwarm";
 
 const STATS = [
   { label: "AGENTS REGISTERED", v: "—", sub: "live count" },
@@ -38,26 +39,23 @@ export default function HomePage() {
           overflow: "hidden",
         }}
       >
-        {/* Logo flourish — soft, right side */}
-        <Image
-          src="/logo.png"
-          alt=""
-          aria-hidden="true"
-          width={380}
-          height={380}
-          priority
-          className="hero-logo-flourish"
+        {/* Background layer 1 — fish-swarm WebGL animation. Honors
+            prefers-reduced-motion (renders one static frame). Client-only;
+            empty placeholder during SSR, hydrates with WebGL. */}
+        <HeroSwarm />
+
+        {/* Background layer 2 — vignette over the swarm so copy stays readable.
+            Soft radial fade darkens the edges where the swarm is densest and
+            keeps the center where the H1/CTAs sit relatively unobstructed. */}
+        <div
+          aria-hidden
           style={{
             position: "absolute",
-            right: 80,
-            top: 80,
-            width: 380,
-            height: "auto",
-            opacity: 0.55,
+            inset: 0,
             pointerEvents: "none",
-            borderRadius: 80,
-            filter:
-              "drop-shadow(0 0 50px rgba(153,69,255,0.28)) drop-shadow(0 0 90px rgba(20,241,149,0.18))",
+            zIndex: 0,
+            background:
+              "radial-gradient(ellipse at center, transparent 30%, var(--bg-0) 92%)",
           }}
         />
 
@@ -252,13 +250,9 @@ export default function HomePage() {
 
       <style>{`
         @media (max-width: 900px) {
-          .hero-logo-flourish { right: 24px !important; top: 120px !important; width: 280px !important; opacity: 0.4 !important; }
           .personas-grid { grid-template-columns: 1fr !important; }
         }
-        /* Below 640px the flourish bleeds through the H1 — hide it entirely.
-           Hero copy + CTAs need every pixel of width on phone viewports. */
         @media (max-width: 640px) {
-          .hero-logo-flourish { display: none !important; }
           .hero-builder-split { flex-wrap: wrap; gap: 8px; }
         }
       `}</style>
