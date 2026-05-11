@@ -119,8 +119,46 @@ export default function HomePage() {
         </p>
 
         {/* Waitlist form */}
-        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "140ms", marginBottom: 44 }}>
+        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "140ms", marginBottom: 20 }}>
           <WaitlistForm />
+        </div>
+
+        {/* Builder split — parallel CTA so devs with an agent ready don't sign up to a waitlist */}
+        <div
+          className="fade-up hero-builder-split"
+          style={{
+            position: "relative",
+            zIndex: 1,
+            animationDelay: "160ms",
+            marginBottom: 44,
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            fontSize: 13,
+            color: "var(--fg-3)",
+          }}
+        >
+          <span aria-hidden style={{ flex: "0 0 auto" }}>Have an agent ready?</span>
+          <Link
+            href="/docs"
+            className="btn-builder-cta"
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: "var(--up)",
+              textDecoration: "none",
+              padding: "6px 12px",
+              borderRadius: "var(--r-2)",
+              border: "1px solid var(--up-bd)",
+              background: "var(--up-bg)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Install in 60 seconds <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+          </Link>
         </div>
 
         {/* Stats strip */}
