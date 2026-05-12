@@ -1,25 +1,32 @@
 /**
- * Hermes Scholar — TradeFish reference Brain agent
+ * Hermes Scholar — TradeFish Brain agent (v1 trade model)
  *
- * Reads settled rounds from the platform, distills each one into a structured
- * lesson (title, content, tokens, tags) via an LLM, and posts it to the
- * /api/brain/ingest endpoint so it becomes searchable knowledge in the Brain tab.
+ * Polls Supabase directly for settled rounds (queries.status='settled'),
+ * distils each round into a structured lesson via GPT 5.5, and POSTs
+ * to /api/brain/ingest.
  *
- * This is a *write-only* agent: it does not answer trading queries. Its job is
- * to grow the wiki so that trading agents (like claude-momentum) get better
- * context on their next fetch of /api/wiki/search.
+ * Polling strategy: OPTION A — direct Supabase query via service-role key.
+ * Rationale: GET /api/rounds/settled does not exist yet in the platform.
+ * Direct DB access avoids adding a platform endpoint as a deployment blocker
+ * and is safe with the service-role key scoped to this agent's host.
+ *
+ * v1 trade-model semantics (PR #20, 0014_v1_trade_model.sql):
+ *   - Each settled round has ONE paper_trades.pnl_usd per response.
+ *   - 10x leverage on position_size_usd.
+ *   - No per-horizon (1h/4h/24h) structure — one settle event per round.
  *
  * Usage:
- *   1. cp .env.example .env  (fill in TRADEFISH_API, SCHOLAR_API_KEY, OPENAI_API_KEY)
+ *   1. cp .env.example .env  (fill in all vars — see README-taco.md)
  *   2. npm install
- *   3. npm run dev
- *
- * See README.md for full documentation.
+ *   3. DRY_RUN=1 npx tsx index.ts   (verify without posting)
+ *   4. npx tsx index.ts              (live run)
  */
 
 import "dotenv/config";
 import OpenAI from "openai";
+import { createClient } from "@supabase/supabase-js";
 import fs from "node:fs/promises";
+import { createWriteStream } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -27,47 +34,84 @@ import { fileURLToPath } from "node:url";
 // Config
 // ---------------------------------------------------------------------------
 
-const TRADEFISH_API = (process.env.TRADEFISH_API ?? "https://tradefish.fun").replace(/\/$/, "");
+const TRADEFISH_API = (process.env.TRADEFISH_API ?? "").replace(/\/$/, "");
 const SCHOLAR_API_KEY = process.env.SCHOLAR_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || undefined;
-const SCHOLAR_MODEL = process.env.SCHOLAR_MODEL ?? "gpt-4o-mini";
+const SCHOLAR_MODEL = process.env.SCHOLAR_MODEL ?? "gpt-5.5";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const MAX_INGESTS_PER_HOUR = parseInt(process.env.MAX_INGESTS_PER_HOUR ?? "20", 10);
-const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS ?? "300000", 10);
+const DRY_RUN = process.env.DRY_RUN === "1";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const STATE_FILE = path.join(__dirname, "state.json");
+const LOG_FILE = path.join(__dirname, "log.txt");
+
+// ---------------------------------------------------------------------------
+// Dual logger: stdout + log.txt
+// ---------------------------------------------------------------------------
+
+const logStream = createWriteStream(LOG_FILE, { flags: "a" });
+
+function log(...args: unknown[]) {
+  const line = `[${new Date().toISOString()}] ${args.map(String).join(" ")}`;
+  console.log(line);
+  logStream.write(line + "\n");
+}
+
+function logError(...args: unknown[]) {
+  const line = `[${new Date().toISOString()}] ERROR ${args.map(String).join(" ")}`;
+  console.error(line);
+  logStream.write(line + "\n");
+}
 
 // ---------------------------------------------------------------------------
 // Guards
 // ---------------------------------------------------------------------------
 
-if (!SCHOLAR_API_KEY) {
-  console.error("SCHOLAR_API_KEY not set. Obtain one from the TradeFish platform.");
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  logError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set.");
+  process.exit(1);
+}
+if (!SCHOLAR_API_KEY && !DRY_RUN) {
+  logError("SCHOLAR_API_KEY not set. Obtain one from the TradeFish platform.");
   process.exit(1);
 }
 if (!OPENAI_API_KEY && !OPENAI_BASE_URL) {
-  console.error("OPENAI_API_KEY not set. Set it or provide OPENAI_BASE_URL for a local provider.");
+  logError("OPENAI_API_KEY not set. Set it or provide OPENAI_BASE_URL for a compatible provider.");
+  process.exit(1);
+}
+if (!TRADEFISH_API && !DRY_RUN) {
+  logError("TRADEFISH_API not set. Set to https://<your-staging-or-prod-host>.");
   process.exit(1);
 }
 
 // ---------------------------------------------------------------------------
-// OpenAI client (supports any OpenAI-compatible provider via OPENAI_BASE_URL)
+// Clients
 // ---------------------------------------------------------------------------
 
 const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY ?? "unused", // local providers may not need a real key
+  apiKey: OPENAI_API_KEY ?? "unused",
   ...(OPENAI_BASE_URL ? { baseURL: OPENAI_BASE_URL } : {}),
 });
+
+const supabase = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-/**
- * A single settled round from GET /api/rounds/settled.
- * TODO: validate against actual response shape once P1/P2 land.
- */
+type Trade = {
+  agent_name: string;
+  direction: "buy" | "sell" | "hold";
+  confidence: number;
+  position_size_usd: number;
+  entry_price: number;
+  exit_price: number;
+  pnl_usd: number;
+};
+
 type SettledRound = {
   id: string;
   token_mint: string;
@@ -76,41 +120,16 @@ type SettledRound = {
   question_type: string;
   asked_at: string;
   settled_at: string;
-  entry_price_usd: number;
-  exit_price_usd: number;
-  price_change_pct: number;
-  /** Winning direction: "buy" | "sell" | "hold" */
-  outcome: string;
-  /** Top agent responses, ordered by PnL desc. */
-  top_responses: Array<{
-    agent_name: string;
-    answer: string;
-    confidence: number;
-    reasoning: string;
-    pnl_usd: number;
-  }>;
+  entry_price_usd: number;   // pyth_price_at_ask
+  close_price_usd: number;   // close_price_pyth
+  trades: Trade[];
 };
 
-/**
- * Shape returned by GET /api/rounds/settled.
- * TODO: validate against actual response shape once P1/P2 land.
- */
-type SettledRoundsResponse = {
-  rounds: SettledRound[];
-};
-
-/**
- * Distilled lesson produced by the LLM and posted to /api/brain/ingest.
- * Matches the Brain ingest payload shape from the spec.
- */
 type LessonPayload = {
   title: string;
   content: string;
-  /** Token symbols mentioned in the lesson, e.g. ["SOL", "JUP"] */
   tokens: string[];
-  /** Semantic tags, e.g. ["momentum", "breakout", "high-confidence"] */
   tags: string[];
-  /** Round that this lesson was distilled from */
   source_round_id: string;
 };
 
@@ -120,6 +139,8 @@ type LessonPayload = {
 
 type State = {
   last_run_at: string | null;
+  ingests_this_hour: number;
+  hour_window_start: string | null;
 };
 
 async function loadState(): Promise<State> {
@@ -127,7 +148,7 @@ async function loadState(): Promise<State> {
     const raw = await fs.readFile(STATE_FILE, "utf8");
     return JSON.parse(raw) as State;
   } catch {
-    return { last_run_at: null };
+    return { last_run_at: null, ingests_this_hour: 0, hour_window_start: null };
   }
 }
 
@@ -136,94 +157,106 @@ async function saveState(state: State): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// API helpers
+// Supabase polling (Option A — direct DB query)
 // ---------------------------------------------------------------------------
 
-/**
- * Fetch settled rounds since `since` (ISO 8601).
- * TODO: validate against actual response shape once P1/P2 land.
- */
 async function fetchSettledRounds(since: string): Promise<SettledRound[]> {
-  const url = `${TRADEFISH_API}/api/rounds/settled?since=${encodeURIComponent(since)}`;
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${SCHOLAR_API_KEY}` },
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`GET /api/rounds/settled failed ${res.status}: ${body.slice(0, 300)}`);
-  }
-  // TODO: validate against actual response shape once P1/P2 land.
-  const json = (await res.json()) as SettledRoundsResponse;
-  return json.rounds ?? [];
-}
+  // Join: queries (settled, since) → supported_tokens → responses → agents → paper_trades
+  const { data: queries, error: qErr } = await supabase
+    .from("queries")
+    .select(
+      `
+      id,
+      token_mint,
+      question_type,
+      asked_at,
+      settled_at,
+      pyth_price_at_ask,
+      close_price_pyth,
+      supported_tokens!inner (symbol, name),
+      responses (
+        id,
+        answer,
+        confidence,
+        position_size_usd,
+        pyth_price_at_response,
+        agents!inner (name),
+        paper_trades (pnl_usd, entry_price, exit_price, direction, position_size_usd)
+      )
+    `
+    )
+    .eq("status", "settled")
+    .gt("settled_at", since)
+    .order("settled_at", { ascending: true })
+    .limit(50);
 
-/**
- * Post a distilled lesson to /api/brain/ingest.
- * Returns the server's response body.
- * TODO: validate against actual response shape once P2 lands.
- */
-async function ingestLesson(lesson: LessonPayload): Promise<{ status: "inserted" | "merged" | "duplicate"; node_id?: string }> {
-  const res = await fetch(`${TRADEFISH_API}/api/brain/ingest`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${SCHOLAR_API_KEY}`,
-    },
-    body: JSON.stringify(lesson),
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`POST /api/brain/ingest failed ${res.status}: ${body.slice(0, 300)}`);
+  if (qErr) {
+    throw new Error(`Supabase query failed: ${qErr.message}`);
   }
-  // TODO: validate against actual response shape once P2 lands.
-  return res.json();
+  if (!queries || queries.length === 0) return [];
+
+  return queries.map((q: any): SettledRound => {
+    const responses: any[] = q.responses ?? [];
+    const trades: Trade[] = responses
+      .filter((r: any) => r.paper_trades && r.paper_trades.length > 0)
+      .map((r: any) => {
+        const pt = r.paper_trades[0];
+        return {
+          agent_name: r.agents?.name ?? "unknown",
+          direction: pt.direction,
+          confidence: parseFloat(r.confidence),
+          position_size_usd: parseFloat(pt.position_size_usd),
+          entry_price: parseFloat(pt.entry_price),
+          exit_price: parseFloat(pt.exit_price),
+          pnl_usd: parseFloat(pt.pnl_usd),
+        };
+      })
+      .sort((a, b) => b.pnl_usd - a.pnl_usd);
+
+    return {
+      id: q.id,
+      token_mint: q.token_mint,
+      token_symbol: q.supported_tokens?.symbol ?? q.token_mint,
+      token_name: q.supported_tokens?.name ?? q.token_mint,
+      question_type: q.question_type,
+      asked_at: q.asked_at,
+      settled_at: q.settled_at,
+      entry_price_usd: parseFloat(q.pyth_price_at_ask),
+      close_price_usd: parseFloat(q.close_price_pyth ?? q.pyth_price_at_ask),
+      trades,
+    };
+  });
 }
 
 // ---------------------------------------------------------------------------
-// Distillation prompt
+// Distillation prompt (v1 semantics — single pnl_usd per trade, 10x leverage)
 // ---------------------------------------------------------------------------
 
 function buildDistillationPrompt(round: SettledRound): string {
-  const topResponses = round.top_responses
-    .slice(0, 5)
+  const priceChange = round.entry_price_usd > 0
+    ? (((round.close_price_usd - round.entry_price_usd) / round.entry_price_usd) * 100).toFixed(2)
+    : "0.00";
+  const direction = round.close_price_usd >= round.entry_price_usd ? "UP" : "DOWN";
+
+  const tradeLines = round.trades
+    .slice(0, 6)
     .map(
-      (r, i) =>
-        `  ${i + 1}. [${r.agent_name}] answer=${r.answer} conf=${r.confidence.toFixed(2)} pnl=$${r.pnl_usd.toFixed(4)}\n     reasoning: ${r.reasoning}`
+      (t) =>
+        `  - ${t.agent_name}: ${t.direction.toUpperCase()} @ ${t.confidence.toFixed(2)} conf` +
+        ` · $${t.position_size_usd.toFixed(0)} position → ${t.pnl_usd >= 0 ? "+" : ""}$${t.pnl_usd.toFixed(2)} PnL`
     )
     .join("\n");
 
-  return `You are Hermes Scholar, a financial knowledge distiller for the TradeFish platform.
+  return `A round just settled on tradefish:
+Token: ${round.token_symbol} (${round.token_mint})
+Question: "buy/sell ${round.token_symbol} now?"
+Pyth entry → close: $${round.entry_price_usd} → $${round.close_price_usd} (${direction} ${priceChange}%)
+Trades on this round (10× leveraged):
+${tradeLines || "  (no trades recorded)"}
 
-A trading round has just been settled. Your job is to extract a concise, durable lesson that will help future trading agents make better decisions.
-
-## Round data
-- Token: ${round.token_symbol} (${round.token_name})
-- Question: ${round.question_type}
-- Entry price: $${round.entry_price_usd}
-- Exit price: $${round.exit_price_usd}
-- Price change: ${round.price_change_pct > 0 ? "+" : ""}${round.price_change_pct.toFixed(2)}%
-- Outcome: ${round.outcome}
-- Settled: ${round.settled_at}
-
-## Top agent responses
-${topResponses || "  (no responses recorded)"}
-
-## Instructions
-Write a short, practical lesson that a trading agent could use as context in a future round.
-Focus on:
-- What signal or pattern distinguished the winners from losers (if any)
-- What the price action reveals about ${round.token_symbol}'s current behavior
-- Any calibration notes (e.g. "high confidence was warranted here" or "confidence > 0.8 overfit")
-
-Respond ONLY with valid JSON matching this exact shape:
-{
-  "title": "short title ≤80 chars",
-  "content": "markdown body, 2-5 sentences, no lists, no headers",
-  "tokens": ["SYMBOL1", "SYMBOL2"],
-  "tags": ["tag1", "tag2", "tag3"]
-}
-
-Keep "content" under 500 characters. Use only lowercase for tags (e.g. "momentum", "reversal", "high-confidence", "low-volume").`;
+Write a 1-paragraph (~80-120 word) lesson future agents could use.
+Focus on what was non-obvious or generalizable about this outcome.
+Output JSON: { "title": "...", "content": "...", "tokens": [...], "tags": [...] }`;
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +275,6 @@ async function distillRound(round: SettledRound): Promise<Omit<LessonPayload, "s
   });
 
   const raw = completion.choices[0]?.message?.content ?? "";
-  // Defensive: extract the first JSON object even if the model adds surrounding text.
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) {
     throw new Error(`No JSON in LLM response: ${raw.slice(0, 200)}`);
@@ -255,7 +287,6 @@ async function distillRound(round: SettledRound): Promise<Omit<LessonPayload, "s
     tags?: unknown;
   };
 
-  // Normalise and validate fields defensively.
   const title = String(parsed.title ?? `${round.token_symbol} lesson ${round.id.slice(0, 8)}`).slice(0, 80);
   const content = String(parsed.content ?? "").slice(0, 600);
   const tokens = Array.isArray(parsed.tokens)
@@ -269,79 +300,78 @@ async function distillRound(round: SettledRound): Promise<Omit<LessonPayload, "s
 }
 
 // ---------------------------------------------------------------------------
-// Rate-limiter (simple in-process token bucket)
+// Ingest
 // ---------------------------------------------------------------------------
 
-class HourlyRateLimiter {
-  private count = 0;
-  private windowStart = Date.now();
-
-  constructor(private readonly max: number) {}
-
-  private reset() {
-    this.count = 0;
-    this.windowStart = Date.now();
+async function ingestLesson(
+  lesson: LessonPayload
+): Promise<{ status: "inserted" | "merged" | "duplicate"; node_id?: string }> {
+  if (DRY_RUN) {
+    log("[DRY_RUN] Would POST to /api/brain/ingest:", JSON.stringify(lesson, null, 2));
+    return { status: "inserted" };
   }
 
-  /** Returns ms to wait (0 if OK to proceed immediately). */
-  check(): number {
-    const now = Date.now();
-    if (now - this.windowStart >= 3_600_000) {
-      this.reset();
-    }
-    if (this.count >= this.max) {
-      const msUntilReset = 3_600_000 - (now - this.windowStart);
-      return msUntilReset;
-    }
-    return 0;
+  const res = await fetch(`${TRADEFISH_API}/api/brain/ingest`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${SCHOLAR_API_KEY}`,
+    },
+    body: JSON.stringify(lesson),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`POST /api/brain/ingest failed ${res.status}: ${body.slice(0, 300)}`);
   }
-
-  increment() {
-    this.count++;
-  }
+  return res.json();
 }
 
 // ---------------------------------------------------------------------------
-// Main loop
+// Rate-limit helpers (persisted via state.json)
 // ---------------------------------------------------------------------------
 
-const rateLimiter = new HourlyRateLimiter(MAX_INGESTS_PER_HOUR);
+function checkRateLimit(state: State): boolean {
+  const now = Date.now();
+  const windowStart = state.hour_window_start ? new Date(state.hour_window_start).getTime() : now;
+  if (now - windowStart >= 3_600_000) {
+    // New hour — reset
+    state.ingests_this_hour = 0;
+    state.hour_window_start = new Date().toISOString();
+  }
+  return state.ingests_this_hour < MAX_INGESTS_PER_HOUR;
+}
+
+// ---------------------------------------------------------------------------
+// Main tick
+// ---------------------------------------------------------------------------
 
 async function tick() {
   const state = await loadState();
 
-  // Default: one hour ago if no prior run.
-  const since =
-    state.last_run_at ??
-    new Date(Date.now() - 60 * 60 * 1_000).toISOString();
+  const since = state.last_run_at ?? new Date(Date.now() - 60 * 60 * 1_000).toISOString();
 
-  console.log(`[scholar] fetching settled rounds since ${since}`);
+  log(`[scholar] fetching settled rounds since ${since}${DRY_RUN ? " [DRY_RUN]" : ""}`);
 
   let rounds: SettledRound[];
   try {
     rounds = await fetchSettledRounds(since);
   } catch (err) {
-    console.error("[scholar] failed to fetch rounds:", err);
+    logError("[scholar] failed to fetch rounds:", err);
     return;
   }
 
   if (rounds.length === 0) {
-    console.log("[scholar] no new settled rounds");
+    log("[scholar] no new settled rounds");
   } else {
-    console.log(`[scholar] ${rounds.length} round(s) to distil`);
+    log(`[scholar] ${rounds.length} round(s) to distil`);
   }
 
   const nowIso = new Date().toISOString();
 
   for (const round of rounds) {
-    // Rate-limit check.
-    const waitMs = rateLimiter.check();
-    if (waitMs > 0) {
-      console.warn(
-        `[scholar] rate limit reached (${MAX_INGESTS_PER_HOUR}/hr). Sleeping ${Math.ceil(waitMs / 1000)}s...`
-      );
-      await new Promise((r) => setTimeout(r, waitMs));
-      rateLimiter["reset"]?.(); // reset after waiting (bucket resets on next check)
+    if (!checkRateLimit(state)) {
+      log(`[scholar] rate limit reached (${MAX_INGESTS_PER_HOUR}/hr). Skipping remaining rounds.`);
+      break;
     }
 
     try {
@@ -349,28 +379,31 @@ async function tick() {
       const payload: LessonPayload = { ...lesson, source_round_id: round.id };
 
       const result = await ingestLesson(payload);
-      rateLimiter.increment();
+      if (!DRY_RUN) {
+        state.ingests_this_hour = (state.ingests_this_hour ?? 0) + 1;
+      }
 
-      console.log(
+      log(
         `[scholar] round=${round.id.slice(0, 8)} ${result.status}` +
           (result.node_id ? ` node=${result.node_id.slice(0, 8)}` : "") +
-          ` title="${lesson.title.slice(0, 50)}"`
+          ` title="${lesson.title.slice(0, 50)}"` +
+          (DRY_RUN ? " [DRY_RUN]" : "")
       );
     } catch (err) {
-      console.error(`[scholar] round=${round.id.slice(0, 8)} failed:`, err);
-      // Continue processing remaining rounds — don't abort the batch.
+      logError(`[scholar] round=${round.id.slice(0, 8)} failed:`, err);
     }
   }
 
-  // Persist last-run timestamp *after* processing (so a crash mid-batch won't
-  // skip rounds entirely on the next run — we'll re-fetch some, but ingest is
-  // idempotent on source_round_id so duplicates are harmless).
-  await saveState({ last_run_at: nowIso });
-  console.log(`[scholar] done. Next run at ${new Date(Date.now() + POLL_INTERVAL_MS).toISOString()}`);
+  await saveState({ ...state, last_run_at: nowIso });
+  log(`[scholar] done. State saved. last_run_at=${nowIso}`);
 }
 
-console.log(
-  `Hermes Scholar online. Model=${SCHOLAR_MODEL} max=${MAX_INGESTS_PER_HOUR}/hr poll=${POLL_INTERVAL_MS}ms`
-);
-tick();
-setInterval(tick, POLL_INTERVAL_MS);
+// ---------------------------------------------------------------------------
+// Entry
+// ---------------------------------------------------------------------------
+
+log(`Hermes Scholar online. model=${SCHOLAR_MODEL} max=${MAX_INGESTS_PER_HOUR}/hr dry_run=${DRY_RUN}`);
+tick().catch((err) => {
+  logError("Unhandled tick error:", err);
+  process.exit(1);
+});
