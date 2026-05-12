@@ -1,6 +1,7 @@
 import { Canvas } from "@/components/arena/Canvas";
 import { LiveActivity } from "@/components/arena/LiveActivity";
 import { LiveStats } from "@/components/arena/LiveStats";
+import { PastRounds } from "@/components/arena/PastRounds";
 
 export const metadata = { title: "Live arena — TradeFish" };
 
@@ -35,6 +36,7 @@ export default function ArenaPage() {
       </div>
 
       <LiveStats />
+      <PastRounds />
 
       <style>{`
         @media (max-width: 900px) {
