@@ -17,6 +17,7 @@ type AgentRow = {
   endpoint: string | null;
   last_seen_at: string | null;
   bankroll_usd: number | null;
+  revival_count: number | null;
 };
 
 type StatRow = {
@@ -81,7 +82,7 @@ export default async function AgentDetailPage({
     const db = dbAdmin();
     const { data: a } = await db
       .from("agents")
-      .select("id, short_id, name, owner_handle, owner_pubkey, persona, claimed, created_at, delivery, endpoint, last_seen_at, bankroll_usd")
+      .select("id, short_id, name, owner_handle, owner_pubkey, persona, claimed, created_at, delivery, endpoint, last_seen_at, bankroll_usd, revival_count")
       .eq("short_id", id)
       .maybeSingle();
     agent = (a ?? null) as AgentRow | null;
@@ -123,6 +124,7 @@ export default async function AgentDetailPage({
     : agent.owner_handle ?? null;
 
   const bankroll = Number(agent.bankroll_usd ?? 1000);
+  const revivals = Number(agent.revival_count ?? 0);
   const composite = Number(stats?.composite_score ?? 0);
   const sharpe = Number(stats?.sharpe ?? 0);
   const sampleN = Number(stats?.sample_size ?? 0);
@@ -226,13 +228,14 @@ export default async function AgentDetailPage({
           </div>
         </div>
 
-        {/* 5-stat strip */}
-        <div className="agent-stats" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", borderBottom: "1px solid var(--bd-1)" }}>
+        {/* 6-stat strip */}
+        <div className="agent-stats" style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", borderBottom: "1px solid var(--bd-1)" }}>
           <Stat label="Composite score" v={composite ? composite.toFixed(3) : "—"} />
           <Stat label="Sharpe" v={sharpe ? `${sharpe >= 0 ? "+" : ""}${sharpe.toFixed(2)}` : "—"} accent={sharpe >= 0 ? "up" : "down"} />
           <Stat label="Trades" v={sampleN ? sampleN.toLocaleString() : "0"} />
           <Stat label="Win rate" v={winRate !== null ? `${winRate}%` : "—"} accent={winRate !== null && winRate >= 50 ? "up" : "down"} />
-          <Stat label="Total PnL" v={stats ? `${totalPnl >= 0 ? "+" : "−"}${fmtUsd(totalPnl)}` : "—"} accent={totalPnl >= 0 ? "up" : "down"} last />
+          <Stat label="Total PnL" v={stats ? `${totalPnl >= 0 ? "+" : "−"}${fmtUsd(totalPnl)}` : "—"} accent={totalPnl >= 0 ? "up" : "down"} />
+          <Stat label="Revivals" v={revivals.toLocaleString()} accent={revivals === 0 ? "neutral" : revivals <= 2 ? "hold" : "down"} last />
         </div>
 
         {/* Body */}
@@ -432,6 +435,7 @@ export default async function AgentDetailPage({
           .agent-hero > .av { width: 64px !important; height: 64px !important; font-size: 18px !important; }
           .agent-hero > div:last-child { grid-column: 1 / -1; }
           .agent-stats { grid-template-columns: repeat(3, 1fr) !important; }
+          .agent-stats > div:nth-child(3n) { border-right: none !important; }
           .agent-stats > div { border-right: none !important; border-bottom: 1px solid var(--bd-1); }
         }
       `}</style>
@@ -439,11 +443,16 @@ export default async function AgentDetailPage({
   );
 }
 
-function Stat({ label, v, accent, last }: { label: string; v: string; accent?: "up" | "down"; last?: boolean }) {
+function Stat({ label, v, accent, last }: { label: string; v: string; accent?: "up" | "down" | "hold" | "neutral"; last?: boolean }) {
+  const color =
+    accent === "up" ? "var(--up)" :
+    accent === "down" ? "var(--down)" :
+    accent === "hold" ? "var(--hold)" :
+    "var(--fg-2)";
   return (
     <div style={{ padding: "24px 32px", borderRight: last ? "none" : "1px solid var(--bd-1)" }}>
       <div className="t-mini" style={{ marginBottom: 8 }}>{label}</div>
-      <div className="num" style={{ fontSize: 26, fontWeight: 500, color: accent === "up" ? "var(--up)" : accent === "down" ? "var(--down)" : "var(--fg)" }}>
+      <div className="num" style={{ fontSize: 26, fontWeight: 500, color }}>
         {v}
       </div>
     </div>
