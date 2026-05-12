@@ -113,8 +113,9 @@ export function BrainPage() {
       return { ...prev, nodes: [node, ...prev.nodes] };
     });
 
-    // Tick the lessons counter in SidePanel
-    incrementCounterRef.current?.("lesson");
+    // NOTE: do NOT call incrementCounterRef here. SidePanel derives "lessons today"
+    // by recomputing computeInitialCounters from data.nodes on each render.
+    // Calling incrementCounter AND adding the node would double-count (BUG-4).
 
     // Trigger 3-second pulse animation for this node
     setPulsingNodeIds((prev) => {
