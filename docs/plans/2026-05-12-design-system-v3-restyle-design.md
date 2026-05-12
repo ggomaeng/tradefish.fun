@@ -224,3 +224,67 @@ Conventional commits with trailers per `CLAUDE.md` git workflow:
 - `feat(ask): restyle composer + balance + scoring rail (design v3)` — Section D
 
 Include `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` trailer.
+
+---
+
+## What shipped (final — 2026-05-12)
+
+The PR ended up scoping wider than the original A/B/C/D plan. After Section D landed, the user redirected to a polish-and-unify pass — preserve existing UX/structure on every surface, layer the Solana terminal feel on top via design-system primitives. 9 polish rounds followed, one atomic commit per surface.
+
+### Foundation (A–B, restoring landing identity after a mid-flight revert)
+
+| Commit | What |
+|---|---|
+| `5dc0fe0` `feat(design)` | Install v3 skill folder + Geist Mono wiring in `layout.tsx`. |
+| `8e480a5` `feat(design)` | Rewrite `globals.css` with v3 tokens + alias bridge + full component layer. |
+| `172dc84` then `caded91` | Landing restructure → **reverted** when the user clarified the ocean hero (HeroSwarm + LightRays) is brand identity, not subject to wholesale restructure. |
+| `f93343b` / `562a90c` | Two merges from `origin/main` (commits #21, #22, #23, #24 `arena→swarm` rename, #26 brain feature). |
+| `1032b50` `fix(appnav)` | Restored platform `.appnav` to match main verbatim — header is shared chrome, not subject to v3 mono-caps without explicit ask. |
+| `e5e5ced` `feat(landing)` | Added platform nav links (`SWARM/ASK/AGENTS/BRAIN/DOCS`) to the ocean hero top nav. |
+| `3946188` `fix(hero)` | Aligned `HeroAsk` placeholder rotation to the canonical "Buy or sell $TOKEN right now?" — honesty about backend grammar. |
+
+### Polish pass (9 rounds, one commit per surface)
+
+| Commit | Surface | Move |
+|---|---|---|
+| `aa7fd8f` | Landing below-hero | `┌─ STEP NN` Step labels, Geist Mono titles, sharp persona icons. |
+| `7d4bca2` | Landing personas | **Established the "polished card discipline"** — equal heights via flex+minHeight, 4 corner brackets (`┌ ┐ └ ┘`) per card tinted to accent color, sharp pixel req chips, mono caps CTAs. Standard carried into every later round. |
+| `8754c17` | `/agents` Leaderboard | `┌─ SURFACE · LEADERBOARD`, ▲/▼ glyph PnL + Sharpe, sharp table chrome. PrizePool (teammate) untouched. |
+| `1a43cbc` | `/round/[id]` head | `┌─ QUESTION` panel + spectrum-text `{symbol}` + Departure Mono countdown with cyan glow + `EXPIRED`/`SETTLED` chips. |
+| `6619f58` | `/agents/[id]` detail | Verified-chip glyph `◉ VERIFIED`, sharp 80px avatar, `┌─ BANKROLL` Departure Mono panel + ▲/▼ delta. |
+| `b8ddf15` + `9038954` | `/brain` | `┌─ SURFACE · LIVE` eyebrow on both SSR + mounted paths (second commit fixed the missed mounted-path during visual verification). |
+| `e606dfa` | `/agents/register` | Docs-shell `┌─` eyebrow + Geist Mono h2 steps + cyan-bordered codeblocks. |
+| `b0248fa` | `/claim/[token]` | Sharp pixel center block with full `--grad-spectrum` + `--bloom-cyan`, v3 spectrum stop radial bgs (was legacy solana-purple/coral). |
+| `cb64fbf` | Shared chrome | `┌─ TOP UP · SOL → CREDITS` TopupModal panel, mono-caps WalletWidget menu, `┌─ SURFACE · X · ERROR` magenta RouteError. |
+| `1e0cc9a` | `/docs` + `/terms` | Mono-caps eyebrows + Geist Mono display h1s across both surfaces. |
+
+### Workspace + cleanup
+
+| Commit | What |
+|---|---|
+| `fb41b18` `feat(db)` | Demo-mode env-var gating so platform pages render RouteError chrome instead of 500ing without Supabase creds. Added `.env.example`. |
+| `9a68740` `style(appnav)` | NAV_LINKS uppercased + `hideOnMobile` flags for Brain/Docs. |
+| `315910b` `refactor(landing)` | HeroSwarm moved back inside `.tf-landing-hero` scope (was page-fixed). |
+| `2ec43a3` `chore(cleanup)` | Dropped Inter + JetBrains_Mono from `layout.tsx` (zero callsites). Removed 27 MB of unused image bloat from `.claude/skills/tradefish-design/uploads/` + 4 reference screenshots. Re-applied footer `<a>` → `<Link>` fix that got reverted during merge. |
+
+### Card discipline standard (established Round 1, applied Rounds 2–9)
+
+Any card-like surface element gets:
+- Sharp pixel corners (`var(--r-0)`)
+- `var(--surface)` translucent bg, `var(--line)` hairline border
+- Equal-height treatment (`height: 100%` + `minHeight` in grids; `flex: 1` on body para to push CTA to the bottom)
+- Optional `┌ ┐ └ ┘` corner brackets (mono font, absolutely positioned, tinted to surface accent) when the card represents a persona / step / verdict
+- Mono caps CTA at the bottom with arrow (`WATCH THE SWARM →` etc.)
+- Sharp pixel-corner requirement chips (drop `--r-pill` rounded)
+- Cyan-glow hover (`--glow-cyan` + `--surface-2` bg)
+
+### Voice rules (locked, applied app-wide)
+
+Captured in `CLAUDE.md` "Design — LOCKED" section + `.claude/skills/tradefish-design/SKILL.md` project-override preamble. Future surfaces should match without re-asking.
+
+### Out of scope (intentionally deferred or skipped)
+
+- Light-mode parity (`[data-theme="light"]`) — v3 doesn't ship light tokens yet. `/docs` could use it eventually.
+- Pre-existing lint warnings in `examples/reference-agents/`, `PrizePool.tsx`, `OwnerControls.tsx`, `brain/BrainPage.tsx setMounted(true)` — teammate code, separate PR.
+- Performance audit on Departure Mono local font load — woff2 is preloaded, FOUT is minimal in practice.
+- TopupModal full flow restyle (signing / confirming / success) — only header + dropdown chrome touched; inner phase states still use legacy v2 styling internally.
