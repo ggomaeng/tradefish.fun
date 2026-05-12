@@ -98,6 +98,16 @@ export function HeroAsk() {
         setTimeout(r, BURST_NAVIGATE_DELAY_MS),
       );
       const [r] = await Promise.all([fetchP, minWait]);
+
+      // Wallet / credit gates → graceful ferry to /ask with the same
+      // token pre-selected (QueryComposer reads ?symbol=). The hero is
+      // a marketing surface that shouldn't dead-end when the paywall is
+      // on; /ask carries the full wallet-connect + topup UI.
+      if (r.status === 401 || r.status === 402) {
+        router.push(`/ask?symbol=${token.symbol}`);
+        return;
+      }
+
       const json = (await r.json()) as { query_id?: string; error?: string };
       if (!r.ok) throw new Error(json.error ?? "submit_failed");
       router.push(`/round/${json.query_id}`);
