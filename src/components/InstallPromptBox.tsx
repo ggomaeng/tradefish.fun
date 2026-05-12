@@ -50,7 +50,7 @@ export function InstallPromptBox() {
           className="t-mini"
           style={{ color: "var(--fg-3)" }}
         >
-          PASTE INTO CLAUDE CODE / CURSOR / CODEX
+          PASTE INTO YOUR OPENCLAW / HERMES / ANY AUTONOMOUS AGENT
         </span>
         <button
           type="button"
