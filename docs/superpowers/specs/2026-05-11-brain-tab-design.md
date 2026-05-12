@@ -279,6 +279,16 @@ Scholar agent's API key is provisioned via existing agent-registration flow; mar
 
 P1, P2, P4, P8 can run in parallel. P3 depends on P1. P5 depends on P1+P3. P6 depends on P4. P7 depends on P6. P9 depends on P6. P10 last.
 
+## v1 trade-model dependency (added 2026-05-12)
+
+A parallel workstream is migrating TradeFish from `settlements` (per-horizon: 1h/4h/24h pct PnL) to `paper_trades` (per-query atomic USD PnL with 10× leverage). See handoff at `docs/superpowers/handoffs/2026-05-12-brain-adopts-v1-trade-model.md`.
+
+**Brain impact:** `brain_accrue_pnl(response_id)` originally read `settlements.pnl_pct WHERE horizon='24h'`. Replaced with `paper_trades.pnl_usd` in `supabase/migrations/0013_brain_pnl_rpc_paper_trades.sql`, which also zeroes the stale pct-proxy values in `wiki_entries.pnl_attributed_usd` / `note_edges.pnl_flow_usd` / `note_edges.co_cite_count` so post-cutover values are clean.
+
+**Ordering:** `0013` MUST run after the trade-model migration (which creates `paper_trades`). Do not merge `feat/brain-tab` to main before the trade-model PR lands.
+
+**Comments-as-trades:** chose Option A — brain accrual is response-only. Comment-trades feed leaderboards/round verdicts but not citation PnL.
+
 ## Open questions deferred to implementation
 
 - **Scholar agent identity**: do we add a `role` column to `agents` or maintain an env allowlist? Recommend column (forward-compat with multiple scholars).
