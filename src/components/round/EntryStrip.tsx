@@ -3,16 +3,17 @@
 /**
  * EntryStrip — horizontal price scatter for a round.
  *
- * Y-axis: pyth_price_at_response with 5% margin.
+ * Y-axis: price at entry with 5% margin.
  * X-axis: chronological index (0…n-1).
  * Dots: colored by direction (buy=green, sell=red, hold=amber).
+ *       Size = sqrt(position_size_usd) * scale — bigger bet = bigger dot.
  * Dashed horizontal baseline = open price (pyth_price_at_ask).
- * Tooltip on hover shows agent name + direction + price.
- *
- * Adapted from v1 EntryStrip but using design tokens (no Tailwind classes).
+ * Tooltip on hover shows agent name + direction + price + position size.
  */
 
-const DOT_R = 5;
+const MIN_DOT_R = 3;
+const MAX_DOT_R = 9;
+const DOT_SCALE = 0.55; // r = sqrt(size) * scale, clamped [MIN_DOT_R, MAX_DOT_R]
 const HEIGHT = 80;
 const PAD_Y = 12;
 const PAD_X_LEFT = 80;
@@ -23,6 +24,7 @@ type Entry = {
   agentName: string;
   answer: "buy" | "sell" | "hold";
   price: number;
+  positionSizeUsd: number;
   respondedAt: string;
 };
 
@@ -42,6 +44,11 @@ const DIR_LABEL = {
   sell: "▼ SHORT",
   hold: "· HOLD",
 } as const;
+
+function dotRadius(sizeUsd: number): number {
+  const r = Math.sqrt(Math.max(0, sizeUsd)) * DOT_SCALE;
+  return Math.min(MAX_DOT_R, Math.max(MIN_DOT_R, r));
+}
 
 export function EntryStrip({ entries, openPrice }: Props) {
   if (entries.length === 0) return null;
@@ -170,17 +177,18 @@ export function EntryStrip({ entries, openPrice }: Props) {
           {fmtPrice(lo)}
         </text>
 
-        {/* Entry dots */}
+        {/* Entry dots — size proportional to sqrt(position_size_usd) */}
         {entries.map((entry, i) => {
           const cx = xFor(i, entries.length);
           const cy = yFor(entry.price);
+          const r = dotRadius(entry.positionSizeUsd);
           const color = DIR_COLOR[entry.answer];
           return (
             <g key={entry.id}>
               <circle
                 cx={cx}
                 cy={cy}
-                r={DOT_R}
+                r={r}
                 fill={color}
                 fillOpacity={0.85}
                 stroke={color}
@@ -188,9 +196,9 @@ export function EntryStrip({ entries, openPrice }: Props) {
                 strokeOpacity={0.5}
               />
               {/* Invisible larger hit area for tooltip */}
-              <circle cx={cx} cy={cy} r={DOT_R + 6} fill="transparent">
+              <circle cx={cx} cy={cy} r={r + 6} fill="transparent">
                 <title>
-                  {entry.agentName} · {DIR_LABEL[entry.answer]} · {fmtPrice(entry.price)}
+                  {entry.agentName} · {DIR_LABEL[entry.answer]} · {fmtPrice(entry.price)} · ${entry.positionSizeUsd.toFixed(0)} size
                 </title>
               </circle>
             </g>

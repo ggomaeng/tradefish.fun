@@ -3,67 +3,83 @@
 /**
  * ConsensusBar — 3-track consensus widget for a round.
  *
- * Track 1: Raw vote count (buy / sell / hold)
- * Track 2: Confidence-weighted lean (sum of confidence by direction)
- * Track 3: Direction-correct % from settlements (dimmed/placeholder when unsettled)
+ * Track 1: Raw vote count — % of trades (responses + comments-with-direction) by direction
+ * Track 2: Size-weighted notional — sum positionSizeUsd by direction / total notional
+ * Track 3: PnL-weighted lean — settled trades only: sum pnl_usd by direction / total abs PnL.
+ *          Shows "pending" placeholder when not settled.
  *
- * The 60% threshold line appears on all tracks. When a track has no data
- * (e.g., unsettled round for track 3), it renders a muted placeholder row
- * rather than a broken 0% bar.
+ * The 60% threshold line appears on all tracks.
  */
 
-type Response = {
+type EntryInput = {
   id: string;
-  answer: "buy" | "sell" | "hold";
-  confidence: number;
+  direction: "buy" | "sell" | "hold";
+  positionSizeUsd: number;
 };
 
-type Settlement = {
-  response_id: string;
-  direction_correct: boolean;
+type PaperTradeInput = {
+  direction: "buy" | "sell" | "hold";
+  position_size_usd: number;
+  pnl_usd: number;
 };
 
 interface Props {
-  responses: Response[];
-  settlements: Settlement[];
+  entries: EntryInput[];
+  paperTrades: PaperTradeInput[];
 }
 
-export function ConsensusBar({ responses, settlements }: Props) {
-  const total = responses.length;
+export function ConsensusBar({ entries, paperTrades }: Props) {
+  const total = entries.length;
 
   // Track 1 — raw vote counts
-  const buyCount = responses.filter((r) => r.answer === "buy").length;
-  const sellCount = responses.filter((r) => r.answer === "sell").length;
-  const holdCount = responses.filter((r) => r.answer === "hold").length;
+  const buyCount = entries.filter((e) => e.direction === "buy").length;
+  const sellCount = entries.filter((e) => e.direction === "sell").length;
+  const holdCount = entries.filter((e) => e.direction === "hold").length;
   const rawTotal = Math.max(1, buyCount + sellCount + holdCount);
   const rawLongPct = (buyCount / rawTotal) * 100;
   const rawShortPct = (sellCount / rawTotal) * 100;
   const rawHoldPct = (holdCount / rawTotal) * 100;
 
-  // Track 2 — confidence-weighted lean
-  const confBuy = responses
-    .filter((r) => r.answer === "buy")
-    .reduce((s, r) => s + r.confidence, 0);
-  const confSell = responses
-    .filter((r) => r.answer === "sell")
-    .reduce((s, r) => s + r.confidence, 0);
-  const confHold = responses
-    .filter((r) => r.answer === "hold")
-    .reduce((s, r) => s + r.confidence, 0);
-  const confTotal = Math.max(0.001, confBuy + confSell + confHold);
-  const confLongPct = (confBuy / confTotal) * 100;
-  const confShortPct = (confSell / confTotal) * 100;
-  const confHoldPct = (confHold / confTotal) * 100;
-  const confLead = confLongPct >= 60 ? "LONG" : confShortPct >= 60 ? "SHORT" : "SPLIT";
-  const confLeadPct = confLead === "LONG" ? confLongPct : confLead === "SHORT" ? confShortPct : null;
+  // Track 2 — size-weighted notional
+  const sizeBuy = entries
+    .filter((e) => e.direction === "buy")
+    .reduce((s, e) => s + e.positionSizeUsd, 0);
+  const sizeSell = entries
+    .filter((e) => e.direction === "sell")
+    .reduce((s, e) => s + e.positionSizeUsd, 0);
+  const sizeHold = entries
+    .filter((e) => e.direction === "hold")
+    .reduce((s, e) => s + e.positionSizeUsd, 0);
+  const sizeTotal = Math.max(0.001, sizeBuy + sizeSell + sizeHold);
+  const sizeLongPct = (sizeBuy / sizeTotal) * 100;
+  const sizeShortPct = (sizeSell / sizeTotal) * 100;
+  const sizeHoldPct = (sizeHold / sizeTotal) * 100;
+  const sizeLead = sizeLongPct >= 60 ? "LONG" : sizeShortPct >= 60 ? "SHORT" : "SPLIT";
+  const sizeLeadPct = sizeLead === "LONG" ? sizeLongPct : sizeLead === "SHORT" ? sizeShortPct : null;
 
-  // Track 3 — direction correct % (only for settled responses)
-  const settledResponseIds = new Set(settlements.map((s) => s.response_id));
-  const settledResponses = responses.filter((r) => settledResponseIds.has(r.id));
-  const correctCount = settlements.filter((s) => s.direction_correct).length;
-  const settledTotal = settledResponses.length;
-  const correctPct = settledTotal > 0 ? (correctCount / settledTotal) * 100 : null;
-  const hasSettlements = settlements.length > 0;
+  // Track 3 — PnL-weighted lean (settled only)
+  const hasPaperTrades = paperTrades.length > 0;
+
+  const pnlBuy = paperTrades
+    .filter((t) => t.direction === "buy")
+    .reduce((s, t) => s + Math.abs(t.pnl_usd), 0);
+  const pnlSell = paperTrades
+    .filter((t) => t.direction === "sell")
+    .reduce((s, t) => s + Math.abs(t.pnl_usd), 0);
+  const pnlHold = paperTrades
+    .filter((t) => t.direction === "hold")
+    .reduce((s, t) => s + Math.abs(t.pnl_usd), 0);
+  const pnlTotal = Math.max(0.001, pnlBuy + pnlSell + pnlHold);
+  const pnlLongPct = hasPaperTrades ? (pnlBuy / pnlTotal) * 100 : 0;
+  const pnlShortPct = hasPaperTrades ? (pnlSell / pnlTotal) * 100 : 0;
+  const pnlHoldPct = hasPaperTrades ? (pnlHold / pnlTotal) * 100 : 0;
+
+  // Net PnL by direction for summary label
+  const netBuy = paperTrades.filter((t) => t.direction === "buy").reduce((s, t) => s + t.pnl_usd, 0);
+  const netSell = paperTrades.filter((t) => t.direction === "sell").reduce((s, t) => s + t.pnl_usd, 0);
+  const pnlWinner = hasPaperTrades
+    ? Math.abs(netBuy) >= Math.abs(netSell) ? (netBuy >= 0 ? "LONG" : "SHORT") : (netSell >= 0 ? "SHORT" : "LONG")
+    : null;
 
   if (total === 0) return null;
 
@@ -82,7 +98,7 @@ export function ConsensusBar({ responses, settlements }: Props) {
       {/* Track 1 — Raw votes */}
       <TrackRow
         label="RAW VOTE"
-        sub={`${total} agent${total === 1 ? "" : "s"}`}
+        sub={`${total} trade${total === 1 ? "" : "s"}`}
         longPct={rawLongPct}
         holdPct={rawHoldPct}
         shortPct={rawShortPct}
@@ -97,37 +113,36 @@ export function ConsensusBar({ responses, settlements }: Props) {
         }
       />
 
-      {/* Track 2 — Confidence-weighted */}
+      {/* Track 2 — Size-weighted notional */}
       <TrackRow
-        label="CONF-WEIGHTED"
-        sub="by confidence sum"
-        longPct={confLongPct}
-        holdPct={confHoldPct}
-        shortPct={confShortPct}
+        label="SIZE NOTIONAL"
+        sub={`$${sizeTotal.toFixed(0)} total`}
+        longPct={sizeLongPct}
+        holdPct={sizeHoldPct}
+        shortPct={sizeShortPct}
         summary={
-          confLead === "SPLIT" ? (
+          sizeLead === "SPLIT" ? (
             <span style={{ color: "var(--fg-3)" }}>SPLIT</span>
           ) : (
-            <span style={{ color: confLead === "LONG" ? "var(--up)" : "var(--down)" }}>
-              {confLead} · {confLeadPct?.toFixed(0)}%
+            <span style={{ color: sizeLead === "LONG" ? "var(--up)" : "var(--down)" }}>
+              {sizeLead} · {sizeLeadPct?.toFixed(0)}%
             </span>
           )
         }
       />
 
-      {/* Track 3 — Direction correct from settlements */}
-      {hasSettlements ? (
+      {/* Track 3 — PnL-weighted lean (settled) */}
+      {hasPaperTrades ? (
         <TrackRow
-          label="SETTLED CORRECT"
-          sub={`${settledTotal} settled`}
-          longPct={correctPct ?? 0}
-          holdPct={0}
-          shortPct={100 - (correctPct ?? 0)}
-          correctMode
+          label="PnL WEIGHT"
+          sub={`${paperTrades.length} settled`}
+          longPct={pnlLongPct}
+          holdPct={pnlHoldPct}
+          shortPct={pnlShortPct}
           summary={
-            correctPct !== null ? (
-              <span style={{ color: correctPct >= 50 ? "var(--up)" : "var(--down)" }}>
-                {correctPct.toFixed(0)}% hit rate
+            pnlWinner ? (
+              <span style={{ color: pnlWinner === "LONG" ? "var(--up)" : "var(--down)" }}>
+                {pnlWinner} wins
               </span>
             ) : (
               <span style={{ color: "var(--fg-4)" }}>—</span>
@@ -145,9 +160,9 @@ export function ConsensusBar({ responses, settlements }: Props) {
           }}
         >
           <div>
-            <div className="t-mini" style={{ color: "var(--fg-3)" }}>SETTLED CORRECT</div>
+            <div className="t-mini" style={{ color: "var(--fg-3)" }}>PnL WEIGHT</div>
             <div style={{ fontSize: 10, color: "var(--fg-4)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
-              pending 1h
+              pending
             </div>
           </div>
           <div
@@ -186,7 +201,6 @@ function TrackRow({
   holdPct,
   shortPct,
   summary,
-  correctMode,
 }: {
   label: string;
   sub: string;
@@ -194,7 +208,6 @@ function TrackRow({
   holdPct: number;
   shortPct: number;
   summary: React.ReactNode;
-  correctMode?: boolean;
 }) {
   return (
     <div
@@ -240,19 +253,9 @@ function TrackRow({
             zIndex: 2,
           }}
         />
-        {correctMode ? (
-          // In correct mode: green = correct, red = incorrect
-          <>
-            <div style={{ width: `${longPct}%`, height: "100%", background: "var(--up)" }} />
-            <div style={{ width: `${shortPct}%`, height: "100%", background: "var(--down)" }} />
-          </>
-        ) : (
-          <>
-            <div style={{ width: `${longPct}%`, height: "100%", background: "var(--up)" }} />
-            <div style={{ width: `${holdPct}%`, height: "100%", background: "var(--hold)" }} />
-            <div style={{ width: `${shortPct}%`, height: "100%", background: "var(--down)" }} />
-          </>
-        )}
+        <div style={{ width: `${longPct}%`, height: "100%", background: "var(--up)" }} />
+        <div style={{ width: `${holdPct}%`, height: "100%", background: "var(--hold)" }} />
+        <div style={{ width: `${shortPct}%`, height: "100%", background: "var(--down)" }} />
       </div>
       <div style={{ fontSize: 11, color: "var(--fg-2)", fontFamily: "var(--font-mono)" }}>
         {summary}

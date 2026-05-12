@@ -3,46 +3,40 @@
 /**
  * SettlementVerdict — animated settlement overlay for settled rounds.
  *
- * Mounts when the round has 24h settlements. Shows:
- * - Vote distribution (LONG / SHORT / HOLD with animated bars)
+ * Mounts when the round has paper_trades (i.e. query is settled).
+ * Shows:
+ * - Vote distribution (LONG / SHORT / HOLD with animated bars) — from paperTrades
  * - Price open → close with delta %
  * - CONSENSUS RIGHT / WRONG / SPLIT verdict
- * - Top agent by 1h PnL
+ * - Top agent by pnl_usd
  *
- * Dismissable by click anywhere on overlay. No auto-dismiss. No persistence
- * across reloads — shows on mount, hidden in component state after dismiss.
- *
- * Adapted from v1 RoundConclusion but using the v2 design tokens.
+ * Dismissable by click anywhere on overlay.
  */
 
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useState } from "react";
+import type { RoundPaperTrade } from "@/lib/realtime/round";
 
 export type VerdictData = {
   symbol: string;
   openPrice: number;
-  closePrice: number; // pyth_price_at_settle for 24h horizon
-  longCount: number;
-  shortCount: number;
-  holdCount: number;
-  topAgentName: string | null;
-  topAgentPnl: number | null; // 1h pnl_pct for best performer
-  // consensus derived from vote counts
+  closePrice: number; // query.close_price_pyth
+  paperTrades: RoundPaperTrade[];
 };
 
 interface Props {
   data: VerdictData;
 }
 
-function computeVerdict(data: VerdictData): {
+function computeVerdict(longCount: number, shortCount: number, netPnlByDirection: Record<string, number>): {
   label: string;
   color: string;
   borderColor: string;
 } {
-  const majority = data.longCount > data.shortCount ? "LONG" : data.shortCount > data.longCount ? "SHORT" : null;
+  const majority = longCount > shortCount ? "buy" : shortCount > longCount ? "sell" : null;
   if (majority === null) return { label: "SPLIT — NO CONSENSUS", color: "var(--hold)", borderColor: "var(--hold-bd)" };
-  const moved = data.closePrice >= data.openPrice ? "LONG" : "SHORT";
-  if (majority === moved) return { label: "CONSENSUS WAS RIGHT", color: "var(--up)", borderColor: "var(--up-bd)" };
+  const majorityPnl = netPnlByDirection[majority] ?? 0;
+  if (majorityPnl > 0) return { label: "CONSENSUS WAS RIGHT", color: "var(--up)", borderColor: "var(--up-bd)" };
   return { label: "CONSENSUS WAS WRONG", color: "var(--down)", borderColor: "var(--down-bd)" };
 }
 
@@ -50,12 +44,34 @@ export function SettlementVerdict({ data }: Props) {
   const [visible, setVisible] = useState(true);
   const reduced = useReducedMotion();
 
-  const total = Math.max(1, data.longCount + data.shortCount + data.holdCount);
-  const longPct = Math.round((data.longCount / total) * 100);
-  const shortPct = Math.round((data.shortCount / total) * 100);
-  const holdPct = Math.round((data.holdCount / total) * 100);
+  const { paperTrades } = data;
 
-  const verdict = computeVerdict(data);
+  // Direction counts
+  const longCount = paperTrades.filter((t) => t.direction === "buy").length;
+  const shortCount = paperTrades.filter((t) => t.direction === "sell").length;
+  const holdCount = paperTrades.filter((t) => t.direction === "hold").length;
+
+  const total = Math.max(1, longCount + shortCount + holdCount);
+  const longPct = Math.round((longCount / total) * 100);
+  const shortPct = Math.round((shortCount / total) * 100);
+  const holdPct = Math.round((holdCount / total) * 100);
+
+  // Net PnL by direction for consensus correctness
+  const netPnlByDirection: Record<string, number> = {};
+  for (const t of paperTrades) {
+    netPnlByDirection[t.direction] = (netPnlByDirection[t.direction] ?? 0) + t.pnl_usd;
+  }
+
+  const verdict = computeVerdict(longCount, shortCount, netPnlByDirection);
+
+  // Top agent by pnl_usd
+  let topAgentName: string | null = null;
+  let topAgentPnl: number | null = null;
+  if (paperTrades.length > 0) {
+    const top = paperTrades.reduce((best, cur) => cur.pnl_usd > best.pnl_usd ? cur : best);
+    topAgentName = top.agent_name;
+    topAgentPnl = top.pnl_usd;
+  }
 
   const open = data.openPrice;
   const close = data.closePrice;
@@ -67,6 +83,12 @@ export function SettlementVerdict({ data }: Props) {
     if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
     if (p >= 1) return `$${p.toFixed(4)}`;
     return `$${p.toFixed(6)}`;
+  }
+
+  function fmtUsd(n: number): string {
+    const abs = Math.abs(n);
+    if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+    return `$${abs.toFixed(2)}`;
   }
 
   return (
@@ -118,7 +140,7 @@ export function SettlementVerdict({ data }: Props) {
                 fontFamily: "var(--font-mono)",
               }}
             >
-              ROUND CLOSED · {data.symbol}/USD · 24h SETTLED
+              ROUND CLOSED · {data.symbol}/USD · SETTLED
             </motion.div>
 
             {/* Question */}
@@ -154,10 +176,10 @@ export function SettlementVerdict({ data }: Props) {
             </motion.div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <VoteRow label="LONG" count={data.longCount} pct={longPct} color="var(--up)" delay={0.85} reduced={reduced ?? false} />
-              <VoteRow label="SHORT" count={data.shortCount} pct={shortPct} color="var(--down)" delay={1.1} reduced={reduced ?? false} />
-              {data.holdCount > 0 && (
-                <VoteRow label="HOLD" count={data.holdCount} pct={holdPct} color="var(--hold)" delay={1.35} reduced={reduced ?? false} />
+              <VoteRow label="LONG" count={longCount} pct={longPct} color="var(--up)" delay={0.85} reduced={reduced ?? false} />
+              <VoteRow label="SHORT" count={shortCount} pct={shortPct} color="var(--down)" delay={1.1} reduced={reduced ?? false} />
+              {holdCount > 0 && (
+                <VoteRow label="HOLD" count={holdCount} pct={holdPct} color="var(--hold)" delay={1.35} reduced={reduced ?? false} />
               )}
             </div>
 
@@ -237,7 +259,7 @@ export function SettlementVerdict({ data }: Props) {
             </motion.div>
 
             {/* Top agent */}
-            {data.topAgentName && (
+            {topAgentName && (
               <motion.div
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -259,18 +281,17 @@ export function SettlementVerdict({ data }: Props) {
                 >
                   TOP AGENT
                 </span>
-                <span style={{ fontSize: 16, color: "var(--fg)" }}>{data.topAgentName}</span>
-                {data.topAgentPnl !== null && (
+                <span style={{ fontSize: 16, color: "var(--fg)" }}>{topAgentName}</span>
+                {topAgentPnl !== null && (
                   <span
                     className="num"
                     style={{
                       fontSize: 18,
-                      color: data.topAgentPnl >= 0 ? "var(--up)" : "var(--down)",
+                      color: topAgentPnl >= 0 ? "var(--up)" : "var(--down)",
                       marginLeft: "auto",
                     }}
                   >
-                    {data.topAgentPnl >= 0 ? "+" : ""}
-                    {data.topAgentPnl.toFixed(2)}%
+                    {topAgentPnl >= 0 ? "+" : "−"}{fmtUsd(topAgentPnl)}
                   </span>
                 )}
               </motion.div>

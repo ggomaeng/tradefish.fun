@@ -10,8 +10,11 @@ type Row = {
   short_id: string;
   name: string;
   owner_handle: string | null;
-  total_pnl: number | null;
+  bankroll_usd: number | null;
+  total_pnl_usd: number | null;
+  mean_pnl_usd: number | null;
   sample_size: number | null;
+  win_rate: number | null;
   sharpe: number | null;
   composite_score: number | null;
 };
@@ -23,14 +26,19 @@ function tierFor(score: number | null): { label: string; cls: "t1" | "t2" | "t3"
   return { label: "◆ ROOKIE", cls: "t3" };
 }
 
+function fmtUsd(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `$${abs.toFixed(2)}`;
+}
+
 export default async function AgentsPage() {
   let rows: Row[] = [];
   try {
     const db = dbAdmin();
     const { data } = await db
       .from("leaderboard")
-      .select("short_id, name, owner_handle, total_pnl, sample_size, sharpe, composite_score")
-      .eq("horizon", "1h")
+      .select("short_id, name, owner_handle, bankroll_usd, total_pnl_usd, mean_pnl_usd, sample_size, win_rate, sharpe, composite_score")
       .order("composite_score", { ascending: false, nullsFirst: false })
       .limit(50);
     rows = (data ?? []) as Row[];
@@ -61,9 +69,9 @@ export default async function AgentsPage() {
         {/* Head */}
         <div style={{ padding: 32, borderBottom: "1px solid var(--bd-1)", display: "grid", gridTemplateColumns: "1fr auto", gap: 20, alignItems: "end" }}>
           <div>
-            <h2 className="t-h2" style={{ margin: 0 }}>Top agents · 1h horizon</h2>
+            <h2 className="t-h2" style={{ margin: 0 }}>Top agents · all-time</h2>
             <p className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
-              Min 10 settled responses to rank.
+              Min 10 settled trades to rank. Bankroll starts at $1,000.
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -86,11 +94,11 @@ export default async function AgentsPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--bg-1)", borderBottom: "1px solid var(--bd-1)" }}>
-                {["#", "Agent", "Tier", "Score", "Sharpe", "N", "Total PnL", "Status"].map((h, i) => (
+                {["#", "Agent", "Tier", "Score", "Sharpe", "N", "Bankroll", "Total PnL", "Win%", "Status"].map((h, i) => (
                   <th
                     key={h}
                     style={{
-                      textAlign: i >= 3 && i <= 6 ? "right" : "left",
+                      textAlign: i >= 3 ? "right" : "left",
                       padding: "12px 16px",
                       fontSize: 11, fontWeight: 500,
                       letterSpacing: "0.06em",
@@ -105,11 +113,14 @@ export default async function AgentsPage() {
             </thead>
             <tbody>
               {rows.map((r, i) => {
-                const pnl = r.total_pnl ?? 0;
-                const pnlColor = pnl >= 0 ? "var(--up)" : "var(--down)";
+                const bankroll = r.bankroll_usd ?? 1000;
+                const totalPnl = r.total_pnl_usd ?? 0;
+                const pnlColor = totalPnl >= 0 ? "var(--up)" : "var(--down)";
+                const bankrollColor = bankroll >= 1000 ? "var(--up)" : "var(--down)";
                 const tier = tierFor(r.composite_score);
                 const initials = r.name.slice(0, 2).toUpperCase();
                 const avCls = AVATAR_CYCLE[i % AVATAR_CYCLE.length];
+                const winPct = r.win_rate !== null ? Math.round(r.win_rate * 100) : null;
                 return (
                   <tr key={r.short_id} className="row-hover" style={{ borderBottom: "1px solid var(--bd-1)" }}>
                     <td style={{ ...tdStyle, width: 40 }}>
@@ -151,15 +162,23 @@ export default async function AgentsPage() {
                       <b className="num">{r.composite_score?.toFixed(3) ?? "—"}</b>
                     </td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>
-                      <span className="num up" style={{ color: (r.sharpe ?? 0) >= 0 ? "var(--up)" : "var(--down)" }}>
+                      <span className="num" style={{ color: (r.sharpe ?? 0) >= 0 ? "var(--up)" : "var(--down)" }}>
                         {r.sharpe != null ? `${r.sharpe >= 0 ? "+" : ""}${r.sharpe.toFixed(2)}` : "—"}
                       </span>
                     </td>
                     <td style={{ ...tdStyle, textAlign: "right" }} className="num">{r.sample_size ?? "—"}</td>
-                    <td style={{ ...tdStyle, textAlign: "right" }} className="num" >
-                      <span style={{ color: pnlColor }}>
-                        {r.total_pnl != null ? `${pnl >= 0 ? "+" : ""}${pnl.toFixed(2)}%` : "—"}
+                    <td style={{ ...tdStyle, textAlign: "right" }} className="num">
+                      <span style={{ color: bankrollColor }}>
+                        ${bankroll.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }} className="num">
+                      <span style={{ color: pnlColor }}>
+                        {r.total_pnl_usd != null ? `${totalPnl >= 0 ? "+" : "−"}${fmtUsd(totalPnl)}` : "—"}
+                      </span>
+                    </td>
+                    <td style={{ ...tdStyle, textAlign: "right" }} className="num">
+                      {winPct !== null ? `${winPct}%` : "—"}
                     </td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>
                       <span className="chip chip-live"><span className="dot" />LIVE</span>

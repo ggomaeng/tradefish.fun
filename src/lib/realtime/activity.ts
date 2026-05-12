@@ -5,12 +5,12 @@
  *
  * Bootstrap: pulls the last 8 events from a UNION of:
  *   - latest 8 responses (joined to agents)
- *   - latest 4 settlements (joined to responses → agents)
+ *   - latest 4 paper_trades (joined to agents + queries → tokens)
  *   - latest 2 newly-claimed agents
  * Sorted by event timestamp desc and trimmed to 8.
  *
  * Realtime: subscribes to the `activity` channel for INSERTs on `responses`
- * and `settlements` and prepends new events. Trims the buffer to 8.
+ * and `paper_trades` and prepends new events. Trims the buffer to 8.
  *
  * NOTE: claim events come only from the bootstrap fetch — there's no good
  * INSERT trigger for them since claim toggles `agents.claimed = true` via
@@ -29,6 +29,7 @@ export type ActivityEvent =
       token: string;
       dir: "buy" | "sell" | "hold";
       conf: number;
+      size: number;
     }
   | {
       kind: "settle";
@@ -37,7 +38,6 @@ export type ActivityEvent =
       token: string;
       dir: "buy" | "sell" | "hold";
       pnl: number;
-      horizon: "1h" | "4h" | "24h";
     }
   | { kind: "claim"; ts: string; who: string };
 
@@ -49,7 +49,7 @@ function evTimestamp(e: ActivityEvent): number {
 
 function dedupeKey(e: ActivityEvent): string {
   if (e.kind === "predict") return `p:${e.who}:${e.token}:${e.ts}`;
-  if (e.kind === "settle") return `s:${e.who}:${e.token}:${e.horizon}:${e.ts}`;
+  if (e.kind === "settle") return `s:${e.who}:${e.token}:${e.ts}`;
   return `c:${e.who}:${e.ts}`;
 }
 
@@ -90,22 +90,21 @@ export function useArenaActivity(): {
         const respPromise = sb
           .from("responses")
           .select(
-            "id, answer, confidence, responded_at, agents(name), queries(token_mint, supported_tokens(symbol))",
+            "id, answer, confidence, responded_at, position_size_usd, agents(name), queries(token_mint, supported_tokens(symbol))",
           )
           .order("responded_at", { ascending: false })
           .limit(8);
 
-        // (b) latest 4 settlements, joined to response → agent + token.
-        const settlePromise = sb
-          .from("settlements")
+        // (b) latest 4 paper_trades, joined to agents + queries → token.
+        const tradesPromise = sb
+          .from("paper_trades")
           .select(
-            "horizon, pnl_pct, settled_at, response_id, responses(answer, agents(name), queries(supported_tokens(symbol)))",
+            "id, direction, pnl_usd, settled_at, agents(name), queries(supported_tokens(symbol))",
           )
           .order("settled_at", { ascending: false })
           .limit(4);
 
-        // (c) latest 2 claimed agents (no claimed_at column, fall back to
-        //     last_seen_at as the closest stand-in).
+        // (c) latest 2 claimed agents.
         const claimPromise = sb
           .from("agents")
           .select("name, last_seen_at, created_at")
@@ -113,9 +112,9 @@ export function useArenaActivity(): {
           .order("created_at", { ascending: false })
           .limit(2);
 
-        const [respRes, settleRes, claimRes] = await Promise.all([
+        const [respRes, tradesRes, claimRes] = await Promise.all([
           respPromise,
-          settlePromise,
+          tradesPromise,
           claimPromise,
         ]);
 
@@ -126,6 +125,7 @@ export function useArenaActivity(): {
             answer: "buy" | "sell" | "hold";
             confidence: number | string;
             responded_at: string;
+            position_size_usd: number | string | null;
             agents:
               | { name: string }
               | { name: string }[]
@@ -164,75 +164,44 @@ export function useArenaActivity(): {
             token: tok,
             dir: row.answer,
             conf: Number(row.confidence),
+            size: Number(row.position_size_usd ?? 100),
           });
         }
 
-        for (const s of settleRes.data ?? []) {
-          const row = s as {
-            horizon: "1h" | "4h" | "24h";
-            pnl_pct: number | string;
+        for (const t of tradesRes.data ?? []) {
+          const row = t as {
+            direction: "buy" | "sell" | "hold";
+            pnl_usd: number | string;
             settled_at: string;
-            responses:
+            agents: { name: string } | { name: string }[] | null;
+            queries:
               | {
-                  answer: "buy" | "sell" | "hold";
-                  agents: { name: string } | { name: string }[] | null;
-                  queries:
-                    | {
-                        supported_tokens:
-                          | { symbol: string }
-                          | { symbol: string }[]
-                          | null;
-                      }
-                    | {
-                        supported_tokens:
-                          | { symbol: string }
-                          | { symbol: string }[]
-                          | null;
-                      }[]
+                  supported_tokens:
+                    | { symbol: string }
+                    | { symbol: string }[]
                     | null;
                 }
               | {
-                  answer: "buy" | "sell" | "hold";
-                  agents: { name: string } | { name: string }[] | null;
-                  queries:
-                    | {
-                        supported_tokens:
-                          | { symbol: string }
-                          | { symbol: string }[]
-                          | null;
-                      }
-                    | {
-                        supported_tokens:
-                          | { symbol: string }
-                          | { symbol: string }[]
-                          | null;
-                      }[]
+                  supported_tokens:
+                    | { symbol: string }
+                    | { symbol: string }[]
                     | null;
                 }[]
               | null;
           };
-          const respJoin = Array.isArray(row.responses)
-            ? row.responses[0]
-            : row.responses;
-          if (!respJoin) continue;
-          const ag = respJoin.agents;
+          const ag = row.agents;
           const who = Array.isArray(ag) ? ag[0]?.name : ag?.name;
-          const qJoin = Array.isArray(respJoin.queries)
-            ? respJoin.queries[0]
-            : respJoin.queries;
+          const qJoin = Array.isArray(row.queries) ? row.queries[0] : row.queries;
           const tokJoin = qJoin?.supported_tokens;
-          const tok = Array.isArray(tokJoin)
-            ? tokJoin[0]?.symbol
-            : tokJoin?.symbol;
+          const tok = Array.isArray(tokJoin) ? tokJoin[0]?.symbol : tokJoin?.symbol;
           if (!who || !tok) continue;
           collected.push({
             kind: "settle",
             ts: row.settled_at,
             who,
             token: tok,
-            dir: respJoin.answer,
-            pnl: Number(row.pnl_pct),
-            horizon: row.horizon,
+            dir: row.direction,
+            pnl: Number(row.pnl_usd),
           });
         }
 
@@ -261,9 +230,6 @@ export function useArenaActivity(): {
     bootstrap();
 
     // ─── Realtime channel ─────────────────────────────────────────
-    // INSERTs on responses + settlements give us new predict/settle events.
-    // For settle events we need joined data (agent name, token symbol) that
-    // postgres_changes won't provide — fetch it lazily before prepending.
     const channel = sb
       .channel("activity")
       .on(
@@ -275,7 +241,7 @@ export function useArenaActivity(): {
           const { data } = await sb
             .from("responses")
             .select(
-              "answer, confidence, responded_at, agents(name), queries(supported_tokens(symbol))",
+              "answer, confidence, responded_at, position_size_usd, agents(name), queries(supported_tokens(symbol))",
             )
             .eq("id", String(row.id))
             .single();
@@ -284,6 +250,7 @@ export function useArenaActivity(): {
             answer: "buy" | "sell" | "hold";
             confidence: number | string;
             responded_at: string;
+            position_size_usd: number | string | null;
             agents: { name: string } | { name: string }[] | null;
             queries:
               | {
@@ -315,26 +282,29 @@ export function useArenaActivity(): {
             token: tok,
             dir: r.answer,
             conf: Number(r.confidence),
+            size: Number(r.position_size_usd ?? 100),
           };
           commit([ev, ...eventsRef.current]);
         },
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "settlements" },
+        { event: "INSERT", schema: "public", table: "paper_trades" },
         async (payload: { new: Record<string, unknown> }) => {
           const row = payload.new;
-          if (!row?.response_id) return;
+          if (!row?.id) return;
           const { data } = await sb
-            .from("responses")
+            .from("paper_trades")
             .select(
-              "answer, agents(name), queries(supported_tokens(symbol))",
+              "direction, pnl_usd, settled_at, agents(name), queries(supported_tokens(symbol))",
             )
-            .eq("id", String(row.response_id))
+            .eq("id", String(row.id))
             .single();
           if (!data) return;
           const r = data as {
-            answer: "buy" | "sell" | "hold";
+            direction: "buy" | "sell" | "hold";
+            pnl_usd: number | string;
+            settled_at: string;
             agents: { name: string } | { name: string }[] | null;
             queries:
               | {
@@ -364,9 +334,8 @@ export function useArenaActivity(): {
             ts: String(row.settled_at ?? new Date().toISOString()),
             who,
             token: tok,
-            dir: r.answer,
-            pnl: Number(row.pnl_pct),
-            horizon: row.horizon as "1h" | "4h" | "24h",
+            dir: r.direction,
+            pnl: Number(r.pnl_usd),
           };
           commit([ev, ...eventsRef.current]);
         },

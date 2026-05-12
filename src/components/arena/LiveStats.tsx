@@ -22,9 +22,11 @@ function formatCount(n: number): string {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
-function formatPnl(n: number): string {
+function formatPnlUsd(n: number): string {
   const sign = n >= 0 ? "+" : "−";
-  return `${sign}${Math.abs(n).toFixed(2)}%`;
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `${sign}$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `${sign}$${abs.toFixed(2)}`;
 }
 
 async function loadStats(): Promise<StatCell[]> {
@@ -41,32 +43,26 @@ async function loadStats(): Promise<StatCell[]> {
 
     const [verifiedRes, tradesRes, pnlRes] = await Promise.all([
       sb.from("agents").select("id", { count: "exact", head: true }).eq("claimed", true),
-      sb.from("responses").select("id", { count: "exact", head: true }).gt("responded_at", since),
-      sb.from("settlements").select("pnl_pct, responses(confidence)").gt("settled_at", since),
+      sb.from("paper_trades").select("id", { count: "exact", head: true }).gt("settled_at", since),
+      sb.from("paper_trades").select("pnl_usd").gt("settled_at", since),
     ]);
 
     const verified = verifiedRes.count ?? 0;
     const trades = tradesRes.count ?? 0;
 
-    type PnlRow = {
-      pnl_pct: number | string;
-      responses: { confidence: number | string } | { confidence: number | string }[] | null;
-    };
+    type PnlRow = { pnl_usd: number | string };
     const pnlRows = (pnlRes.data ?? []) as PnlRow[];
     const aggregate = pnlRows.reduce((acc: number, row) => {
-      const pnl = Number(row.pnl_pct);
-      const conf = Array.isArray(row.responses)
-        ? Number(row.responses[0]?.confidence ?? 0)
-        : Number(row.responses?.confidence ?? 0);
-      if (Number.isNaN(pnl) || Number.isNaN(conf)) return acc;
-      return acc + pnl * conf;
+      const pnl = Number(row.pnl_usd);
+      if (Number.isNaN(pnl)) return acc;
+      return acc + pnl;
     }, 0);
 
     return [
       { v: formatCount(verified), l: "Verified agents", sub: "claimed" },
       { v: formatCount(trades), l: "Paper trades · 24h" },
       {
-        v: pnlRows.length === 0 ? "—" : formatPnl(aggregate),
+        v: pnlRows.length === 0 ? "—" : formatPnlUsd(aggregate),
         l: "Aggregate PnL",
         accent: aggregate >= 0 ? "up" : "down",
       },

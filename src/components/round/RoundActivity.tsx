@@ -3,17 +3,18 @@
 /**
  * RoundActivity — right-sidebar live feed for a single round.
  *
- * For open rounds: subscribes to Supabase Realtime for new responses
- * + settlements via useRoundActivity(), merging with SSR initial data.
+ * Events:
+ * - "predict" — responses + comments-with-direction (entry events)
+ * - "comment" — comments without direction (prose only)
+ * - "settle" — paper_trades INSERT (one moment per query settlement)
+ * - "settling" — pulse indicator when query is closed but not yet settled
  *
- * For closed rounds: static render of the passed responses.
- *
- * Shows settlement PnL deltas and direction changes in a compact feed.
+ * For open rounds: subscribes to Supabase Realtime via useRoundActivity().
  */
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRoundActivity, type RoundResponse, type RoundSettlement } from "@/lib/realtime/round";
+import { useRoundActivity, type RoundResponse, type RoundPaperTrade, type RoundComment } from "@/lib/realtime/round";
 
 const DIR_LABEL = { buy: "▲ LONG", sell: "▼ SHORT", hold: "· HOLD" } as const;
 const DIR_COLOR = { buy: "var(--up)", sell: "var(--down)", hold: "var(--hold)" } as const;
@@ -22,7 +23,8 @@ interface Props {
   queryId: string;
   isOpen: boolean;
   initialResponses: RoundResponse[];
-  initialSettlements: RoundSettlement[];
+  initialPaperTrades: RoundPaperTrade[];
+  initialComments: RoundComment[];
 }
 
 function relTime(iso: string, nowMs: number): string {
@@ -34,8 +36,14 @@ function relTime(iso: string, nowMs: number): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
-export function RoundActivity({ queryId, isOpen, initialResponses, initialSettlements }: Props) {
-  const { responses, settlements } = useRoundActivity(queryId, initialResponses, initialSettlements);
+function fmtUsd(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `$${abs.toFixed(2)}`;
+}
+
+export function RoundActivity({ queryId, isOpen, initialResponses, initialPaperTrades, initialComments }: Props) {
+  const { responses, paperTrades, comments } = useRoundActivity(queryId, initialResponses, initialPaperTrades, initialComments);
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -43,29 +51,43 @@ export function RoundActivity({ queryId, isOpen, initialResponses, initialSettle
     return () => clearInterval(id);
   }, []);
 
-  // Build a unified event list: responses + settlements sorted by time desc
+  const isClosed = !isOpen;
+  const isSettled = paperTrades.length > 0;
+
+  // Build unified event list sorted by time desc
   type FeedItem =
-    | { kind: "response"; r: RoundResponse }
-    | { kind: "settlement"; s: RoundSettlement; r: RoundResponse };
+    | { kind: "predict"; r: RoundResponse }
+    | { kind: "comment_trade"; c: RoundComment }
+    | { kind: "comment_prose"; c: RoundComment }
+    | { kind: "settle"; pt: RoundPaperTrade };
 
   const items: FeedItem[] = [];
 
-  // Settlements first (most recent activity)
-  const responseMap = new Map(responses.map((r) => [r.id, r]));
-  for (const s of settlements) {
-    const r = responseMap.get(s.response_id);
-    if (r) items.push({ kind: "settlement", s, r });
-  }
-
-  // All responses
   for (const r of responses) {
-    items.push({ kind: "response", r });
+    items.push({ kind: "predict", r });
   }
 
-  // Sort by timestamp desc
+  for (const c of comments) {
+    if (c.direction && c.position_size_usd !== null) {
+      items.push({ kind: "comment_trade", c });
+    } else {
+      items.push({ kind: "comment_prose", c });
+    }
+  }
+
+  for (const pt of paperTrades) {
+    items.push({ kind: "settle", pt });
+  }
+
   items.sort((a, b) => {
-    const tsA = a.kind === "settlement" ? a.s.settled_at : a.r.responded_at;
-    const tsB = b.kind === "settlement" ? b.s.settled_at : b.r.responded_at;
+    let tsA: string;
+    let tsB: string;
+    if (a.kind === "predict") tsA = a.r.responded_at;
+    else if (a.kind === "comment_trade" || a.kind === "comment_prose") tsA = a.c.created_at;
+    else tsA = a.pt.settled_at;
+    if (b.kind === "predict") tsB = b.r.responded_at;
+    else if (b.kind === "comment_trade" || b.kind === "comment_prose") tsB = b.c.created_at;
+    else tsB = b.pt.settled_at;
     return new Date(tsB).getTime() - new Date(tsA).getTime();
   });
 
@@ -100,8 +122,10 @@ export function RoundActivity({ queryId, isOpen, initialResponses, initialSettle
             <span className="dot" />
             LIVE
           </span>
+        ) : isSettled ? (
+          <span className="chip chip-up">SETTLED</span>
         ) : (
-          <span className="chip">SETTLED</span>
+          <span className="chip">CLOSED</span>
         )}
       </div>
 
@@ -112,6 +136,29 @@ export function RoundActivity({ queryId, isOpen, initialResponses, initialSettle
         aria-atomic="false"
         className="no-scrollbar"
       >
+        {/* Settling indicator — closed but no trades yet */}
+        {isClosed && !isSettled && (
+          <div
+            style={{
+              padding: "12px 16px",
+              borderBottom: "1px solid var(--bd-1)",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span
+              className="dot"
+              style={{ width: 6, height: 6, background: "var(--hold)", borderRadius: "50%", flexShrink: 0 }}
+            />
+            <span
+              style={{ fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)", letterSpacing: "0.06em" }}
+            >
+              SETTLING…
+            </span>
+          </div>
+        )}
+
         {empty ? (
           <div
             style={{
@@ -134,14 +181,138 @@ export function RoundActivity({ queryId, isOpen, initialResponses, initialSettle
             )}
           </div>
         ) : (
-          items.map((item, i) => {
-            if (item.kind === "settlement") {
-              const { s, r } = item;
-              const sign = s.pnl_pct >= 0 ? "+" : "";
-              const pnlColor = s.pnl_pct >= 0 ? "var(--up)" : "var(--down)";
+          items.map((item) => {
+            if (item.kind === "settle") {
+              const { pt } = item;
+              const sign = pt.pnl_usd >= 0 ? "+" : "−";
+              const pnlColor = pt.pnl_usd >= 0 ? "var(--up)" : "var(--down)";
               return (
                 <div
-                  key={`s-${s.response_id}-${s.horizon}`}
+                  key={`st-${pt.id}`}
+                  style={{
+                    padding: "10px 16px",
+                    borderBottom: "1px solid var(--bd-1)",
+                    display: "grid",
+                    gridTemplateColumns: "28px 1fr",
+                    gap: 10,
+                    background: "rgba(20,241,149,0.03)",
+                  }}
+                >
+                  <div
+                    className="av"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      fontSize: 10,
+                      background: "var(--up-bg)",
+                      border: "1px solid var(--up-bd)",
+                      color: "var(--up)",
+                    }}
+                  >
+                    {pt.agent_name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "var(--fg)" }}>
+                      <Link href={`/agents/${pt.agent_short_id}`} style={{ color: "var(--fg)" }}>
+                        {pt.agent_name}
+                      </Link>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "var(--fg-3)",
+                        fontFamily: "var(--font-mono)",
+                        marginTop: 2,
+                        display: "flex",
+                        gap: 6,
+                        alignItems: "center",
+                      }}
+                    >
+                      <span>{relTime(pt.settled_at, now)}</span>
+                      <span>·</span>
+                      <span>settled</span>
+                    </div>
+                    <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 10,
+                          color: DIR_COLOR[pt.direction],
+                        }}
+                      >
+                        {DIR_LABEL[pt.direction]}
+                      </span>
+                      <span
+                        className="num"
+                        style={{ fontSize: 11, color: pnlColor, marginLeft: "auto" }}
+                      >
+                        {sign}{fmtUsd(pt.pnl_usd)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            if (item.kind === "comment_trade") {
+              const { c } = item;
+              const dir = c.direction!;
+              return (
+                <div
+                  key={`ct-${c.id}`}
+                  style={{
+                    padding: "10px 16px",
+                    borderBottom: "1px solid var(--bd-1)",
+                    display: "grid",
+                    gridTemplateColumns: "28px 1fr",
+                    gap: 10,
+                  }}
+                >
+                  <div
+                    className="av"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      fontSize: 10,
+                      background: dir === "buy" ? "var(--up-bg)" : dir === "sell" ? "var(--down-bg)" : "var(--hold-bg)",
+                      border: `1px solid ${dir === "buy" ? "var(--up-bd)" : dir === "sell" ? "var(--down-bd)" : "var(--hold-bd)"}`,
+                      color: DIR_COLOR[dir],
+                    }}
+                  >
+                    {c.agent_name.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: "var(--fg)" }}>
+                      <Link href={`/agents/${c.agent_short_id}`} style={{ color: "var(--fg)" }}>
+                        {c.agent_name}
+                      </Link>
+                    </div>
+                    <div style={{ fontSize: 10, color: "var(--fg-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                      {relTime(c.created_at, now)} · re-entry
+                    </div>
+                    <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
+                      <span style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: DIR_COLOR[dir] }}>
+                        {DIR_LABEL[dir]}
+                      </span>
+                      <span className="num" style={{ fontSize: 10, color: "var(--fg-3)" }}>
+                        ${c.position_size_usd?.toFixed(0)} size
+                      </span>
+                    </div>
+                    {c.body && (
+                      <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4, lineHeight: 1.5 }}>
+                        {c.body}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            if (item.kind === "comment_prose") {
+              const { c } = item;
+              return (
+                <div
+                  key={`cp-${c.id}`}
                   style={{
                     padding: "10px 16px",
                     borderBottom: "1px solid var(--bd-1)",
@@ -161,52 +332,28 @@ export function RoundActivity({ queryId, isOpen, initialResponses, initialSettle
                       color: "var(--fg-3)",
                     }}
                   >
-                    {r.agent_name.slice(0, 2).toUpperCase()}
+                    {c.agent_name.slice(0, 2).toUpperCase()}
                   </div>
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 500, color: "var(--fg)" }}>
-                      <Link href={`/agents/${r.agent_short_id}`} style={{ color: "var(--fg)" }}>
-                        {r.agent_name}
+                      <Link href={`/agents/${c.agent_short_id}`} style={{ color: "var(--fg)" }}>
+                        {c.agent_name}
                       </Link>
                     </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        color: "var(--fg-3)",
-                        fontFamily: "var(--font-mono)",
-                        marginTop: 2,
-                        display: "flex",
-                        gap: 6,
-                        alignItems: "center",
-                      }}
-                    >
-                      <span>{relTime(s.settled_at, now)}</span>
-                      <span>·</span>
-                      <span>{s.horizon} settle</span>
+                    <div style={{ fontSize: 10, color: "var(--fg-3)", fontFamily: "var(--font-mono)", marginTop: 2 }}>
+                      {relTime(c.created_at, now)} · comment
                     </div>
-                    <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 10,
-                          color: DIR_COLOR[r.answer],
-                        }}
-                      >
-                        {DIR_LABEL[r.answer]}
-                      </span>
-                      <span
-                        className="num"
-                        style={{ fontSize: 11, color: pnlColor, marginLeft: "auto" }}
-                      >
-                        {sign}{s.pnl_pct.toFixed(2)}%
-                      </span>
-                    </div>
+                    {c.body && (
+                      <div style={{ fontSize: 11, color: "var(--fg-2)", marginTop: 4, lineHeight: 1.5 }}>
+                        {c.body}
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             }
 
-            // Response row
+            // Response (predict) row
             const { r } = item;
             return (
               <div
@@ -257,7 +404,7 @@ export function RoundActivity({ queryId, isOpen, initialResponses, initialSettle
                       marginTop: 2,
                     }}
                   >
-                    {relTime(r.responded_at, now)}
+                    {relTime(r.responded_at, now)} · ${r.position_size_usd.toFixed(0)} size
                   </div>
                   <div style={{ marginTop: 4, display: "flex", gap: 6, alignItems: "center" }}>
                     <span

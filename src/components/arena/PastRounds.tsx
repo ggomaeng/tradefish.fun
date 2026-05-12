@@ -15,8 +15,8 @@ interface RoundRow {
   is_demo: boolean;
   supported_tokens: { symbol: string; name: string };
   response_count: number;
-  // settlement data (24h horizon, optional — may not exist yet)
-  top_pnl: number | null;
+  // paper_trades data (optional — may not exist yet)
+  top_pnl: number | null;        // signed pnl_usd of best-performing trade
   direction_correct: boolean | null;
   consensus: Direction | null;
 }
@@ -40,33 +40,26 @@ async function loadPastRounds(): Promise<RoundRow[]> {
 
     if (error || !queries) return [];
 
-    // Gather query IDs to pull settlements
+    // Gather query IDs to pull paper_trades
     const queryIds = queries.map((q) => (q as { id: string }).id);
 
-    // Pull 24h settlements for all responses in these queries
-    // settlements → responses → query_id
-    const { data: settlementsRaw } = await db
-      .from("settlements")
-      .select(
-        `pnl_pct, direction_correct,
-         responses!inner(query_id, confidence, answer)`
-      )
-      .eq("horizon", "24h")
-      .in("responses.query_id", queryIds);
+    // Pull paper_trades for all these queries
+    const { data: tradesRaw } = await db
+      .from("paper_trades")
+      .select("query_id, direction, pnl_usd")
+      .in("query_id", queryIds);
 
-    // Build a map: query_id → settlement rows
-    type SettlementRecord = {
-      pnl_pct: number;
-      direction_correct: boolean;
-      responses: { query_id: string; confidence: number; answer: Direction } | null;
+    // Build a map: query_id → paper_trade rows
+    type TradeRecord = {
+      query_id: string;
+      direction: Direction;
+      pnl_usd: number;
     };
 
-    const settlementsByQuery = new Map<string, SettlementRecord[]>();
-    for (const s of (settlementsRaw ?? []) as unknown as SettlementRecord[]) {
-      const qid = s.responses?.query_id;
-      if (!qid) continue;
-      if (!settlementsByQuery.has(qid)) settlementsByQuery.set(qid, []);
-      settlementsByQuery.get(qid)!.push(s);
+    const tradesByQuery = new Map<string, TradeRecord[]>();
+    for (const t of (tradesRaw ?? []) as unknown as TradeRecord[]) {
+      if (!tradesByQuery.has(t.query_id)) tradesByQuery.set(t.query_id, []);
+      tradesByQuery.get(t.query_id)!.push(t);
     }
 
     // Compose rows
@@ -97,18 +90,24 @@ async function loadPastRounds(): Promise<RoundRow[]> {
         else consensus = "hold";
       }
 
-      // Top PnL from settled responses for this query (24h)
-      const settled = settlementsByQuery.get(q.id) ?? [];
+      // Top PnL from paper_trades for this query
+      const trades = tradesByQuery.get(q.id) ?? [];
       let topPnl: number | null = null;
       let directionCorrect: boolean | null = null;
-      if (settled.length > 0) {
-        const best = settled.reduce((a, b) =>
-          Math.abs(Number(b.pnl_pct)) > Math.abs(Number(a.pnl_pct)) ? b : a
+
+      if (trades.length > 0) {
+        // top_pnl = the trade with highest abs(pnl_usd), return its signed value
+        const best = trades.reduce((a, b) =>
+          Math.abs(Number(b.pnl_usd)) > Math.abs(Number(a.pnl_usd)) ? b : a
         );
-        topPnl = Number(best.pnl_pct);
-        // "correct" if majority of settled responses were correct
-        const correctCount = settled.filter((s) => s.direction_correct).length;
-        directionCorrect = correctCount >= settled.length / 2;
+        topPnl = Number(best.pnl_usd);
+
+        // direction_correct = majority-direction trades had positive net pnl_usd
+        if (consensus) {
+          const majorityTrades = trades.filter((t) => t.direction === consensus);
+          const netPnl = majorityTrades.reduce((sum, t) => sum + Number(t.pnl_usd), 0);
+          directionCorrect = majorityTrades.length > 0 && netPnl > 0;
+        }
       }
 
       return {
@@ -170,6 +169,12 @@ const CONSENSUS_COLOR: Record<Direction, string> = {
   hold: "var(--hold)",
 };
 
+function fmtUsd(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `$${abs.toFixed(2)}`;
+}
+
 // ── Component ──────────────────────────────────────────────────────────────
 
 export async function PastRounds() {
@@ -224,7 +229,7 @@ export async function PastRounds() {
               borderBottom: "1px solid var(--bd-1)",
             }}
           >
-            {["Token", "Question", "Asked", "Status", "Consensus / Agents", "PnL"].map((h) => (
+            {["Token", "Question", "Asked", "Status", "Consensus / Agents", "Top PnL"].map((h) => (
               <div key={h} className="t-mini" style={{ color: "var(--fg-4)" }}>
                 {h}
               </div>
@@ -235,7 +240,7 @@ export async function PastRounds() {
           {rounds.map((round, i) => {
             const isLive = new Date(round.deadline_at) > new Date();
             const questionText = `Buy or sell ${round.supported_tokens.symbol} right now?`;
-            const pnlSign = round.top_pnl !== null && round.top_pnl >= 0 ? "+" : "";
+            const pnlSign = round.top_pnl !== null && round.top_pnl >= 0 ? "+" : "−";
             const pnlColor =
               round.top_pnl === null
                 ? "var(--fg-3)"
@@ -260,7 +265,7 @@ export async function PastRounds() {
                 }}
                 className="past-round-row"
               >
-                {/* Token chip — demo and paid rounds render identically */}
+                {/* Token chip */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span className="chip" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
                     {round.supported_tokens.symbol}
@@ -285,7 +290,7 @@ export async function PastRounds() {
                       LIVE
                     </span>
                   ) : (
-                    <span className="chip">SETTLED</span>
+                    <span className="chip">{round.top_pnl !== null ? "SETTLED" : "CLOSED"}</span>
                   )}
                 </div>
 
@@ -330,13 +335,13 @@ export async function PastRounds() {
                   )}
                 </div>
 
-                {/* Top PnL */}
+                {/* Top PnL — USD-denominated */}
                 <div
                   className="num"
                   style={{ fontSize: 13, fontWeight: 500, color: pnlColor }}
                 >
                   {round.top_pnl !== null
-                    ? `${pnlSign}${Math.abs(round.top_pnl).toFixed(2)}%`
+                    ? `${pnlSign}${fmtUsd(round.top_pnl)}`
                     : "—"}
                 </div>
               </Link>

@@ -6,7 +6,7 @@ import { EntryStrip } from "@/components/round/EntryStrip";
 import { PredictionFeed } from "@/components/round/PredictionFeed";
 import { RoundActivity } from "@/components/round/RoundActivity";
 import { SettlementVerdict, type VerdictData } from "@/components/round/SettlementVerdict";
-import type { RoundResponse, RoundSettlement } from "@/lib/realtime/round";
+import type { RoundResponse, RoundPaperTrade, RoundComment } from "@/lib/realtime/round";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +17,8 @@ type RoundRow = {
   deadline_at: string;
   pyth_price_at_ask: number;
   token_mint: string;
+  status: string | null;
+  close_price_pyth: number | null;
   supported_tokens: { symbol: string; name: string };
 };
 
@@ -28,16 +30,35 @@ type RawResponse = {
   reasoning: string | null;
   responded_at: string;
   pyth_price_at_response: number;
+  position_size_usd: number;
   agents: { short_id: string; name: string; owner_handle: string | null };
 };
 
-type RawSettlement = {
+type RawComment = {
+  id: string;
   response_id: string;
-  horizon: "1h" | "4h" | "24h";
-  pnl_pct: number;
-  pyth_price_at_settle: number;
-  direction_correct: boolean;
+  body: string;
+  created_at: string;
+  direction: "buy" | "sell" | "hold" | null;
+  confidence: number | null;
+  position_size_usd: number | null;
+  entry_price: number | null;
+  responses: { agent_id: string; agents: { short_id: string; name: string } | { short_id: string; name: string }[] | null };
+};
+
+type RawPaperTrade = {
+  id: string;
+  response_id: string | null;
+  comment_id: string | null;
+  agent_id: string;
+  query_id: string;
+  direction: "buy" | "sell" | "hold";
+  position_size_usd: number;
+  entry_price: number;
+  exit_price: number;
+  pnl_usd: number;
   settled_at: string;
+  agents: { short_id: string; name: string } | { short_id: string; name: string }[] | null;
 };
 
 function fmtCountdown(deadline: string): string {
@@ -68,40 +89,53 @@ export default async function RoundPage({
 
   let round: RoundRow | null = null;
   let rawResponses: RawResponse[] = [];
-  let rawSettlements: RawSettlement[] = [];
+  let rawComments: RawComment[] = [];
+  let rawPaperTrades: RawPaperTrade[] = [];
 
   try {
     const db = dbAdmin();
     const { data: q } = await db
       .from("queries")
       .select(
-        `id, short_id, asked_at, deadline_at, pyth_price_at_ask, token_mint, supported_tokens!inner(symbol, name)`,
+        `id, short_id, asked_at, deadline_at, pyth_price_at_ask, token_mint, status, close_price_pyth, supported_tokens!inner(symbol, name)`,
       )
       .eq("short_id", id)
       .maybeSingle();
     round = (q as unknown as RoundRow) ?? null;
 
     if (round) {
+      // Fetch responses
       const { data: r } = await db
         .from("responses")
         .select(
-          `id, agent_id, answer, confidence, reasoning, responded_at, pyth_price_at_response, agents!inner(short_id, name, owner_handle)`,
+          `id, agent_id, answer, confidence, reasoning, responded_at, pyth_price_at_response, position_size_usd, agents!inner(short_id, name, owner_handle)`,
         )
         .eq("query_id", round.id)
         .order("responded_at", { ascending: true });
       rawResponses = (r ?? []) as unknown as RawResponse[];
 
+      // Fetch comments with their responses' agent info
       if (rawResponses.length > 0) {
         const responseIds = rawResponses.map((r) => r.id);
-        const { data: s } = await db
-          .from("settlements")
+        const { data: c } = await db
+          .from("comments")
           .select(
-            `response_id, horizon, pnl_pct, pyth_price_at_settle, direction_correct, settled_at`,
+            `id, response_id, body, created_at, direction, confidence, position_size_usd, entry_price, responses!inner(agent_id, agents!inner(short_id, name))`,
           )
           .in("response_id", responseIds)
-          .order("settled_at", { ascending: true });
-        rawSettlements = (s ?? []) as unknown as RawSettlement[];
+          .order("created_at", { ascending: true });
+        rawComments = (c ?? []) as unknown as RawComment[];
       }
+
+      // Fetch paper_trades for this query
+      const { data: pt } = await db
+        .from("paper_trades")
+        .select(
+          `id, response_id, comment_id, agent_id, query_id, direction, position_size_usd, entry_price, exit_price, pnl_usd, settled_at, agents!inner(short_id, name)`,
+        )
+        .eq("query_id", round.id)
+        .order("settled_at", { ascending: true });
+      rawPaperTrades = (pt ?? []) as unknown as RawPaperTrade[];
     }
   } catch {
     // ignore — fall through to 404
@@ -147,18 +181,46 @@ export default async function RoundPage({
     reasoning: r.reasoning,
     responded_at: r.responded_at,
     pyth_price_at_response: Number(r.pyth_price_at_response),
+    position_size_usd: Number(r.position_size_usd ?? 100),
     agent_name: r.agents.name,
     agent_short_id: r.agents.short_id,
   }));
 
-  const settlements: RoundSettlement[] = rawSettlements.map((s) => ({
-    response_id: s.response_id,
-    horizon: s.horizon,
-    pnl_pct: Number(s.pnl_pct),
-    pyth_price_at_settle: Number(s.pyth_price_at_settle),
-    direction_correct: Boolean(s.direction_correct),
-    settled_at: s.settled_at,
-  }));
+  const comments: RoundComment[] = rawComments.map((c) => {
+    const respJoin = Array.isArray(c.responses) ? c.responses[0] : c.responses;
+    const ag = Array.isArray(respJoin?.agents) ? respJoin?.agents[0] : respJoin?.agents;
+    return {
+      id: c.id,
+      response_id: c.response_id,
+      body: c.body,
+      created_at: c.created_at,
+      direction: c.direction,
+      confidence: c.confidence !== null ? Number(c.confidence) : null,
+      position_size_usd: c.position_size_usd !== null ? Number(c.position_size_usd) : null,
+      entry_price: c.entry_price !== null ? Number(c.entry_price) : null,
+      agent_name: ag?.name ?? "Unknown",
+      agent_short_id: ag?.short_id ?? "",
+    };
+  });
+
+  const paperTrades: RoundPaperTrade[] = rawPaperTrades.map((pt) => {
+    const ag = Array.isArray(pt.agents) ? pt.agents[0] : pt.agents;
+    return {
+      id: pt.id,
+      response_id: pt.response_id,
+      comment_id: pt.comment_id,
+      agent_id: pt.agent_id,
+      query_id: pt.query_id,
+      direction: pt.direction,
+      position_size_usd: Number(pt.position_size_usd),
+      entry_price: Number(pt.entry_price),
+      exit_price: Number(pt.exit_price),
+      pnl_usd: Number(pt.pnl_usd),
+      settled_at: pt.settled_at,
+      agent_name: ag?.name ?? "Unknown",
+      agent_short_id: ag?.short_id ?? "",
+    };
+  });
 
   const total = responses.length;
   const counts = {
@@ -167,44 +229,70 @@ export default async function RoundPage({
     hold: responses.filter((r) => r.answer === "hold").length,
   };
 
-  const settlements24h = settlements.filter((s) => s.horizon === "24h");
-  const isFullySettled = settlements24h.length > 0;
+  // Is settled: query has status='settled' or we have paper_trades
+  const isSettled = round.status === "settled" || paperTrades.length > 0;
+
+  // Close price: use query.close_price_pyth if available,
+  // else fall back to average of paper_trade exit prices
+  let closePrice: number | null = null;
+  if (round.close_price_pyth) {
+    closePrice = Number(round.close_price_pyth);
+  } else if (paperTrades.length > 0) {
+    closePrice = paperTrades.reduce((s, t) => s + t.exit_price, 0) / paperTrades.length;
+  }
 
   let verdictData: VerdictData | null = null;
-  if (isFullySettled) {
-    const s24Prices = settlements24h.map((s) => s.pyth_price_at_settle);
-    const closePrice = s24Prices.reduce((a, b) => a + b, 0) / s24Prices.length;
-    const settlements1h = settlements.filter((s) => s.horizon === "1h");
-    let topAgentName: string | null = null;
-    let topAgentPnl: number | null = null;
-    if (settlements1h.length > 0) {
-      const top = settlements1h.reduce((best, cur) =>
-        cur.pnl_pct > best.pnl_pct ? cur : best,
-      );
-      const topResp = responses.find((r) => r.id === top.response_id);
-      if (topResp) {
-        topAgentName = topResp.agent_name;
-        topAgentPnl = top.pnl_pct;
-      }
-    }
+  if (isSettled && closePrice !== null && paperTrades.length > 0) {
     verdictData = {
       symbol,
       openPrice: Number(round.pyth_price_at_ask),
       closePrice,
-      longCount: counts.buy,
-      shortCount: counts.sell,
-      holdCount: counts.hold,
-      topAgentName,
-      topAgentPnl,
+      paperTrades,
     };
   }
 
-  const entryStripEntries = responses.map((r) => ({
-    id: r.id,
-    agentName: r.agent_name,
-    answer: r.answer,
-    price: r.pyth_price_at_response,
-    respondedAt: r.responded_at,
+  // Entries for EntryStrip — responses + comments-with-direction
+  const entryStripEntries = [
+    ...responses.map((r) => ({
+      id: r.id,
+      agentName: r.agent_name,
+      answer: r.answer,
+      price: r.pyth_price_at_response,
+      positionSizeUsd: r.position_size_usd,
+      respondedAt: r.responded_at,
+    })),
+    ...comments
+      .filter((c) => c.direction && c.entry_price !== null)
+      .map((c) => ({
+        id: c.id,
+        agentName: c.agent_name,
+        answer: c.direction as "buy" | "sell" | "hold",
+        price: c.entry_price!,
+        positionSizeUsd: c.position_size_usd ?? 100,
+        respondedAt: c.created_at,
+      })),
+  ];
+
+  // Entries for ConsensusBar
+  const consensusEntries = [
+    ...responses.map((r) => ({
+      id: r.id,
+      direction: r.answer,
+      positionSizeUsd: r.position_size_usd,
+    })),
+    ...comments
+      .filter((c) => c.direction && c.position_size_usd !== null)
+      .map((c) => ({
+        id: c.id,
+        direction: c.direction as "buy" | "sell" | "hold",
+        positionSizeUsd: c.position_size_usd!,
+      })),
+  ];
+
+  const consensusPaperTrades = paperTrades.map((pt) => ({
+    direction: pt.direction,
+    position_size_usd: pt.position_size_usd,
+    pnl_usd: pt.pnl_usd,
   }));
 
   return (
@@ -237,7 +325,7 @@ export default async function RoundPage({
         </span>
       </div>
 
-      {/* Main card — glassmorphic with Solana radial gradients */}
+      {/* Main card */}
       <div
         style={{
           background:
@@ -274,18 +362,13 @@ export default async function RoundPage({
                   <span className="dot" />
                   LIVE
                 </span>
-              ) : isFullySettled ? (
+              ) : isSettled ? (
                 <span className="chip chip-up">SETTLED</span>
               ) : (
                 <span className="chip">CLOSED</span>
               )}
               <span className="chip">Round #{round.short_id}</span>
               <span className="chip">{symbol}/USD</span>
-              {isFullySettled && (
-                <span className="chip chip-up" style={{ fontSize: 10 }}>
-                  24h FINAL
-                </span>
-              )}
             </div>
             <div
               style={{
@@ -338,7 +421,7 @@ export default async function RoundPage({
               className="num"
               style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}
             >
-              + 4h, 24h windows
+              5-min rounds · 10× leverage
             </div>
           </div>
         </div>
@@ -369,39 +452,30 @@ export default async function RoundPage({
             }
           />
           <StatCell
-            label="Settlements"
+            label="Paper trades"
             value={
-              settlements.length === 0 ? (
+              paperTrades.length === 0 ? (
                 <span style={{ color: "var(--fg-4)" }}>—</span>
               ) : (
                 <span>
-                  <span style={{ color: "var(--fg)" }}>
-                    {settlements.filter((s) => s.horizon === "1h").length}
-                  </span>
-                  <span style={{ color: "var(--fg-4)", margin: "0 4px" }}>/</span>
-                  <span style={{ color: "var(--fg)" }}>
-                    {settlements.filter((s) => s.horizon === "4h").length}
-                  </span>
-                  <span style={{ color: "var(--fg-4)", margin: "0 4px" }}>/</span>
-                  <span style={{ color: "var(--fg)" }}>
-                    {settlements.filter((s) => s.horizon === "24h").length}
-                  </span>
-                  <span
-                    className="num"
-                    style={{ fontSize: 10, color: "var(--fg-3)", marginLeft: 6 }}
-                  >
-                    1h/4h/24h
+                  <span style={{ color: "var(--fg)" }}>{paperTrades.length}</span>
+                  <span className="num" style={{ fontSize: 10, color: "var(--fg-3)", marginLeft: 6 }}>
+                    settled
                   </span>
                 </span>
               )
             }
           />
-          <StatCell label="Responses" value={String(total)} last />
+          <StatCell
+            label={closePrice ? `${symbol} · close` : "Close price"}
+            value={closePrice ? fmtPrice(closePrice) : <span style={{ color: "var(--fg-4)" }}>—</span>}
+            last
+          />
         </div>
 
         {/* Consensus bar */}
-        {total > 0 && (
-          <ConsensusBar responses={responses} settlements={settlements} />
+        {consensusEntries.length > 0 && (
+          <ConsensusBar entries={consensusEntries} paperTrades={consensusPaperTrades} />
         )}
 
         {/* Entry strip */}
@@ -423,7 +497,8 @@ export default async function RoundPage({
         >
           <PredictionFeed
             responses={responses}
-            settlements={settlements}
+            comments={comments}
+            paperTrades={paperTrades}
             isOpen={isOpen}
             askedAt={round.asked_at}
           />
@@ -431,7 +506,8 @@ export default async function RoundPage({
             queryId={round.id}
             isOpen={isOpen}
             initialResponses={responses}
-            initialSettlements={settlements}
+            initialPaperTrades={paperTrades}
+            initialComments={comments}
           />
         </div>
       </div>
