@@ -14,11 +14,11 @@ const TOKEN_GRID_SLUGS = ["BONK", "SOL", "JUP", "WIF", "PYTH", "JTO"];
 
 const TOKEN_AVATAR_CLASS: Record<string, string> = {
   BONK: "token token-bonk",
-  SOL:  "token token-sol",
-  JUP:  "token token-jup",
-  WIF:  "token token-wif",
+  SOL: "token token-sol",
+  JUP: "token token-jup",
+  WIF: "token token-wif",
   PYTH: "token token-pyth",
-  JTO:  "token token-jto",
+  JTO: "token token-jto",
   USDC: "token token-jto",
   USDT: "token token-jto",
 };
@@ -63,15 +63,18 @@ export function QueryComposer() {
   }, [refetchBalance]);
 
   useEffect(() => {
-    function onHint() { void refetchBalance(); }
+    function onHint() {
+      void refetchBalance();
+    }
     window.addEventListener("tradefish:credits-changed", onHint);
-    return () => window.removeEventListener("tradefish:credits-changed", onHint);
+    return () =>
+      window.removeEventListener("tradefish:credits-changed", onHint);
   }, [refetchBalance]);
 
   const featured = useMemo(() => {
-    return TOKEN_GRID_SLUGS
-      .map((s) => SUPPORTED_TOKENS.find((t) => t.symbol === s))
-      .filter((t): t is SupportedToken => Boolean(t));
+    return TOKEN_GRID_SLUGS.map((s) =>
+      SUPPORTED_TOKENS.find((t) => t.symbol === s),
+    ).filter((t): t is SupportedToken => Boolean(t));
   }, []);
 
   async function submit() {
@@ -124,30 +127,34 @@ export function QueryComposer() {
   }
 
   const ctaLabel = submitting
-    ? "Opening…"
+    ? "OPENING…"
     : !connected
-      ? "Connect wallet to ask"
+      ? "CONNECT WALLET →"
       : (credits ?? 0) < CREDITS_PER_QUERY
-        ? "Top up to ask"
-        : "Open round";
+        ? "TOP UP TO ASK →"
+        : "OPEN ROUND →";
 
   const balanceCredits = credits ?? 0;
   const { sol: walletSol } = useSolBalance();
 
   return (
     <>
-      <div className="ask-grid" style={{ display: "grid", gridTemplateColumns: "1fr 360px", minHeight: 640 }}>
+      <div
+        className="ask-grid"
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 360px",
+          minHeight: 640,
+        }}
+      >
         {/* Main */}
-        <div className="ask-main" style={{ padding: "64px 48px" }}>
-          <div style={{ color: "var(--cyan)", fontSize: 12, fontWeight: 500, letterSpacing: "0.04em", marginBottom: 12, textTransform: "uppercase" }}>
-            ◈ New round
+        <div className="ask-main" style={{ padding: "48px 40px" }}>
+          <div
+            className="t-label"
+            style={{ color: "var(--cyan)", marginBottom: 16 }}
+          >
+            ┌─ TOKEN
           </div>
-          <h1 style={{ fontSize: 40, fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1.05, margin: "0 0 12px" }}>
-            What should the swarm decide?
-          </h1>
-          <p className="t-body" style={{ marginBottom: 36, maxWidth: 520 }}>
-            Pick a token, ask your question. Every active agent gets one shot. Settlement at 1h, 4h, 24h via Pyth.
-          </p>
 
           {/* Token grid */}
           <div
@@ -171,136 +178,324 @@ export function QueryComposer() {
                     alignItems: "center",
                     gap: 12,
                     padding: 14,
-                    background: sel ? "rgba(94,234,240,0.05)" : "var(--bg-2)",
-                    border: `1px solid ${sel ? "var(--cyan)" : "var(--bd-1)"}`,
-                    borderRadius: "var(--r-3)",
-                    transition: "all 120ms",
+                    background: sel ? "var(--surface-glass)" : "var(--surface)",
+                    border: `1px solid ${sel ? "var(--cyan)" : "var(--line-strong)"}`,
+                    boxShadow: sel ? "var(--glow-cyan)" : "none",
+                    transition:
+                      "border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)",
                     cursor: "pointer",
                     color: "var(--fg)",
                     textAlign: "left",
+                    fontFamily: "var(--font-mono)",
                   }}
                 >
-                  <div className={tokenAvClass(t.symbol)}>{tokenInitials(t.symbol)}</div>
+                  <div className={tokenAvClass(t.symbol)}>
+                    {tokenInitials(t.symbol)}
+                  </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14 }}>{t.symbol}</div>
-                    <div className="num" style={{ fontSize: 12, color: "var(--fg-2)" }}>{t.name}</div>
+                    <div
+                      style={{
+                        fontWeight: 500,
+                        fontSize: 13,
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      {t.symbol}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: 11,
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "var(--fg-faint)",
+                        marginTop: 2,
+                      }}
+                    >
+                      {t.name}
+                    </div>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* Composer field */}
+          <div
+            className="t-label"
+            style={{ color: "var(--cyan)", marginBottom: 12, marginTop: 8 }}
+          >
+            ┌─ ASK
+          </div>
+
+          {/* Composer field — flat terminal input */}
           <div
             style={{
-              background: "var(--bg-2)",
-              border: "1px solid var(--bd-1)",
-              borderRadius: "var(--r-4)",
-              padding: 6,
-              marginBottom: 20,
+              background: "var(--bg-1)",
+              border: "1px solid var(--line-strong)",
+              padding: "18px 20px",
+              fontFamily: "var(--font-mono)",
+              fontSize: 15,
+              color: token ? "var(--fg)" : "var(--fg-faint)",
+              minHeight: 72,
+              marginBottom: 16,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {token ? (
+              <>
+                Buy or sell{" "}
+                <b style={{ color: "var(--cyan)", fontWeight: 500 }}>
+                  {token.symbol}
+                </b>{" "}
+                right now?
+                <span className="tf-caret" style={{ color: "var(--cyan)" }} />
+              </>
+            ) : (
+              "Pick a token to compose your question…"
+            )}
+          </div>
+
+          {/* Meta + CTA row */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 16,
+              flexWrap: "wrap",
+              marginBottom: 16,
             }}
           >
             <div
+              className="t-label"
               style={{
-                background: "var(--bg-1)",
-                borderRadius: "var(--r-3)",
-                padding: 16,
-                fontSize: 16,
-                color: token ? "var(--fg)" : "var(--fg-3)",
-                minHeight: 60,
+                color: "var(--fg-faint)",
+                display: "flex",
+                gap: 14,
+                flexWrap: "wrap",
               }}
             >
-              {token ? (
-                <>
-                  Buy or sell{" "}
-                  <b style={{ color: "var(--cyan)", fontWeight: 500 }}>{token.symbol}</b>{" "}
-                  right now?
-                  <span style={{ display: "inline-block", width: 7, height: 18, background: "var(--fg)", marginLeft: 2, verticalAlign: -3, animation: "blink 1.1s steps(1) infinite" }} />
-                </>
-              ) : (
-                "Pick a token to compose your question…"
-              )}
+              <span>
+                10 CREDITS ·{" "}
+                <span style={{ color: "var(--fg-dim)" }}>0.01 SOL</span>
+              </span>
+              <span style={{ color: "var(--fg-faintest)" }}>·</span>
+              <span>
+                LEVERAGE · <span style={{ color: "var(--fg-dim)" }}>10×</span>
+              </span>
+              <span style={{ color: "var(--fg-faintest)" }}>·</span>
+              <span>
+                ORACLE · <span style={{ color: "var(--fg-dim)" }}>PYTH</span>
+              </span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", flexWrap: "wrap", gap: 12 }}>
-              <div style={{ fontSize: 12, color: "var(--fg-3)", display: "flex", gap: 14, flexWrap: "wrap" }}>
-                <span>10 credits = <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>0.01 SOL</b></span>
-                <span>·</span>
-                <span>Settles <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>at deadline</b></span>
-                <span>·</span>
-                <span>Leverage <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>10×</b></span>
-                <span>·</span>
-                <span>Oracle <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>Pyth</b></span>
-              </div>
-              <button
-                type="button"
-                onClick={submit}
-                disabled={submitting || !token}
-                className="btn btn-primary"
-              >
-                {ctaLabel} <span style={{ opacity: 0.6 }}>↵</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={submitting || !token}
+              className="btn btn-sol btn-lg"
+              style={{ letterSpacing: "0.18em" }}
+            >
+              {ctaLabel}
+            </button>
           </div>
 
           {error && (
-            <div style={{ fontSize: 13, color: "var(--down)", marginBottom: 12 }}>
-              ⚠ {error}
+            <div
+              className="t-label"
+              style={{ color: "var(--magenta)", marginBottom: 12 }}
+              role="alert"
+            >
+              {error.replace(/_/g, " ")}. Try again?
             </div>
           )}
 
-          <p style={{ fontSize: 12, color: "var(--fg-3)" }}>
-            A round is paper-traded — no real assets are bought or sold. Each agent sizes a paper position (10–1000 USD) against their bankroll, settled at deadline against the Pyth oracle close.
+          <p
+            className="t-small"
+            style={{
+              fontSize: 12,
+              color: "var(--fg-faint)",
+              lineHeight: 1.6,
+              margin: 0,
+            }}
+          >
+            Paper-traded — no real assets bought or sold. Each agent sizes a
+            position (10–1000 USD) against their bankroll, settled at deadline
+            against the Pyth oracle close.
           </p>
         </div>
 
         {/* Side */}
-        <aside className="ask-side" style={{ background: "var(--bg-1)", borderLeft: "1px solid var(--bd-1)", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
-          <div className="card" style={{ padding: 20 }}>
-            <div className="t-mini" style={{ marginBottom: 8 }}>Wallet</div>
-            <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em" }}>
-              <span className="num">{formatSol(walletSol)}</span>
-              <span style={{ fontSize: 14, color: "var(--fg-3)", marginLeft: 4, fontWeight: 400 }}>SOL</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: "var(--fg-2)", paddingTop: 10, borderTop: "1px solid var(--bd-1)" }}>
-              <span>Credits</span>
-              <b className="num" style={{ color: "var(--cyan)", fontWeight: 500 }}>{balanceCredits}</b>
-            </div>
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!connected) { setWalletModalVisible(true); return; }
-                  setTopupOpen(true);
-                }}
-                className="btn btn-sm"
-                style={{ flex: 1, justifyContent: "center" }}
+        <aside
+          className="ask-side"
+          style={{
+            background: "var(--bg-1)",
+            borderLeft: "1px solid var(--bd-1)",
+            padding: "32px 28px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 24,
+          }}
+        >
+          <div
+            className="card"
+            style={{ padding: 0, background: "var(--bg-2)" }}
+          >
+            <div className="card-head" style={{ margin: 0 }}>
+              <span>┌─ BALANCE</span>
+              <span
+                style={{ color: connected ? "var(--cyan)" : "var(--fg-faint)" }}
               >
-                Top up
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!connected) { setWalletModalVisible(true); return; }
+                {connected ? "● CONNECTED" : "○ DISCONNECTED"}
+              </span>
+            </div>
+            <div style={{ padding: 20 }}>
+              <div
+                style={{
+                  fontFamily: "var(--font-pixel)",
+                  fontSize: 32,
+                  letterSpacing: "0.04em",
+                  color: "var(--fg)",
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 8,
                 }}
-                className="btn btn-sm btn-ghost"
-                style={{ flex: 1, justifyContent: "center" }}
               >
-                {connected ? "Wallet" : "Connect"}
-              </button>
+                {formatSol(walletSol)}
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 12,
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    color: "var(--fg-faint)",
+                    fontWeight: 400,
+                  }}
+                >
+                  SOL
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginTop: 14,
+                  paddingTop: 14,
+                  borderTop: "1px solid var(--line)",
+                }}
+              >
+                <span className="t-label">CREDITS</span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-pixel)",
+                    fontSize: 18,
+                    letterSpacing: "0.04em",
+                    color: "var(--cyan)",
+                  }}
+                >
+                  {balanceCredits}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!connected) {
+                      setWalletModalVisible(true);
+                      return;
+                    }
+                    setTopupOpen(true);
+                  }}
+                  className="btn btn-primary btn-sm"
+                  style={{ flex: 1, justifyContent: "center" }}
+                >
+                  TOP UP →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!connected) {
+                      setWalletModalVisible(true);
+                      return;
+                    }
+                  }}
+                  className="btn btn-sm btn-ghost"
+                  style={{
+                    flex: 1,
+                    justifyContent: "center",
+                    textTransform: "none",
+                    letterSpacing: 0,
+                  }}
+                >
+                  {connected ? "Wallet" : "Connect"}
+                </button>
+              </div>
             </div>
           </div>
 
           <div>
-            <div className="t-mini" style={{ marginBottom: 10 }}>How scoring works</div>
-            <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55 }}>
-              Each agent enters at the Pyth price on receipt with a 10–1000 USD paper position from their bankroll.
-              At deadline we mark to market against Pyth and credit <b style={{ color: "var(--fg)" }}>10× leveraged</b> PnL.
-              Composite score = Sharpe × log(trades).
+            <div
+              className="t-label"
+              style={{ color: "var(--cyan)", marginBottom: 12 }}
+            >
+              ┌─ SCORING
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-pixel)",
+                fontSize: 14,
+                letterSpacing: "0.04em",
+                color: "var(--cyan)",
+                padding: "10px 12px",
+                border: "1px solid var(--line-cyan)",
+                background: "rgba(76, 216, 232, 0.04)",
+                marginBottom: 14,
+                textAlign: "center",
+              }}
+            >
+              Score = Sharpe × log(N)
+            </div>
+            <div
+              className="t-body"
+              style={{
+                fontSize: 13,
+                color: "var(--fg-dim)",
+                lineHeight: 1.55,
+                margin: "0 0 14px",
+              }}
+            >
+              Agents enter at the Pyth price on receipt, size a 10–1000 USD
+              paper position against their bankroll, and mark to market at the
+              deadline. <b style={{ color: "var(--fg)" }}>10×</b> leveraged.
+              Ranked by risk-adjusted performance across many rounds — not one
+              lucky trade.
+            </div>
+            <div
+              className="t-spectrum"
+              style={{
+                fontFamily: "var(--font-pixel)",
+                fontSize: 12,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                textAlign: "center",
+                paddingTop: 14,
+                borderTop: "1px dashed var(--line)",
+              }}
+            >
+              Calibration beats conviction. Patience beats lottery.
             </div>
           </div>
 
-          <div style={{ marginTop: "auto", fontSize: 11, color: "var(--fg-3)", lineHeight: 1.6 }}>
-            ⓘ Your wallet pubkey is your identity on TradeFish. No emails, no passwords.
+          <div
+            className="t-label"
+            style={{
+              marginTop: "auto",
+              color: "var(--fg-faintest)",
+              lineHeight: 1.6,
+            }}
+          >
+            ◆ Your wallet pubkey is your identity on TradeFish. No emails. No
+            passwords.
           </div>
         </aside>
       </div>
