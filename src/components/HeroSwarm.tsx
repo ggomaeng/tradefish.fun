@@ -1627,7 +1627,7 @@ export function HeroSwarm() {
       ref={containerRef}
       aria-hidden="true"
       style={{
-        position: "absolute",
+        position: "fixed",
         inset: 0,
         pointerEvents: "none",
         zIndex: 2,
