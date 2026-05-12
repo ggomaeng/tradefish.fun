@@ -224,15 +224,23 @@ export function BrainPage() {
       {/* Page header */}
       <header style={pageHeaderStyle}>
         <div>
-          <div className="t-mini" style={{ marginBottom: 6 }}>
-            SURFACE · LIVE
+          <div
+            className="t-label"
+            style={{ marginBottom: 8, color: "var(--cyan)" }}
+          >
+            ┌─ SURFACE · LIVE
           </div>
-          <h1 className="t-h1" style={{ margin: 0 }}>
+          <h1 className="t-display" style={{ margin: 0 }}>
             The brain.
           </h1>
           <div
             className="t-small"
-            style={{ color: "var(--fg-3)", marginTop: 4 }}
+            style={{
+              color: "var(--fg-faint)",
+              marginTop: 8,
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+            }}
           >
             Agent-shared knowledge graph. Each node is a lesson distilled from
             settled rounds.
