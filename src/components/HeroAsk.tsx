@@ -5,16 +5,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
 
-// Landing input — single free-form text field with a rotating
-// typewriter placeholder. Backend contract is unchanged: on submit we
-// soft-parse the typed text for a token symbol (e.g., "$SOL" or "SOL")
-// and POST { token_mint, question_type: "buy_sell_now" } per AGENTS.md.
-// The question text itself is currently discarded — future backend
-// extension can accept the raw prompt.
+// Landing hero — locked-template asker.
+// The backend currently only accepts { token_mint, question_type:
+// "buy_sell_now" }, so the hero matches /ask's reality: the question
+// is fixed as "Buy or sell $TOKEN right now?" and only the token is
+// selectable (via a dropdown). When the backend grows free-form
+// question support, swap this back to an input.
 
-// All six supported tokens — matches /ask's grid so the hero is honest
-// about what the platform actually accepts.
-const ASK_ABOUT_SYMBOLS = ["SOL", "BONK", "JUP", "WIF", "PYTH", "JTO"] as const;
+const TOKEN_SYMBOLS = ["SOL", "BONK", "JUP", "WIF", "PYTH", "JTO"] as const;
 const DEFAULT_SYMBOL = "SOL";
 
 const EV_ATTENTION_ON = "swarm:attention-on";
@@ -23,50 +21,9 @@ const EV_SUBMIT_BURST = "swarm:submit-burst";
 
 const BURST_NAVIGATE_DELAY_MS = 580;
 
-// Rotating placeholder — canonical "Buy or sell $TOKEN right now?" form
-// only, cycling through the 6 supported tokens. The backend accepts
-// { token_mint, question_type: "buy_sell_now" } and discards everything
-// else, so the placeholder shouldn't promise free-form Q&A.
-const PLACEHOLDERS = [
-  "Buy or sell $SOL right now?",
-  "Buy or sell $BONK right now?",
-  "Buy or sell $JUP right now?",
-  "Buy or sell $WIF right now?",
-  "Buy or sell $PYTH right now?",
-  "Buy or sell $JTO right now?",
-] as const;
-
-// Typewriter tunables. Per-character variance gives a human typing
-// feel; ALL keys are deterministic-ish so the effect doesn't flicker.
-const TYPE_BASE_MS = 38;
-const TYPE_JITTER_MS = 28;
-const DELETE_MS = 22;
-const HOLD_MS = 1800;
-const POST_DELETE_PAUSE_MS = 350;
-
 function findTokenBySymbol(symbol: string): SupportedToken | undefined {
   const u = symbol.trim().toUpperCase();
   return SUPPORTED_TOKENS.find((t) => t.symbol === u);
-}
-
-/**
- * Extract the first supported token referenced in `text`. Prefers the
- * `$SYMBOL` form (e.g. `$SOL`), falling back to bare uppercase symbol
- * matches at word boundaries. Returns null if no supported token is
- * mentioned.
- */
-function extractToken(text: string): SupportedToken | null {
-  if (!text) return null;
-  const dollar = text.match(/\$([A-Za-z]{2,6})\b/);
-  if (dollar) {
-    const t = findTokenBySymbol(dollar[1]);
-    if (t) return t;
-  }
-  for (const t of SUPPORTED_TOKENS) {
-    const re = new RegExp(`\\b${t.symbol}\\b`, "i");
-    if (re.test(text)) return t;
-  }
-  return null;
 }
 
 function dispatchSwarm(name: string): void {
@@ -74,77 +31,83 @@ function dispatchSwarm(name: string): void {
   window.dispatchEvent(new CustomEvent(name));
 }
 
-type Phase = "typing" | "holding" | "deleting";
-
-/**
- * Self-driving typewriter that cycles a list of strings: types →
- * holds → deletes → next. `active` gates the scheduler so the cycle
- * pauses when the input has focus or content (otherwise the
- * placeholder would advance silently behind the user).
- */
-function useTypewriter(
-  strings: readonly string[],
-  active: boolean,
-): { text: string; caret: boolean } {
-  const [idx, setIdx] = useState(0);
-  const [text, setText] = useState("");
-  const [phase, setPhase] = useState<Phase>("typing");
-
-  useEffect(() => {
-    if (!active) return;
-    const cur = strings[idx] ?? "";
-    if (phase === "typing") {
-      if (text.length < cur.length) {
-        const delay = TYPE_BASE_MS + Math.random() * TYPE_JITTER_MS;
-        const t = setTimeout(
-          () => setText(cur.slice(0, text.length + 1)),
-          delay,
-        );
-        return () => clearTimeout(t);
-      }
-      const t = setTimeout(() => setPhase("holding"), 60);
-      return () => clearTimeout(t);
-    }
-    if (phase === "holding") {
-      const t = setTimeout(() => setPhase("deleting"), HOLD_MS);
-      return () => clearTimeout(t);
-    }
-    // phase === "deleting"
-    if (text.length > 0) {
-      const t = setTimeout(() => setText(text.slice(0, -1)), DELETE_MS);
-      return () => clearTimeout(t);
-    }
-    // Done deleting — short pause, then advance to the next string.
-    const t = setTimeout(() => {
-      setIdx((i) => (i + 1) % strings.length);
-      setPhase("typing");
-    }, POST_DELETE_PAUSE_MS);
-    return () => clearTimeout(t);
-  }, [text, phase, idx, strings, active]);
-
-  return { text, caret: true };
-}
-
 export function HeroAsk() {
   const router = useRouter();
-  const query = "";
-  const focused = false;
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [token, setToken] = useState<SupportedToken>(
+    () => findTokenBySymbol(DEFAULT_SYMBOL) ?? SUPPORTED_TOKENS[0],
+  );
+  const [open, setOpen] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  // The landing input is a doorway, not a form — typewriter always runs.
-  const { text: phText, caret: phCaret } = useTypewriter(PLACEHOLDERS, true);
+  // Click-outside closes the dropdown.
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
 
-  const pickStarter = (symbol: string): void => {
-    const t = findTokenBySymbol(symbol);
+  // Escape closes the dropdown.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  // The whole asker is "focused" while either the dropdown is open or
+  // the user is hovering the row — drives the attention bloom + swarm
+  // attention event.
+  useEffect(() => {
+    dispatchSwarm(focused || open ? EV_ATTENTION_ON : EV_ATTENTION_OFF);
+  }, [focused, open]);
+
+  const pick = (sym: string): void => {
+    const t = findTokenBySymbol(sym);
     if (!t) return;
-    dispatchSwarm(EV_SUBMIT_BURST);
-    router.push(`/ask?symbol=${encodeURIComponent(symbol)}`);
+    setToken(t);
+    setOpen(false);
+    setError(null);
   };
 
-  const goToAsk = (): void => {
+  const submit = async (): Promise<void> => {
+    if (submitting) return;
+    setError(null);
+    setSubmitting(true);
     dispatchSwarm(EV_SUBMIT_BURST);
-    router.push("/ask");
+    try {
+      const fetchP = fetch("/api/queries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token_mint: token.mint,
+          question_type: "buy_sell_now",
+        }),
+      });
+      const minWait = new Promise<void>((r) =>
+        setTimeout(r, BURST_NAVIGATE_DELAY_MS),
+      );
+      const [r] = await Promise.all([fetchP, minWait]);
+      const json = (await r.json()) as { query_id?: string; error?: string };
+      if (!r.ok) throw new Error(json.error ?? "submit_failed");
+      router.push(`/round/${json.query_id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "submit_failed");
+      setSubmitting(false);
+    }
   };
+
+  const active = focused || open;
 
   return (
     <div
@@ -152,85 +115,82 @@ export function HeroAsk() {
       style={{ animationDelay: "120ms" }}
     >
       <div className="relative w-full">
-        {/* Bloom behind the input — fades in on focus. */}
+        {/* Bloom behind the row — fades in on focus / dropdown open. */}
         <div
           className="tf-attention-bloom"
           aria-hidden
-          data-attention={focused ? "true" : "false"}
+          data-attention={active ? "true" : "false"}
         />
 
         <div
+          ref={wrapRef}
           data-swarm-anchor
-          onClick={goToAsk}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              goToAsk();
-            }
-          }}
-          className="relative w-full flex items-stretch transition-colors cursor-pointer"
+          onMouseEnter={() => setFocused(true)}
+          onMouseLeave={() => setFocused(false)}
+          className="relative w-full flex items-stretch transition-colors"
           style={{
             background: "rgba(13,24,48,0.78)",
-            border: `1px solid ${focused ? "var(--cyan)" : "var(--line-strong)"}`,
+            border: `1px solid ${active ? "var(--cyan)" : "var(--line-strong)"}`,
             backdropFilter: "blur(10px)",
-            boxShadow: focused
+            boxShadow: active
               ? "0 0 0 3px rgba(168,216,232,0.14), 0 24px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)"
               : "0 0 0 1px rgba(168,216,232,0.06), 0 24px 60px -20px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.04)",
             transition:
               "border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)",
           }}
         >
-          {/* Input acts as a doorway to /ask — readOnly + pointer cursor,
-              click anywhere on the row navigates. Typewriter overlay still
-              renders behind the empty field. */}
-          <div className="relative flex-1 pointer-events-none">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              readOnly
-              tabIndex={-1}
-              aria-hidden
-              spellCheck={false}
-              autoComplete="off"
-              autoCorrect="off"
-              className="w-full bg-transparent outline-none text-[14px] sm:text-[16px] tracking-[0.04em] px-5 py-4 sm:py-[18px] cursor-pointer"
+          {/* Question template — "Buy or sell [TOKEN ▼] right now?" */}
+          <div
+            className="flex-1 flex items-center flex-wrap gap-x-2 px-5 py-4 sm:py-[18px] text-[14px] sm:text-[16px] tracking-[0.04em]"
+            style={{
+              fontFamily: "var(--font-mono)",
+              color: "var(--cream)",
+            }}
+          >
+            <span>Buy or sell</span>
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-haspopup="listbox"
+              aria-expanded={open}
+              aria-label={`Token: ${token.symbol}`}
+              className="inline-flex items-center gap-2 px-2.5 py-1 transition-colors"
               style={{
+                background: open
+                  ? "rgba(168,216,232,0.12)"
+                  : "rgba(168,216,232,0.05)",
+                border: "1px solid var(--cyan-bd)",
+                color: "var(--cyan-bright)",
                 fontFamily: "var(--font-mono)",
-                color: "var(--cream)",
-                caretColor: "transparent",
+                letterSpacing: "0.06em",
               }}
-            />
-            {query === "" && (
+            >
+              <span>${token.symbol}</span>
               <span
                 aria-hidden
-                className="absolute inset-0 pointer-events-none flex items-center px-5 text-[14px] sm:text-[16px] tracking-[0.04em] whitespace-nowrap overflow-hidden"
                 style={{
-                  fontFamily: "var(--font-mono)",
-                  color: "var(--fg-faint)",
+                  fontFamily: "var(--font-pixel)",
+                  fontSize: 11,
+                  opacity: 0.7,
+                  transform: open ? "rotate(180deg)" : "none",
+                  transition: "transform var(--t-fast) var(--ease-out)",
+                  display: "inline-block",
                 }}
               >
-                <span>{phText}</span>
-                {phCaret && (
-                  <span
-                    className="tf-caret-blink ml-[1px] inline-block"
-                    style={{
-                      width: "0.5ch",
-                      height: "1.1em",
-                      background: "var(--cyan-bright)",
-                      opacity: 0.65,
-                    }}
-                  />
-                )}
+                ▾
               </span>
-            )}
+            </button>
+            <span>right now?</span>
           </div>
 
-          <div
-            aria-hidden
-            className="inline-flex items-center justify-center w-12 h-auto self-stretch transition-all pointer-events-none"
+          <button
+            type="button"
+            onClick={submit}
+            onMouseDown={(e) => e.preventDefault()}
+            disabled={submitting}
+            aria-label="ask the swarm"
+            title="Ask the swarm"
+            className="inline-flex items-center justify-center w-12 h-auto self-stretch transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--cyan)",
               color: "var(--bg-0)",
@@ -243,31 +203,98 @@ export function HeroAsk() {
               style={{ fontFamily: "var(--font-pixel)", fontSize: 18 }}
               aria-hidden
             >
-              ▸
+              {submitting ? "…" : "▸"}
             </span>
-          </div>
+          </button>
+
+          {/* Dropdown — absolute positioned, opens below the row */}
+          {open && (
+            <div
+              role="listbox"
+              aria-label="Select a token"
+              className="absolute left-0 right-12 top-[calc(100%+6px)] z-10"
+              style={{
+                background: "rgba(13,24,48,0.92)",
+                border: "1px solid var(--cyan-bd)",
+                backdropFilter: "blur(10px)",
+                boxShadow:
+                  "0 0 0 3px rgba(168,216,232,0.10), 0 24px 60px -20px rgba(0,0,0,0.6)",
+              }}
+            >
+              {TOKEN_SYMBOLS.map((sym) => {
+                const t = findTokenBySymbol(sym);
+                if (!t) return null;
+                const selected = t.mint === token.mint;
+                return (
+                  <button
+                    key={sym}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => pick(sym)}
+                    className="w-full flex items-center justify-between px-5 py-2.5 transition-colors text-left"
+                    style={{
+                      background: selected
+                        ? "rgba(168,216,232,0.10)"
+                        : "transparent",
+                      color: selected ? "var(--cyan-bright)" : "var(--cream)",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 13,
+                      letterSpacing: "0.06em",
+                      borderTop: "1px solid rgba(168,216,232,0.08)",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!selected)
+                        e.currentTarget.style.background =
+                          "rgba(168,216,232,0.06)";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!selected)
+                        e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    <span>
+                      <span style={{ color: "var(--cyan-bright)" }}>$</span>
+                      {sym}
+                      <span
+                        style={{
+                          color: "var(--fg-faint)",
+                          marginLeft: 10,
+                          fontSize: 11,
+                          letterSpacing: "0.14em",
+                        }}
+                      >
+                        {t.name.toUpperCase()}
+                      </span>
+                    </span>
+                    {selected && (
+                      <span
+                        aria-hidden
+                        style={{
+                          fontFamily: "var(--font-pixel)",
+                          color: "var(--cyan-bright)",
+                          fontSize: 11,
+                        }}
+                      >
+                        ●
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      <div
-        className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] tracking-[0.22em] uppercase"
-        style={{ fontFamily: "var(--font-mono)", color: "var(--fg-faint)" }}
-      >
-        <span>ASK ABOUT</span>
-        <span aria-hidden style={{ color: "var(--fg-faintest)" }}>
-          •
-        </span>
-        {ASK_ABOUT_SYMBOLS.map((sym) => (
-          <button
-            key={sym}
-            type="button"
-            onClick={() => pickStarter(sym)}
-            className="transition-colors hover:text-[var(--cyan-bright)]"
-          >
-            ${sym}
-          </button>
-        ))}
-      </div>
+      {error && (
+        <div
+          className="text-[11px] tracking-[0.18em] uppercase"
+          style={{ color: "var(--short)", fontFamily: "var(--font-mono)" }}
+        >
+          ⚠ {error.replace(/_/g, " ")}
+        </div>
+      )}
 
       <Link
         href="/agents/register"
