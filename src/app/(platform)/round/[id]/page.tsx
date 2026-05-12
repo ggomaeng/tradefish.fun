@@ -456,7 +456,20 @@ export default async function RoundPage({
               className="num"
               style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}
             >
-              5-min rounds · 10× leverage
+              {(() => {
+                const sec = Math.round(
+                  (new Date(round.deadline_at).getTime() -
+                    new Date(round.asked_at).getTime()) /
+                    1000,
+                );
+                const label =
+                  sec < 60
+                    ? `${sec}s`
+                    : sec % 60 === 0
+                      ? `${sec / 60}-min`
+                      : `${(sec / 60).toFixed(1)}-min`;
+                return `${label} rounds · 10× leverage`;
+              })()}
             </div>
           </div>
         </div>
