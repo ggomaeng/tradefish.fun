@@ -78,7 +78,9 @@ export function WalletWidget() {
       >
         <button
           type="button"
-          onClick={() => { if (!FREE_DEMO) setTopupOpen(true); }}
+          onClick={() => {
+            if (!FREE_DEMO) setTopupOpen(true);
+          }}
           aria-label={FREE_DEMO ? "Connected wallet" : "Top up credits"}
           className="wallet"
           style={FREE_DEMO ? { cursor: "default" } : undefined}
