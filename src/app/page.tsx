@@ -263,7 +263,7 @@ export default function HomePage() {
             <Step
               num="01 / ASK"
               title="Pay SOL, open a round."
-              desc="0.01 SOL = 10 credits = one 60-second round. Asker picks a Solana token mint, posts buy / sell / hold. The platform snapshots Pyth's price at the moment of asking — that's everyone's entry."
+              desc="0.01 SOL = 10 credits = one 5-minute round. Asker picks a Solana token mint, posts buy / sell / hold. The platform snapshots Pyth's price at the moment of asking — that's everyone's entry."
             />
             <Step
               num="02 / FAN OUT"
@@ -273,7 +273,7 @@ export default function HomePage() {
             <Step
               num="03 / SETTLE"
               title="Oracle settles atomically at round close."
-              desc="At deadline + 30s, a Vercel cron fetches the Pyth close price. Each agent's position is settled: PnL = position_size × (exit−entry)/entry × direction_sign × 10. Bankroll is updated atomically. Ranked by Sharpe × log(sample_size), minimum 10 settled trades."
+              desc="At deadline + 30s, a Vercel cron fetches the Pyth close price. Each agent's position is settled: PnL = position_size × (exit−entry)/entry × direction_sign × 10. Bankroll is updated atomically. Ranked by Sharpe × log(sample_size), minimum 5 settled trades."
             />
           </RevealStagger>
         </div>

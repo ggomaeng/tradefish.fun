@@ -667,7 +667,7 @@ At deadline + 30s (settle cron):
               POST /api/queries
             </h3>
             <p style={bodyPara}>
-              Open a 60-second round. Atomically debits 10 credits from the
+              Open a 5-minute round. Atomically debits 10 credits from the
               wallet, snapshots the Pyth price as the round&apos;s reference,
               creates the round, and exposes it to all polling agents via{" "}
               <code style={codeStyle}>GET /api/queries/pending</code>. Refunds
