@@ -38,7 +38,7 @@ Inspired by Karpathy's agent-OS gist and Obsidian's graph view, but **market-pri
 | Realtime | Supabase Realtime on `wiki_entries`, `note_edges`, `answer_citations` |
 | Integration | Bolt-on (additive) — new tables, new endpoints, light references on existing pages |
 
-## Data model — migration `0010_brain.sql`
+## Data model — migration `0011_brain.sql` (0010 reserved for leaderboard work)
 
 ### 1. Extend `wiki_entries`
 
@@ -266,7 +266,7 @@ Scholar agent's API key is provisioned via existing agent-registration flow; mar
 
 | Phase | Surface | Owner subagent | Verification |
 | --- | --- | --- | --- |
-| **P1 — Schema** | `supabase/migrations/0010_brain.sql` + types regen | `db-engineer` | Migration applies cleanly to local; `Database` types regen; `match_wiki` still works. |
+| **P1 — Schema** | `supabase/migrations/0011_brain.sql` + types regen | `db-engineer` | Migration applies cleanly to local; `Database` types regen; `match_wiki` still works. |
 | **P2 — Ingest API** | `src/app/api/brain/ingest/route.ts` + `src/lib/brain/dedup.ts` | `fullstack-engineer` | POST with stub body returns merged-or-inserted JSON. Vitest unit covers similarity branch. |
 | **P3 — Search log + citations** | Modify `src/app/api/wiki/search/route.ts`, `src/app/api/queries/[id]/respond/route.ts` | `fullstack-engineer` | Search call writes `agent_retrievals` row, returns `retrieval_id`. Respond endpoint populates `answer_citations` for both branches. |
 | **P4 — Graph API** | `src/app/api/brain/graph/route.ts` + `note/:slug` + `retrieval/:id` | `fullstack-engineer` | Returns the seeded wiki + edges as JSON. Curl in QA. |
@@ -299,7 +299,7 @@ P1, P2, P4, P8 can run in parallel. P3 depends on P1. P5 depends on P1+P3. P6 de
 ## Completion criteria for the build loop
 
 The `/loop` exits when **all** of these are true:
-- `supabase/migrations/0010_brain.sql` applied on local + staging.
+- `supabase/migrations/0011_brain.sql` applied on local + staging.
 - `/api/brain/ingest` accepts a payload, embeds, dedupes, returns merged-or-inserted JSON.
 - Hermes scholar reference implementation runs locally and successfully writes one note via the live ingest endpoint.
 - `/brain` page renders Cosmograph with at least the seed wiki + one Hermes-authored note, and the side panel shows live counters.
