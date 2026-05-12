@@ -1,12 +1,18 @@
 /**
  * solana-config — single source of truth for Solana network selection.
  *
+ * Production (www.tradefish.fun) runs on mainnet-beta via Helius. The devnet
+ * branch is retained for local dev and the staging Preview on
+ * `feat/post-waitlist`. Production builds MUST carry all three
+ * NEXT_PUBLIC_* vars below — a missing one falls back to devnet defaults.
+ *
  * - `NEXT_PUBLIC_SOLANA_NETWORK` selects the cluster: 'devnet' | 'mainnet-beta'.
- *   Defaults to 'devnet' (safe default — never silently route to mainnet).
- * - `NEXT_PUBLIC_SOLANA_RPC` overrides the RPC URL when set; otherwise the
- *   public default for the active network is used.
- * - `NEXT_PUBLIC_TRADEFISH_TREASURY` overrides the treasury pubkey when set;
- *   otherwise the per-network default from RUNBOOK §1 is used.
+ *   Defaults to 'devnet' when unset (safe for local dev).
+ * - `NEXT_PUBLIC_SOLANA_RPC` overrides the RPC URL. Public Solana RPCs
+ *   (api.{devnet,mainnet-beta}.solana.com) return 403 to browser traffic,
+ *   so production must point at a dedicated provider (currently Helius).
+ * - `NEXT_PUBLIC_TRADEFISH_TREASURY` overrides the treasury pubkey;
+ *   otherwise falls back to the per-network default in DEFAULT_TREASURY.
  *
  * All getters read `process.env` at call time (NOT at module load) so tests
  * and server-side route handlers can mutate env without import-order issues.

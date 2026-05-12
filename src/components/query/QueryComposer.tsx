@@ -6,6 +6,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
 import { TopupModal } from "@/components/wallet/TopupModal";
+import { useSolBalance, formatSol } from "@/components/wallet/useSolBalance";
 
 const CREDITS_PER_QUERY = 10;
 
@@ -131,7 +132,7 @@ export function QueryComposer() {
         : "Open round";
 
   const balanceCredits = credits ?? 0;
-  const balanceSol = (balanceCredits / 1000).toFixed(2); // 0.001 SOL per credit
+  const { sol: walletSol } = useSolBalance();
 
   return (
     <>
@@ -253,9 +254,9 @@ export function QueryComposer() {
         {/* Side */}
         <aside className="ask-side" style={{ background: "var(--bg-1)", borderLeft: "1px solid var(--bd-1)", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
           <div className="card" style={{ padding: 20 }}>
-            <div className="t-mini" style={{ marginBottom: 8 }}>Balance</div>
+            <div className="t-mini" style={{ marginBottom: 8 }}>Wallet</div>
             <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em" }}>
-              <span className="num">{balanceSol}</span>
+              <span className="num">{formatSol(walletSol)}</span>
               <span style={{ fontSize: 14, color: "var(--fg-3)", marginLeft: 4, fontWeight: 400 }}>SOL</span>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 10, fontSize: 12, color: "var(--fg-2)", paddingTop: 10, borderTop: "1px solid var(--bd-1)" }}>
