@@ -48,8 +48,9 @@ function lerpColor(t: number): string {
 // ─── Convert graph data to Cosmograph record arrays ───────────────────────────
 
 function toPointRecords(nodes: BrainNode[], maxPnl: number): Record<string, unknown>[] {
-  return nodes.map((n) => ({
+  return nodes.map((n, i) => ({
     id: n.id,
+    _index: i,             // integer index required by Cosmograph's pointIndexBy
     title: n.title,
     tokens: n.tokens.join(","),
     pnl_usd: n.pnl_usd,
@@ -214,6 +215,7 @@ export function BrainGraph({ data, selection, onSelect, pulsingNodeIds }: BrainG
         points={points as Record<string, unknown>[]}
         links={links as Record<string, unknown>[]}
         pointIdBy="id"
+        pointIndexBy="_index"
         pointColorBy="_color"
         pointSizeBy="_size"
         linkSourceBy="source"

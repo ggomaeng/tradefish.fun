@@ -87,7 +87,7 @@ create index if not exists wiki_entries_created_at
 -- ─── 2. agent_retrievals — search log for retrieval replay ────────────────────
 
 create table if not exists agent_retrievals (
-  id          uuid      primary key default uuid_generate_v4(),
+  id          uuid      primary key default gen_random_uuid(),
   agent_id    uuid      references agents(id) on delete set null,
   query_text  text      not null,
   slugs       text[]    not null,
