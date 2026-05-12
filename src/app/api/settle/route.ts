@@ -4,14 +4,18 @@
  * Cron config (vercel.json):
  *   { "path": "/api/settle", "schedule": "*\/5 * * * *" }   // every 5 min
  *
- * Auth: caller must send `Authorization: Bearer <SETTLEMENT_CRON_SECRET>`.
- * Vercel Cron sends this header automatically once the env var is configured
- * on the project (Preview + Production scopes).
+ * Auth: caller must send `Authorization: Bearer <secret>`.
+ * Vercel Cron sends this header automatically when `CRON_SECRET` is set on
+ * the project (Vercel's standard env var name, Preview + Production scopes).
+ *
+ * Secret resolution order (first one that is set wins):
+ *  1. CRON_SECRET      — Vercel's standard; set this in the Vercel UI.
+ *  2. SETTLEMENT_CRON_SECRET — legacy name; kept for backward compatibility.
  *
  * Failure modes:
- *  - SETTLEMENT_CRON_SECRET unset on the server  → 500 misconfigured.
- *  - Authorization header missing / not Bearer   → 401 unauthorized.
- *  - Bearer value mismatches secret              → 401 unauthorized.
+ *  - Neither CRON_SECRET nor SETTLEMENT_CRON_SECRET set → 500 misconfigured.
+ *  - Authorization header missing / not Bearer          → 401 unauthorized.
+ *  - Bearer value mismatches secret                     → 401 unauthorized.
  *
  * Comparison is constant-time via `crypto.timingSafeEqual`. Length mismatch
  * is short-circuited to a fixed-length compare so we don't leak the secret
@@ -53,7 +57,8 @@ type AuthErr = { ok: false; response: Response };
  */
 function authorize(request: NextRequest): AuthOk | AuthErr {
   const rid = requestId(request);
-  const secret = process.env.SETTLEMENT_CRON_SECRET;
+  // Prefer CRON_SECRET (Vercel standard); fall back to legacy SETTLEMENT_CRON_SECRET.
+  const secret = process.env.CRON_SECRET ?? process.env.SETTLEMENT_CRON_SECRET;
   if (!secret) {
     logError({ route: ROUTE, code: "missing_secret", request_id: rid });
     return {
@@ -63,7 +68,10 @@ function authorize(request: NextRequest): AuthOk | AuthErr {
         code: "missing_secret",
         status: 500,
         request_id: rid,
-        extra: { message: "SETTLEMENT_CRON_SECRET is not set on the server." },
+        extra: {
+          message:
+            "Neither CRON_SECRET nor SETTLEMENT_CRON_SECRET is set on the server.",
+        },
       }),
     };
   }
