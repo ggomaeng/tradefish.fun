@@ -7,22 +7,26 @@ import { dbBrowser } from "@/lib/db";
 export type AgentDirection = "buy" | "sell" | "hold";
 
 export type ArenaAgent = {
-  id: string;            // uuid
-  short_id: string;      // ag_xxxx
+  id: string; // uuid
+  short_id: string; // ag_xxxx
   name: string;
   last?: AgentDirection;
-  confidence?: number;   // 0..1
-  pnl?: number;          // %
+  confidence?: number; // 0..1
+  pnl?: number; // %
   sharpe?: number;
+  // ISO timestamp of the agent's last poll (GET /pending) or response.
+  // Drives the heartbeat dot on the swarm canvas: ≤30s = "thinking now",
+  // ≤5min = "recently active", older = stale. Omit when unknown.
+  last_seen_at?: string;
 };
 
 export type ArenaState = {
   agents: ArenaAgent[];
-  liveRoundId?: string;        // queries.id (uuid)
-  liveRoundShortId?: string;   // queries.short_id
-  liveQuestion?: string;       // "buy or sell $BONK now?"
+  liveRoundId?: string; // queries.id (uuid)
+  liveRoundShortId?: string; // queries.short_id
+  liveQuestion?: string; // "buy or sell $BONK now?"
   liveTokenSymbol?: string;
-  liveDeadlineAt?: string;     // ISO
+  liveDeadlineAt?: string; // ISO
   loading: boolean;
   error?: string;
 };
@@ -31,15 +35,29 @@ function pnlPct(
   totalPnlUsd: number | null | undefined,
   bankrollUsd: number | null | undefined,
 ): number | undefined {
-  if (totalPnlUsd == null || bankrollUsd == null || bankrollUsd === 0) return undefined;
+  if (totalPnlUsd == null || bankrollUsd == null || bankrollUsd === 0)
+    return undefined;
   return (Number(totalPnlUsd) / Number(bankrollUsd)) * 100;
 }
 
 // ─── Reducer ────────────────────────────────────────────────────────
 type Action =
   | { type: "init"; payload: Partial<ArenaState> }
-  | { type: "merge_response"; agentId: string; last: AgentDirection; confidence: number }
-  | { type: "merge_leaderboard"; rows: Array<{ agent_id: string; total_pnl_usd: number | null; bankroll_usd: number | null; sharpe: number | null }> }
+  | {
+      type: "merge_response";
+      agentId: string;
+      last: AgentDirection;
+      confidence: number;
+    }
+  | {
+      type: "merge_leaderboard";
+      rows: Array<{
+        agent_id: string;
+        total_pnl_usd: number | null;
+        bankroll_usd: number | null;
+        sharpe: number | null;
+      }>;
+    }
   | { type: "error"; message: string };
 
 function reducer(state: ArenaState, action: Action): ArenaState {
@@ -125,7 +143,10 @@ export function useArenaSwarm(): ArenaState {
               short_id: string;
               deadline_at: string;
               token_mint: string;
-              supported_tokens: { symbol: string } | { symbol: string }[] | null;
+              supported_tokens:
+                | { symbol: string }
+                | { symbol: string }[]
+                | null;
             }
           | undefined;
         const tokenJoin = liveQuery?.supported_tokens;
@@ -138,7 +159,7 @@ export function useArenaSwarm(): ArenaState {
         // (b) agents (limit 24)
         const { data: agentRows, error: agentErr } = await sb
           .from("agents")
-          .select("id,short_id,name")
+          .select("id,short_id,name,last_seen_at")
           .order("created_at", { ascending: false })
           .limit(24);
         if (agentErr) throw agentErr;
@@ -147,12 +168,17 @@ export function useArenaSwarm(): ArenaState {
           id: a.id as string,
           short_id: a.short_id as string,
           name: a.name as string,
+          last_seen_at: (a.last_seen_at as string | null) ?? undefined,
         }));
 
         // (c) leaderboard for those agents (post-0014: USD PnL + bankroll → derive %)
         let lbById = new Map<
           string,
-          { total_pnl_usd: number | null; bankroll_usd: number | null; sharpe: number | null }
+          {
+            total_pnl_usd: number | null;
+            bankroll_usd: number | null;
+            sharpe: number | null;
+          }
         >();
         if (agents.length) {
           const { data: lb } = await sb

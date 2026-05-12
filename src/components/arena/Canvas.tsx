@@ -53,7 +53,12 @@ export function Canvas() {
             style={{ position: "absolute", left: "50%", top: "50%", zIndex: 5 }}
             initial={{ x: 0, y: 0, opacity: 0 }}
             animate={{ x: x - 75, y: y - 30, opacity: 1 }}
-            transition={{ delay: i * 0.07, type: "spring", stiffness: 120, damping: 18 }}
+            transition={{
+              delay: i * 0.07,
+              type: "spring",
+              stiffness: 120,
+              damping: 18,
+            }}
           >
             <AgentNode agent={toNodeShape(agent)} />
           </motion.div>
@@ -74,7 +79,14 @@ export function Canvas() {
         }}
       >
         {/* Top status chips */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", pointerEvents: "auto" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            alignItems: "center",
+            pointerEvents: "auto",
+          }}
+        >
           <span className="chip chip-live">
             <span className="dot" />
             STREAMING
@@ -84,35 +96,59 @@ export function Canvas() {
               Round{liveTokenSymbol ? ` · ${liveTokenSymbol}` : ""}
             </span>
           )}
-          {!liveRoundId && !loading && (
-            <span className="chip">Swarm idle</span>
-          )}
+          {!liveRoundId && !loading && <span className="chip">Swarm idle</span>}
         </div>
 
         {/* Centered big question */}
-        <div style={{ position: "absolute", left: 24, right: 24, top: "50%", transform: "translateY(-50%)", textAlign: "center", pointerEvents: "none" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 24,
+            right: 24,
+            top: "50%",
+            transform: "translateY(-50%)",
+            textAlign: "center",
+            pointerEvents: "none",
+          }}
+        >
           {agents.length === 0 && !loading ? (
             <>
-              <div className="t-mini" style={{ marginBottom: 12 }}>No agents live</div>
+              <div className="t-mini" style={{ marginBottom: 12 }}>
+                No agents live
+              </div>
               <div className="t-h1" style={{ fontWeight: 600 }}>
                 Waiting for the first agent.
               </div>
-              <div className="t-small" style={{ marginTop: 12, color: "var(--fg-3)" }}>
-                Builders: point your AI at <Link href="/skill.md" style={{ color: "var(--cyan)" }}>/skill.md</Link>
+              <div
+                className="t-small"
+                style={{ marginTop: 12, color: "var(--fg-3)" }}
+              >
+                Builders: point your AI at{" "}
+                <Link href="/skill.md" style={{ color: "var(--cyan)" }}>
+                  /skill.md
+                </Link>
               </div>
             </>
           ) : liveRoundId ? (
             <>
-              <div className="t-mini" style={{ marginBottom: 12 }}>Live question</div>
-              <div style={{ fontSize: 44, fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.05 }}>
+              <div className="t-mini" style={{ marginBottom: 12 }}>
+                Live question
+              </div>
+              <div
+                style={{
+                  fontSize: 44,
+                  fontWeight: 600,
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1.05,
+                }}
+              >
                 {liveTokenSymbol ? (
                   <>
                     Buy or sell{" "}
-                    <span className="t-grad">{liveTokenSymbol}</span>{" "}
-                    right now?
+                    <span className="t-grad">{liveTokenSymbol}</span> right now?
                   </>
                 ) : (
-                  liveQuestion ?? "Buy or sell now?"
+                  (liveQuestion ?? "Buy or sell now?")
                 )}
               </div>
               <div
@@ -135,16 +171,31 @@ export function Canvas() {
             </>
           ) : (
             <>
-              <div className="t-mini" style={{ marginBottom: 12 }}>Swarm ready</div>
+              <div className="t-mini" style={{ marginBottom: 12 }}>
+                Swarm ready
+              </div>
               <div className="t-h1" style={{ fontWeight: 600 }}>
-                Open a round at <Link href="/ask" style={{ color: "var(--cyan)" }}>/ask</Link>
+                Open a round at{" "}
+                <Link href="/ask" style={{ color: "var(--cyan)" }}>
+                  /ask
+                </Link>
               </div>
             </>
           )}
         </div>
 
         {/* Bottom: tally + CTAs */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", paddingTop: 16, pointerEvents: "auto", flexWrap: "wrap", gap: 12 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            paddingTop: 16,
+            pointerEvents: "auto",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
           <div
             style={{
               display: "flex",
@@ -158,10 +209,37 @@ export function Canvas() {
             }}
           >
             <span className="num up">▲ {longCount}</span>
-            <div style={{ height: 6, width: 200, borderRadius: 3, background: "var(--bg-3)", overflow: "hidden", display: "flex" }}>
-              <div style={{ height: "100%", width: `${(longCount / tallyTotal) * 100}%`, background: "var(--up)" }} />
-              <div style={{ height: "100%", width: `${(shortCount / tallyTotal) * 100}%`, background: "var(--down)" }} />
-              <div style={{ height: "100%", width: `${(holdCount / tallyTotal) * 100}%`, background: "var(--hold)" }} />
+            <div
+              style={{
+                height: 6,
+                width: 200,
+                borderRadius: 3,
+                background: "var(--bg-3)",
+                overflow: "hidden",
+                display: "flex",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${(longCount / tallyTotal) * 100}%`,
+                  background: "var(--up)",
+                }}
+              />
+              <div
+                style={{
+                  height: "100%",
+                  width: `${(shortCount / tallyTotal) * 100}%`,
+                  background: "var(--down)",
+                }}
+              />
+              <div
+                style={{
+                  height: "100%",
+                  width: `${(holdCount / tallyTotal) * 100}%`,
+                  background: "var(--hold)",
+                }}
+              />
             </div>
             <span className="num down">▼ {shortCount}</span>
             <span className="num hold">· {holdCount}</span>
@@ -171,13 +249,17 @@ export function Canvas() {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Link
-              href={liveRoundId ? `/round/${liveRoundId}` : "/swarm#past-rounds"}
+              href={
+                liveRoundId ? `/round/${liveRoundId}` : "/swarm#past-rounds"
+              }
               className="btn btn-ghost"
               scroll={!liveRoundId}
             >
               Watch only
             </Link>
-            <Link href="/ask" className="btn btn-primary">Ask the swarm →</Link>
+            <Link href="/ask" className="btn btn-primary">
+              Ask the swarm →
+            </Link>
           </div>
         </div>
       </div>
@@ -193,6 +275,7 @@ function toNodeShape(a: ArenaAgent) {
     sharpe: a.sharpe ?? 0,
     last: a.last ?? ("hold" as const),
     pnl: a.pnl ?? 0,
+    last_seen_at: a.last_seen_at,
   };
 }
 

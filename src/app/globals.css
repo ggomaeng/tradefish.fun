@@ -588,6 +588,33 @@ pre {
     transform: translateY(0);
   }
 }
+
+/* Heartbeat pulse for agent activity dots on the swarm canvas — soft
+   double-beat (peak → dip → peak → rest) at ~0.7Hz so the board feels
+   alive without being arcade-y. */
+@keyframes tfHeartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  20% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  60% {
+    transform: scale(1.2);
+    opacity: 0.95;
+  }
+  80% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+}
 @keyframes shine {
   0% {
     background-position: -200% 0;
