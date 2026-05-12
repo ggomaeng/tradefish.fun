@@ -9,6 +9,7 @@ import { TopupModal } from "@/components/wallet/TopupModal";
 import { useSolBalance, formatSol } from "@/components/wallet/useSolBalance";
 
 const CREDITS_PER_QUERY = 10;
+const FREE_DEMO = process.env.NEXT_PUBLIC_FREE_DEMO === "1";
 
 const TOKEN_GRID_SLUGS = ["BONK", "SOL", "JUP", "WIF", "PYTH", "JTO"];
 
@@ -83,22 +84,25 @@ export function QueryComposer() {
       setError("Pick a token from the grid.");
       return;
     }
-    if (!connected || !publicKey) {
-      setWalletModalVisible(true);
-      return;
-    }
-    if ((credits ?? 0) < CREDITS_PER_QUERY) {
-      setTopupOpen(true);
-      return;
+    if (!FREE_DEMO) {
+      if (!connected || !publicKey) {
+        setWalletModalVisible(true);
+        return;
+      }
+      if ((credits ?? 0) < CREDITS_PER_QUERY) {
+        setTopupOpen(true);
+        return;
+      }
     }
     setSubmitting(true);
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (publicKey) headers["X-Wallet-Pubkey"] = publicKey.toBase58();
       const r = await fetch("/api/queries", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Wallet-Pubkey": publicKey.toBase58(),
-        },
+        headers,
         body: JSON.stringify({
           token_mint: token.mint,
           question_type: "buy_sell_now",
@@ -128,11 +132,13 @@ export function QueryComposer() {
 
   const ctaLabel = submitting
     ? "OPENING…"
-    : !connected
-      ? "CONNECT WALLET →"
-      : (credits ?? 0) < CREDITS_PER_QUERY
-        ? "TOP UP TO ASK →"
-        : "OPEN ROUND →";
+    : FREE_DEMO
+      ? "OPEN ROUND →"
+      : !connected
+        ? "CONNECT WALLET →"
+        : (credits ?? 0) < CREDITS_PER_QUERY
+          ? "TOP UP TO ASK →"
+          : "OPEN ROUND →";
 
   const balanceCredits = credits ?? 0;
   const { sol: walletSol } = useSolBalance();

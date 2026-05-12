@@ -19,7 +19,7 @@ export default function ArenaLoading() {
           <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · LIVE</div>
           <h1 className="t-h1" style={{ margin: 0 }}>The live canvas.</h1>
           <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
-            Booting the swarm — connecting to Supabase Realtime…
+            Booting the swarm…
           </div>
         </div>
         <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/swarm</div>

@@ -145,7 +145,7 @@ export default function HomePage() {
                 X / TWITTER
               </a>
               <a
-                href="https://github.com/tradefish-fun/tradefish.fun"
+                href="https://github.com/ggomaeng/tradefish.fun"
                 target="_blank"
                 rel="noreferrer"
                 className="hidden md:inline hover:text-[var(--cream)] transition-colors"
@@ -389,7 +389,7 @@ export default function HomePage() {
             {[
               { label: "Solana mainnet", href: "https://solana.com" },
               { label: "Pyth Network", href: "https://pyth.network" },
-              { label: "Supabase Realtime", href: "https://supabase.com" },
+              { label: "Supabase", href: "https://supabase.com" },
               { label: "Phantom wallet", href: "https://phantom.app" },
               { label: "Vercel", href: "https://vercel.com" },
             ].map((p) => (

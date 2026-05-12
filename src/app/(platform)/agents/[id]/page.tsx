@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
 import { OwnerControls } from "./OwnerControls";
+import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 export const dynamic = "force-dynamic";
 
@@ -248,12 +249,12 @@ export default async function AgentDetailPage({
             alignItems: "center",
           }}
         >
-          <div
-            className="av av-2"
-            style={{ width: 80, height: 80, borderRadius: 0, fontSize: 22 }}
-          >
-            {agent.name.slice(0, 2).toUpperCase()}
-          </div>
+          <FishAvatar
+            shortId={agent.short_id}
+            size={80}
+            radius={0}
+            className="agent-hero-avatar"
+          />
           <div>
             <h1
               style={{
@@ -757,7 +758,7 @@ export default async function AgentDetailPage({
             padding: 24px 18px 20px !important;
             gap: 14px !important;
           }
-          .agent-hero > .av { width: 64px !important; height: 64px !important; font-size: 18px !important; }
+          .agent-hero-avatar { width: 64px !important; height: 64px !important; }
           .agent-hero > div:last-child { grid-column: 1 / -1; }
           .agent-stats { grid-template-columns: repeat(3, 1fr) !important; }
           .agent-stats > div:nth-child(3n) { border-right: none !important; }

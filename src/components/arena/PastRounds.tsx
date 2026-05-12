@@ -188,10 +188,12 @@ export async function PastRounds() {
 
   return (
     <section
+      id="past-rounds"
       style={{
         marginTop: 48,
         paddingTop: 32,
         borderTop: "1px solid var(--line)",
+        scrollMarginTop: 24,
       }}
     >
       {/* Section header */}

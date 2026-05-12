@@ -27,11 +27,19 @@ export type ArenaState = {
   error?: string;
 };
 
+function pnlPct(
+  totalPnlUsd: number | null | undefined,
+  bankrollUsd: number | null | undefined,
+): number | undefined {
+  if (totalPnlUsd == null || bankrollUsd == null || bankrollUsd === 0) return undefined;
+  return (Number(totalPnlUsd) / Number(bankrollUsd)) * 100;
+}
+
 // ─── Reducer ────────────────────────────────────────────────────────
 type Action =
   | { type: "init"; payload: Partial<ArenaState> }
   | { type: "merge_response"; agentId: string; last: AgentDirection; confidence: number }
-  | { type: "merge_leaderboard"; rows: Array<{ agent_id: string; total_pnl: number | null; sharpe: number | null }> }
+  | { type: "merge_leaderboard"; rows: Array<{ agent_id: string; total_pnl_usd: number | null; bankroll_usd: number | null; sharpe: number | null }> }
   | { type: "error"; message: string };
 
 function reducer(state: ArenaState, action: Action): ArenaState {
@@ -56,7 +64,7 @@ function reducer(state: ArenaState, action: Action): ArenaState {
           if (!row) return a;
           return {
             ...a,
-            pnl: row.total_pnl ?? a.pnl,
+            pnl: pnlPct(row.total_pnl_usd, row.bankroll_usd) ?? a.pnl,
             sharpe: row.sharpe ?? a.sharpe,
           };
         }),
@@ -83,15 +91,15 @@ export function useArenaSwarm(): ArenaState {
       if (!agentIds.length) return;
       const { data: lb } = await sb
         .from("leaderboard")
-        .select("agent_id,total_pnl,sharpe,horizon")
-        .eq("horizon", "24h")
+        .select("agent_id,total_pnl_usd,bankroll_usd,sharpe")
         .in("agent_id", agentIds);
       if (cancelled || !lb) return;
       dispatch({
         type: "merge_leaderboard",
         rows: lb.map((r) => ({
           agent_id: r.agent_id as string,
-          total_pnl: r.total_pnl as number | null,
+          total_pnl_usd: r.total_pnl_usd as number | null,
+          bankroll_usd: r.bankroll_usd as number | null,
           sharpe: r.sharpe as number | null,
         })),
       });
@@ -141,16 +149,15 @@ export function useArenaSwarm(): ArenaState {
           name: a.name as string,
         }));
 
-        // (c) leaderboard (24h horizon) for those agents
+        // (c) leaderboard for those agents (post-0014: USD PnL + bankroll → derive %)
         let lbById = new Map<
           string,
-          { total_pnl: number | null; sharpe: number | null }
+          { total_pnl_usd: number | null; bankroll_usd: number | null; sharpe: number | null }
         >();
         if (agents.length) {
           const { data: lb } = await sb
             .from("leaderboard")
-            .select("agent_id,total_pnl,sharpe,horizon")
-            .eq("horizon", "24h")
+            .select("agent_id,total_pnl_usd,bankroll_usd,sharpe")
             .in(
               "agent_id",
               agents.map((a) => a.id),
@@ -159,7 +166,8 @@ export function useArenaSwarm(): ArenaState {
             (lb ?? []).map((r) => [
               r.agent_id as string,
               {
-                total_pnl: r.total_pnl as number | null,
+                total_pnl_usd: r.total_pnl_usd as number | null,
+                bankroll_usd: r.bankroll_usd as number | null,
                 sharpe: r.sharpe as number | null,
               },
             ]),
@@ -192,7 +200,7 @@ export function useArenaSwarm(): ArenaState {
           const r = respById.get(a.id);
           return {
             ...a,
-            pnl: lb?.total_pnl ?? undefined,
+            pnl: pnlPct(lb?.total_pnl_usd, lb?.bankroll_usd),
             sharpe: lb?.sharpe ?? undefined,
             last: r?.answer,
             confidence: r?.confidence,

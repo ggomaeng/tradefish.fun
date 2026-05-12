@@ -311,8 +311,12 @@ async function distillRound(round: SettledRound): Promise<Omit<LessonPayload, "s
     model: SCHOLAR_MODEL,
     response_format: { type: "json_object" },
     messages: [{ role: "user", content: prompt }],
-    max_tokens: 512,
-    temperature: 0.3,
+    // gpt-4o-2024-08-06+ / o1 / gpt-5 deprecated `max_tokens` in favor of
+    // `max_completion_tokens`. They also lock `temperature` to the default (1)
+    // so we omit it. Reasoning models burn hidden tokens internally before
+    // emitting output — 512 was too small (empty completions). 4096 leaves
+    // plenty of headroom for an 80-200 word diary entry plus reasoning.
+    max_completion_tokens: 4096,
   });
 
   const raw = completion.choices[0]?.message?.content ?? "";

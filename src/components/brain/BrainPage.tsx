@@ -9,8 +9,8 @@
  * P7 realtime hook surface:
  *   - useGraphData() returns `{ data, loading, error, onPatch }`.
  *     Pass `onPatch` down to BrainGraph; P7 calls it with new wiki_entry rows.
- *   - incrementCounterRef.current(kind) is exposed to SidePanel;
- *     P7 stores a ref to this and calls it on Realtime events.
+ *   - refreshCountersRef.current() force-refetches the side panel's
+ *     aggregates on wiki INSERTs (otherwise the 15s poll catches up).
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
@@ -22,7 +22,6 @@ import type {
 } from "@/lib/brain/types";
 import { BrainGraph as BrainGraphComponent } from "./BrainGraph";
 import { SidePanel } from "./SidePanel";
-import type { CounterKind } from "./SidePanel";
 import { NoteDetail } from "./NoteDetail";
 import { Scrubber } from "./Scrubber";
 import { useBrainRealtime } from "@/lib/brain/realtime";
@@ -83,9 +82,10 @@ export function BrainPage() {
   // Scrubber: null = live (no ?at= param)
   const [scrubAtMs, setScrubAtMs] = useState<number | null>(null);
   const [selection, setSelection] = useState<BrainSelection>(null);
-  const incrementCounterRef = useRef<((kind: CounterKind) => void) | null>(
-    null,
-  );
+  // Force-refresh the side panel's counter aggregates on any wiki INSERT —
+  // bypasses the panel's 15s poll so a new diary entry ticks the counter
+  // within the same tick as the neuron pulse.
+  const refreshCountersRef = useRef<(() => void) | null>(null);
 
   // P7: set of node IDs currently pulsing (inserted via Realtime)
   const [pulsingNodeIds, setPulsingNodeIds] = useState<Set<string>>(new Set());
@@ -135,9 +135,11 @@ export function BrainPage() {
         return { ...prev, nodes: [node, ...prev.nodes] };
       });
 
-      // NOTE: do NOT call incrementCounterRef here. SidePanel derives "lessons today"
-      // by recomputing computeInitialCounters from data.nodes on each render.
-      // Calling incrementCounter AND adding the node would double-count (BUG-4).
+      // Force the side-panel counter aggregates to refetch from the truth
+      // tables (queries + responses + wiki_entries). The 15s poll would catch
+      // up eventually; this just makes the tick land within the same beat as
+      // the neuron pulse.
+      refreshCountersRef.current?.();
 
       // Trigger 3-second pulse animation for this node
       setPulsingNodeIds((prev) => {
@@ -292,7 +294,7 @@ export function BrainPage() {
             data={data}
             selection={selection}
             onFocusSlug={handleFocusSlug}
-            incrementCounterRef={incrementCounterRef}
+            refreshCountersRef={refreshCountersRef}
           />
         )}
       </div>

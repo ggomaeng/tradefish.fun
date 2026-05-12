@@ -28,6 +28,10 @@ const ROUTE = "/api/queries";
 const QUERY_DEADLINE_MS = 60 * 1000;     // agents have 60s to respond
 const CREDITS_PER_QUERY = 10;
 
+// Hackathon demo: when FREE_DEMO=1 the wallet+credit paywall is bypassed.
+// Anonymous askers are allowed; rate-limit falls back to IP.
+const FREE_DEMO = process.env.FREE_DEMO === "1";
+
 const Schema = z.object({
   token_mint: z.string().min(32),
   question_type: z.enum(["buy_sell_now"]),
@@ -45,9 +49,10 @@ function isValidSolanaPubkey(s: string): boolean {
 export async function POST(request: NextRequest) {
   const rid = requestId(request);
 
-  // 1. Wallet auth required — humans pay for every question.
+  // 1. Wallet auth. In FREE_DEMO mode the wallet header is optional;
+  //    otherwise it is required (every question is paid).
   const walletPubkey = request.headers.get("x-wallet-pubkey")?.trim() || null;
-  if (!walletPubkey) {
+  if (!FREE_DEMO && !walletPubkey) {
     return apiError({
       error: "wallet_required",
       code: "wallet_required",
@@ -56,7 +61,7 @@ export async function POST(request: NextRequest) {
       extra: { message: "Connect a Solana wallet to ask a question." },
     });
   }
-  if (!isValidSolanaPubkey(walletPubkey)) {
+  if (walletPubkey && !isValidSolanaPubkey(walletPubkey)) {
     return apiError({
       error: "invalid_wallet_pubkey",
       code: "invalid_wallet_pubkey",
@@ -104,54 +109,56 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 3. Wallet credit gating + atomic debit. We do this BEFORE the Pyth call
-  //    so a failed oracle doesn't burn credits. The atomicity guard is the
-  //    `where credits >= N` clause on the update — concurrent queries on
-  //    the same wallet can't both succeed.
-  const { data: walletRow } = await db
-    .from("wallet_credits")
-    .select("credits")
-    .eq("wallet_pubkey", walletPubkey)
-    .maybeSingle();
-  const balance = walletRow?.credits ?? 0;
-  if (balance < CREDITS_PER_QUERY) {
-    return apiError({
-      error: "insufficient_credits",
-      code: "insufficient_credits",
-      status: 402,
-      request_id: rid,
-      extra: { needed: CREDITS_PER_QUERY, balance },
-    });
-  }
-  const newBalance = balance - CREDITS_PER_QUERY;
-  const { data: updated, error: debitErr } = await db
-    .from("wallet_credits")
-    .update({
-      credits: newBalance,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("wallet_pubkey", walletPubkey)
-    .gte("credits", CREDITS_PER_QUERY) // race-safety: still has enough
-    .select("credits")
-    .maybeSingle();
-  if (debitErr || !updated) {
-    // Another query beat us to the credits.
-    if (debitErr) {
-      logError({ route: ROUTE, code: "insufficient_credits_race", request_id: rid, err: debitErr });
+  // 3. Wallet credit gating + atomic debit. Skipped entirely in FREE_DEMO.
+  //    Otherwise: BEFORE the Pyth call so a failed oracle doesn't burn
+  //    credits. Race-safety guard is the `where credits >= N` clause on
+  //    the update — concurrent queries on the same wallet can't both win.
+  if (!FREE_DEMO && walletPubkey) {
+    const { data: walletRow } = await db
+      .from("wallet_credits")
+      .select("credits")
+      .eq("wallet_pubkey", walletPubkey)
+      .maybeSingle();
+    const balance = walletRow?.credits ?? 0;
+    if (balance < CREDITS_PER_QUERY) {
+      return apiError({
+        error: "insufficient_credits",
+        code: "insufficient_credits",
+        status: 402,
+        request_id: rid,
+        extra: { needed: CREDITS_PER_QUERY, balance },
+      });
     }
-    return apiError({
-      error: "insufficient_credits_race",
-      code: "insufficient_credits_race",
-      status: 402,
-      request_id: rid,
-      extra: { needed: CREDITS_PER_QUERY },
-    });
+    const newBalance = balance - CREDITS_PER_QUERY;
+    const { data: updated, error: debitErr } = await db
+      .from("wallet_credits")
+      .update({
+        credits: newBalance,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("wallet_pubkey", walletPubkey)
+      .gte("credits", CREDITS_PER_QUERY) // race-safety: still has enough
+      .select("credits")
+      .maybeSingle();
+    if (debitErr || !updated) {
+      // Another query beat us to the credits.
+      if (debitErr) {
+        logError({ route: ROUTE, code: "insufficient_credits_race", request_id: rid, err: debitErr });
+      }
+      return apiError({
+        error: "insufficient_credits_race",
+        code: "insufficient_credits_race",
+        status: 402,
+        request_id: rid,
+        extra: { needed: CREDITS_PER_QUERY },
+      });
+    }
   }
 
   // 3. Snapshot Pyth price as round reference
   const pythPrice = await getPythPrice(token.pyth_feed_id);
   if (pythPrice === null) {
-    await refundWalletCredits(walletPubkey);
+    if (!FREE_DEMO) await refundWalletCredits(walletPubkey);
     logError({ route: ROUTE, code: "oracle_unavailable", request_id: rid });
     return apiError({
       error: "oracle_unavailable",
@@ -174,14 +181,14 @@ export async function POST(request: NextRequest) {
       asked_at: now.toISOString(),
       deadline_at: deadline.toISOString(),
       pyth_price_at_ask: pythPrice,
-      credits_spent: CREDITS_PER_QUERY,
+      credits_spent: FREE_DEMO ? 0 : CREDITS_PER_QUERY,
     })
     .select("id, short_id, asked_at, deadline_at")
     .single();
 
   if (error || !query) {
     logError({ route: ROUTE, code: "create_failed", request_id: rid, err: error });
-    await refundWalletCredits(walletPubkey);
+    if (!FREE_DEMO) await refundWalletCredits(walletPubkey);
     return apiError({
       error: "create_failed",
       code: "create_failed",
@@ -190,8 +197,8 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 5. Debit credits
-  if (asker_id) {
+  // 5. Debit credits (ledger entry). Skipped in FREE_DEMO.
+  if (!FREE_DEMO && asker_id) {
     await db.from("credits_ledger").insert({
       user_id: asker_id,
       delta: -CREDITS_PER_QUERY,

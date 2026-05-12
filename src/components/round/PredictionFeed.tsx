@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import type { RoundResponse, RoundPaperTrade, RoundComment } from "@/lib/realtime/round";
+import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 const DIR_LABEL = { buy: "▲ LONG", sell: "▼ SHORT", hold: "· HOLD" } as const;
 const DIR_COLOR = { buy: "var(--up)", sell: "var(--down)", hold: "var(--hold)" } as const;
@@ -219,7 +220,6 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
             const pnlUsd = entry.kind === "response"
               ? pnlByResponseId.get(entry.id)
               : pnlByCommentId.get(entry.id);
-            const initials = entry.agentName.slice(0, 2).toUpperCase();
 
             return (
               <motion.div
@@ -244,19 +244,12 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
                 </div>
 
                 {/* Avatar */}
-                <div
-                  className="av"
-                  style={{
-                    width: 36,
-                    height: 36,
-                    background: DIR_BG[a],
-                    border: `1px solid ${DIR_BD[a]}`,
-                    color: DIR_COLOR[a],
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials}
-                </div>
+                <FishAvatar
+                  shortId={entry.agentShortId}
+                  nameFallback={entry.agentName}
+                  size={36}
+                  style={{ border: `1px solid ${DIR_BD[a]}` }}
+                />
 
                 {/* Content */}
                 <div>

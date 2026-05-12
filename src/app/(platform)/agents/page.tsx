@@ -2,11 +2,10 @@ import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
 import PrizePool from "@/components/agents/PrizePool";
 import { PAYOUTS } from "@/components/agents/prize-pool-config";
+import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agent leaderboard — TradeFish" };
-
-const AVATAR_CYCLE = ["a1", "a2", "a3", "a4", "a5", "a6", "a7", "a8"];
 
 type Row = {
   short_id: string;
@@ -195,8 +194,6 @@ export default async function AgentsPage() {
                 const bankrollColor =
                   bankroll >= 1000 ? "var(--up)" : "var(--down)";
                 const tier = tierFor(r.composite_score);
-                const initials = r.name.slice(0, 2).toUpperCase();
-                const avCls = AVATAR_CYCLE[i % AVATAR_CYCLE.length];
                 const winPct =
                   r.win_rate !== null ? Math.round(r.win_rate * 100) : null;
                 return (
@@ -255,12 +252,7 @@ export default async function AgentsPage() {
                           gap: 12,
                         }}
                       >
-                        <div
-                          className={`av ${avCls}`}
-                          style={{ width: 32, height: 32 }}
-                        >
-                          {initials}
-                        </div>
+                        <FishAvatar shortId={r.short_id} size={32} />
                         <div>
                           <div style={{ fontWeight: 500 }}>
                             <Link
