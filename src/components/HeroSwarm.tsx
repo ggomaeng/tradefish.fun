@@ -1010,6 +1010,20 @@ export function HeroSwarm() {
     window.addEventListener("pointermove", onPointerMove, { passive: true });
     window.addEventListener("pointerleave", onPointerLeave);
 
+    // ── Global click → burst ──────────────────────────────────────
+    // Any background click flashes the swarm. We skip clicks that
+    // originate on interactive UI so button presses don't double-fire
+    // the burst (the buttons that *should* trigger it already dispatch
+    // swarm:submit-burst themselves).
+    const onWindowClick = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (target && target.closest?.('button, a, input, textarea, select, [role="button"], [data-swarm-anchor]')) {
+        return;
+      }
+      window.dispatchEvent(new CustomEvent("swarm:submit-burst"));
+    };
+    window.addEventListener("click", onWindowClick);
+
     // ── Attention-mode bridge (HeroAsk → HeroSwarm) ────────────────
     // The orbit is now the DEFAULT — fish always cohere into a loose
     // school around the viewport center. The attention events tighten
@@ -1714,6 +1728,7 @@ export function HeroSwarm() {
       ro.disconnect();
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("click", onWindowClick);
       window.removeEventListener("swarm:attention-on", onAttentionOn);
       window.removeEventListener("swarm:attention-off", onAttentionOff);
       window.removeEventListener("swarm:submit-burst", onSubmitBurst);
