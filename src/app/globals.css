@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* ── Foundation tokens ─────────────────────────────────────── */
 :root {
@@ -35,6 +39,11 @@
   --magenta: #d96baa;
   --magenta-bright: #ff8acb;
 
+  /* Brand spectrum — banner palette stops between magenta and cyan.
+     Used by the WebGL hero (HeroSwarm) palette LUT. */
+  --violet: #8b6fd9;
+  --indigo: #5c7fe8;
+
   /* Trading semantic */
   --long: #7fe0a8;
   --short: #e07560;
@@ -51,6 +60,38 @@
   --t-fast: 150ms;
   --t-med: 280ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
 }
 
 @theme inline {
@@ -59,8 +100,60 @@
   --color-cyan: var(--cyan);
   --color-cream: var(--cream);
   --color-magenta: var(--magenta);
-  --font-sans: var(--font-mono);
+  /* Aceternity aurora animation — Tailwind v4 syntax via @theme inline.
+     The `animate-aurora` utility class is referenced by AuroraBackground. */
+  --animate-aurora: aurora 60s linear infinite;
+  @keyframes aurora {
+    from {
+      background-position:
+        50% 50%,
+        50% 50%;
+    }
+    to {
+      background-position:
+        350% 50%,
+        350% 50%;
+    }
+  }
+  --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 *,
@@ -96,6 +189,59 @@ body {
   height: 100%;
   z-index: 2;
   pointer-events: none;
+}
+
+/* ── Attention bloom (used by HeroAsk on landing) ────────────────
+   Soft cyan radial glow centered on the input row. Fades in while
+   the inline token input is focused. Sits behind the row (earlier
+   DOM sibling) and uses screen blend so it only ADDS light to the
+   swarm canvas underneath — never darkens anything. The swarm runs
+   a wide-vortex orbit around the same anchor while this is visible,
+   so the row reads as a beam of light the school is circling. */
+.tf-attention-bloom {
+  position: absolute;
+  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  width: 820px;
+  height: 820px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(168, 216, 232, 0.24) 0%,
+    rgba(168, 216, 232, 0.1) 30%,
+    rgba(168, 216, 232, 0.02) 55%,
+    rgba(168, 216, 232, 0) 70%
+  );
+  opacity: 0;
+  transition: opacity 520ms var(--ease-out);
+  mix-blend-mode: screen;
+}
+.tf-attention-bloom[data-attention="true"] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-attention-bloom {
+    transition: opacity 220ms linear;
+  }
+}
+
+/* Block caret blink. Used on the faux cursor that fills the empty token
+   slot before the user focuses it, so the chip reads as a real text
+   field rather than a blank label. Square-wave timing (steps) mimics a
+   real terminal caret. */
+@keyframes tf-caret-blink {
+  0%,
+  49% {
+    opacity: 0.85;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.tf-caret-blink {
+  animation: tf-caret-blink 1s steps(1, end) infinite;
 }
 
 /* ── Animations ─────────────────────────────────────────────── */
@@ -191,4 +337,369 @@ body {
   background-clip: text;
   color: transparent;
   animation: tf-shine 5s linear infinite;
+}
+
+/* ── CRT terminal overlay (sits over the WebGL hero) ──────────── */
+/* Horizontal scanlines + occasional brightness flicker. Mounts as an
+   absolutely-positioned div above HeroSwarm but below the vignette. */
+.tf-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(168, 216, 232, 0.04) 3px,
+    transparent 4px
+  );
+  mix-blend-mode: overlay;
+}
+
+@keyframes tf-flicker {
+  0%,
+  97%,
+  100% {
+    opacity: 1;
+  }
+  98% {
+    opacity: 0.85;
+  }
+  99% {
+    opacity: 0.92;
+  }
+}
+.tf-flicker {
+  animation: tf-flicker 4.2s steps(2, end) infinite;
+}
+
+/* ── Ocean sunlight aurora ─────────────────────────────────────── */
+/* Dappled sunlight filtering through deep water. Two layered radial
+   blooms anchored to the top, slowly drifting horizontally over 60s
+   like the surface of the ocean above — so the light pattern moves
+   gently across the canvas. Sits BEHIND the swarm (low z-index) but
+   ABOVE the abyssal background gradient. Uses screen blend to add
+   light to the scene without darkening shadows. */
+.tf-ocean-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 40% at 30% 0%,
+      rgba(76, 216, 232, 0.42),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 40% 32% at 70% 0%,
+      rgba(127, 224, 168, 0.28),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 50% 0%,
+      rgba(168, 216, 232, 0.36),
+      transparent 70%
+    );
+  background-size:
+    220% 100%,
+    200% 100%,
+    240% 100%;
+  background-repeat: no-repeat;
+  animation: tf-ocean-light 60s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes tf-ocean-light {
+  from {
+    background-position:
+      30% 0%,
+      70% 0%,
+      50% 0%;
+  }
+  to {
+    background-position:
+      130% 0%,
+      -30% 0%,
+      150% 0%;
+  }
+}
+
+/* ── Floating dust motes ───────────────────────────────────────── */
+/* Tiny particles drifting upward through the water — the marine snow /
+   plankton that floats in real deep-sea footage. Multi-layered radial
+   dots in pale cyan, slowly translating up over 60–90 s. Three different
+   speeds + scales create a parallax depth (foreground motes move
+   faster, background motes drift slowly). Screen-blended so motes only
+   ADD light, never darken anything. */
+.tf-dust-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    /* Larger, brighter motes — foreground */
+    radial-gradient(
+      1.8px 1.8px at 12% 18%,
+      rgba(220, 240, 250, 0.7),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.4px 1.4px at 78% 22%,
+      rgba(180, 230, 240, 0.6),
+      transparent 60%
+    ),
+    radial-gradient(
+      2px 2px at 58% 78%,
+      rgba(220, 240, 250, 0.55),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.5px 1.5px at 92% 65%,
+      rgba(200, 240, 250, 0.6),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.6px 1.6px at 22% 88%,
+      rgba(180, 230, 240, 0.5),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.4px 1.4px at 65% 12%,
+      rgba(220, 240, 250, 0.6),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.8px 1.8px at 38% 48%,
+      rgba(200, 230, 240, 0.55),
+      transparent 60%
+    ),
+    /* Smaller, dimmer motes — background */
+    radial-gradient(
+        1px 1px at 8% 55%,
+        rgba(168, 216, 232, 0.4),
+        transparent 50%
+      ),
+    radial-gradient(
+      1px 1px at 48% 28%,
+      rgba(168, 216, 232, 0.35),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 88% 42%,
+      rgba(168, 216, 232, 0.4),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 28% 65%,
+      rgba(168, 216, 232, 0.35),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 72% 92%,
+      rgba(168, 216, 232, 0.4),
+      transparent 50%
+    );
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  animation: tf-dust-drift 80s linear infinite;
+  mix-blend-mode: screen;
+  opacity: 1;
+}
+
+@keyframes tf-dust-drift {
+  from {
+    background-position:
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%;
+  }
+  to {
+    background-position:
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%;
+  }
+}
+
+/* ── Suspended debris ──────────────────────────────────────────── */
+/* Chunkier marine snow / particulates at mid-distance, drifting slowly
+   DOWNWARD (opposite of the dust motes which drift up). Reads as
+   suspended matter floating in deep water — sells the "you are deep
+   underwater" atmosphere. Multi-layered with subtle blur via soft
+   radial falloff so each particle is a soft puff, not a hard dot. */
+.tf-debris {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      2.5px 2.5px at 18% 12%,
+      rgba(200, 225, 240, 0.32),
+      transparent 70%
+    ),
+    radial-gradient(
+      3px 3px at 72% 38%,
+      rgba(180, 215, 235, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      2px 2px at 44% 62%,
+      rgba(210, 230, 245, 0.3),
+      transparent 70%
+    ),
+    radial-gradient(
+      2.8px 2.8px at 88% 78%,
+      rgba(190, 220, 235, 0.26),
+      transparent 70%
+    ),
+    radial-gradient(
+      1.8px 1.8px at 6% 84%,
+      rgba(200, 225, 240, 0.32),
+      transparent 70%
+    ),
+    radial-gradient(
+      2.2px 2.2px at 58% 6%,
+      rgba(195, 220, 235, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      3.2px 3.2px at 28% 42%,
+      rgba(185, 215, 230, 0.24),
+      transparent 70%
+    ),
+    radial-gradient(
+      2px 2px at 82% 18%,
+      rgba(205, 225, 240, 0.3),
+      transparent 70%
+    ),
+    radial-gradient(
+      2.6px 2.6px at 38% 90%,
+      rgba(190, 220, 235, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      1.6px 1.6px at 96% 52%,
+      rgba(200, 225, 240, 0.32),
+      transparent 70%
+    );
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  /* Very slow downward drift — 140s for one full cycle. Reads as
+     suspended matter slowly settling toward the abyss. */
+  animation: tf-debris-drift 140s linear infinite;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  filter: blur(0.4px);
+}
+
+@keyframes tf-debris-drift {
+  from {
+    background-position:
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
+  to {
+    background-position:
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%;
+  }
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }

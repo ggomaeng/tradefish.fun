@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { WaitlistCTA } from "@/components/WaitlistCTA";
+import { HeroAsk } from "@/components/HeroAsk";
 import { HeroSwarm } from "@/components/HeroSwarm";
+import { HowItWorks } from "@/components/HowItWorks";
 import LightRays from "@/components/LightRays";
 
 // HeroSwarm + LightRays are client components (`"use client"`) — they render as
@@ -11,36 +12,74 @@ export default function HomePage() {
   return (
     <main
       className="relative min-h-screen overflow-hidden"
-      style={{ background: "var(--bg-0)" }}
+      style={{
+        // Deep-water VERTICAL gradient — bright surface at top, fading to
+        // abyss at bottom. Creates the depth feel of looking down through
+        // ocean water. Light enters from above (god-rays + ocean-light
+        // bloom + dust motes all stack on this base).
+        background:
+          "linear-gradient(to bottom, #1d4258 0%, #142e42 12%, #0c2030 30%, #07111f 55%, #050a14 80%, #02050a 100%)",
+      }}
     >
       {/* ── Background layers ─────────────────────────────────── */}
+      {/* Ocean sunlight — top-anchored radial blooms (custom CSS) that
+          read as light filtering down from the water surface. Tried
+          Aceternity's AuroraBackground but its horizontal-ribbon gradient
+          produced spotlight blobs rather than vertical sun columns. */}
+      <div aria-hidden className="tf-ocean-light" style={{ zIndex: 0 }} />
+      {/* LightRays — god-rays / volumetric sunlight columns from above.
+          Bumped opacity 0.32 → 0.65 + saturation up so they actually read
+          as visible light shafts cutting through the water. */}
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none"
-        style={{ zIndex: 1, mixBlendMode: "screen" }}
+        style={{ zIndex: 1, mixBlendMode: "screen", opacity: 0.65 }}
       >
         <LightRays
           raysOrigin="top-center"
-          raysColor="#a8d8e8"
-          raysSpeed={0.4}
-          lightSpread={0.55}
-          rayLength={1.8}
-          fadeDistance={0.85}
-          saturation={0.65}
+          raysColor="#cce8f5"
+          raysSpeed={0.35}
+          lightSpread={0.7}
+          rayLength={2.1}
+          fadeDistance={0.95}
+          saturation={0.85}
           followMouse={false}
           mouseInfluence={0}
-          noiseAmount={0.12}
-          distortion={0.04}
+          noiseAmount={0.18}
+          distortion={0.05}
         />
       </div>
+      {/* Dust motes — marine snow drifting up through the light. Subtle
+          parallax particles that complete the underwater scene. */}
+      <div aria-hidden className="tf-dust-motes" style={{ zIndex: 1 }} />
+      {/* Suspended debris — chunkier marine snow particles at mid-distance,
+          drifting slowly downward. Sells the "you are deep underwater"
+          atmosphere where the dust motes alone read as too sparse. */}
+      <div aria-hidden className="tf-debris" style={{ zIndex: 1 }} />
+      {/* Vortex core — softer ambient water glow (not a spotlight). The
+          eye rests at center while the swarm orbits around. Dimmed from
+          its first iteration so the logo glow + center feel atmospheric,
+          not stage-lit. */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: "none",
+          mixBlendMode: "screen",
+          background:
+            "radial-gradient(ellipse 55% 65% at 50% 44%, rgba(180, 215, 235, 0.18) 0%, rgba(130, 180, 215, 0.12) 22%, rgba(75, 130, 170, 0.06) 42%, rgba(40, 80, 115, 0.025) 58%, transparent 72%)",
+        }}
+      />
       <HeroSwarm />
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none"
         style={{
-          zIndex: 3,
+          zIndex: 5,
           background:
-            "radial-gradient(ellipse at center, transparent 28%, rgba(5,10,20,0.92) 95%)",
+            "radial-gradient(ellipse at center, transparent 28%, rgba(3,7,14,0.92) 95%)",
         }}
       />
 
@@ -93,59 +132,45 @@ export default function HomePage() {
         className="relative flex flex-col items-center justify-center text-center px-5 min-h-[100dvh] py-24"
         style={{ zIndex: 10 }}
       >
-        <div className="max-w-[860px] flex flex-col items-center gap-5 sm:gap-7">
+        <div className="w-full max-w-[720px] flex flex-col items-center gap-6">
           <Image
             src="/logo-mark.png"
             alt="TradeFish"
-            width={108}
-            height={108}
+            width={56}
+            height={56}
             priority
             className="tf-fade-up"
             style={{
-              filter:
-                "drop-shadow(0 0 32px rgba(217,107,170,0.35)) drop-shadow(0 0 24px rgba(168,216,232,0.25))",
+              filter: "drop-shadow(0 0 14px rgba(168,216,232,0.22))",
+              opacity: 0.95,
             }}
           />
 
-          <div
-            className="inline-flex items-center gap-2 text-[10px] tracking-[0.32em] uppercase text-[var(--fg-faint)] tf-fade-up"
-            style={{ fontFamily: "var(--font-mono)", animationDelay: "60ms" }}
-          >
-            <span style={{ color: "var(--cyan)" }}>▣</span> SWARM TRADING
-            INTELLIGENCE · CLOSED BETA
-          </div>
-
           <h1
-            className="m-0 leading-[0.98] tracking-[0.02em] tf-fade-up"
+            className="m-0 leading-[1.0] tracking-[-0.02em] tf-fade-up text-center"
             style={{
               fontFamily: "var(--font-pixel)",
-              fontSize: "clamp(30px, 4.4vw, 56px)",
+              fontSize: "clamp(40px, 6vw, 76px)",
               color: "var(--cream)",
-              animationDelay: "80ms",
+              animationDelay: "60ms",
             }}
           >
             <span className="block whitespace-nowrap">
-              DON&apos;T TRUST ONE BOT.
-            </span>
-            <span className="block whitespace-nowrap">
-              TRADE WITH THE <span className="tf-shine-text">SWARM</span>.
+              ASK THE <span className="tf-shine-text">SWARM</span>.
             </span>
           </h1>
 
           <p
-            className="m-0 max-w-[560px] text-[var(--fg)] text-[15px] sm:text-[16px] leading-[1.6] tracking-[0.01em] tf-fade-up"
+            className="m-0 text-[var(--fg-dim)] text-[13px] sm:text-[14px] leading-[1.6] tracking-[0.08em] tf-fade-up text-center"
             style={{
               fontFamily: "var(--font-mono)",
-              animationDelay: "100ms",
-              opacity: 0.86,
+              animationDelay: "90ms",
             }}
           >
-            Specialized trading agents answer live market questions together.
-            Every answer becomes a paper trade, every outcome updates agent
-            reputation, and every settlement teaches the swarm.
+            agents answer. markets score them. the swarm remembers.
           </p>
 
-          <WaitlistCTA />
+          <HeroAsk />
         </div>
 
         {/* ── Bottom status bar ──────────────────────────────── */}
@@ -153,18 +178,14 @@ export default function HomePage() {
           className="absolute bottom-6 left-0 right-0 flex justify-between px-6 sm:px-10 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faintest)] pointer-events-none"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          <span>ACCESS ▸ INVITE-ONLY</span>
-          <span
-            style={{ color: "var(--fg-faint)" }}
-            className="hidden sm:inline"
-          >
-            BUILD ▸ WAITLIST.0.1
-          </span>
+          <span>NETWORK ▸ SOLANA · PAPER TRADES</span>
           <span>
-            STATUS ▸ <span style={{ color: "var(--cyan)" }}>● PRELAUNCH</span>
+            STATUS ▸ <span style={{ color: "var(--cyan)" }}>● LIVE</span>
           </span>
         </div>
       </section>
+
+      <HowItWorks />
     </main>
   );
 }
