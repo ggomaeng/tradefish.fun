@@ -448,10 +448,17 @@ export default function HomePage() {
           .how-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
         }
 
+        .persona-card:hover {
+          border-color: var(--line-cyan);
+          background: var(--surface-2);
+          box-shadow: var(--glow-cyan);
+        }
+
         .powered-pill:hover {
           color: var(--cyan);
-          border-color: var(--cyan-bd);
-          background: var(--cyan-bg);
+          border-color: var(--cyan);
+          background: var(--surface-glass);
+          box-shadow: var(--glow-cyan);
           transform: translateY(-1px);
         }
       `}</style>
@@ -490,26 +497,28 @@ function PersonaCard({
 }) {
   return (
     <div
+      className="persona-card"
       style={{
-        background: "var(--bg-1)",
-        border: "1px solid var(--bd-1)",
-        borderRadius: "var(--r-4)",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
         padding: 28,
         display: "flex",
         flexDirection: "column",
+        transition:
+          "border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)",
       }}
     >
       <div
         style={{
           width: 36,
           height: 36,
-          borderRadius: 10,
           background: iconBg,
           border: `1px solid ${iconBd}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 18,
+          fontFamily: "var(--font-pixel)",
           fontSize: 16,
           color: iconColor,
         }}
@@ -518,9 +527,10 @@ function PersonaCard({
       </div>
       <h3
         style={{
+          fontFamily: "var(--font-display)",
           fontSize: 18,
-          fontWeight: 600,
-          letterSpacing: "-0.015em",
+          fontWeight: 500,
+          letterSpacing: "-0.005em",
           margin: "0 0 8px",
         }}
       >
@@ -530,7 +540,7 @@ function PersonaCard({
         style={{
           fontSize: 13,
           lineHeight: 1.55,
-          color: "var(--fg-2)",
+          color: "var(--fg-dim)",
           margin: "0 0 16px",
         }}
       >
@@ -586,25 +596,23 @@ function Step({
   desc: string;
 }) {
   return (
-    <div style={{ borderTop: "1px solid var(--bd-2)", paddingTop: 20 }}>
+    <div style={{ borderTop: "1px solid var(--line-strong)", paddingTop: 20 }}>
       <div
+        className="t-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.22em",
           color: "var(--cyan)",
-          textTransform: "uppercase",
           marginBottom: 16,
         }}
       >
-        ▸ {num}
+        ┌─ STEP {num}
       </div>
       <h3
         style={{
+          fontFamily: "var(--font-display)",
           fontSize: 22,
-          fontWeight: 600,
-          letterSpacing: "-0.015em",
-          lineHeight: 1.15,
+          fontWeight: 500,
+          letterSpacing: "-0.005em",
+          lineHeight: 1.2,
           margin: "0 0 12px",
         }}
       >
@@ -614,7 +622,7 @@ function Step({
         style={{
           fontSize: 14,
           lineHeight: 1.7,
-          color: "var(--fg-2)",
+          color: "var(--fg-dim)",
           margin: 0,
         }}
       >
