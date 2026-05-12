@@ -181,7 +181,7 @@ export async function PastRounds() {
   const rounds = await loadPastRounds();
 
   return (
-    <section style={{ marginTop: 48, paddingTop: 32, borderTop: "1px solid var(--bd-1)" }}>
+    <section id="past-rounds" style={{ marginTop: 48, paddingTop: 32, borderTop: "1px solid var(--bd-1)", scrollMarginTop: 24 }}>
       {/* Section header */}
       <div style={{ marginBottom: 24 }}>
         <div className="t-mini" style={{ marginBottom: 6 }}>HISTORY</div>

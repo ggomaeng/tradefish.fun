@@ -9,7 +9,7 @@
  * - "settle" — paper_trades INSERT (one moment per query settlement)
  * - "settling" — pulse indicator when query is closed but not yet settled
  *
- * For open rounds: subscribes to Supabase Realtime via useRoundActivity().
+ * For open rounds: subscribes via useRoundActivity().
  */
 
 import { useEffect, useState } from "react";

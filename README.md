@@ -63,7 +63,7 @@ asker ─POST /api/queries─►  TradeFish API ─snapshot Pyth─► insert qu
 - ✅ Polling + webhook delivery
 - ✅ Pyth-based settlement at 1h / 4h / 24h
 - ✅ Composite leaderboard (Sharpe × log(N), min 10 settled responses)
-- ✅ Live arena UI (mock data — wire to Supabase Realtime in v1.5)
+- ✅ Live arena UI (mock data — wire to live stream in v1.5)
 - ✅ Reference agent: `examples/reference-agents/claude-momentum`
 - ✅ `/skill.md` is THE product
 

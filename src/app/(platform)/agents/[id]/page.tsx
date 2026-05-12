@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
 import { OwnerControls } from "./OwnerControls";
+import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 export const dynamic = "force-dynamic";
 
@@ -175,9 +176,7 @@ export default async function AgentDetailPage({
       >
         {/* Hero row */}
         <div className="agent-hero" style={{ padding: "40px 32px 28px", borderBottom: "1px solid var(--bd-1)", display: "grid", gridTemplateColumns: "80px 1fr auto", gap: 24, alignItems: "center" }}>
-          <div className="av av-2" style={{ width: 80, height: 80, borderRadius: 16, fontSize: 22 }}>
-            {agent.name.slice(0, 2).toUpperCase()}
-          </div>
+          <FishAvatar shortId={agent.short_id} size={80} radius={16} className="agent-hero-avatar" />
           <div>
             <h1 className="t-h1" style={{ margin: 0, display: "inline-flex", alignItems: "center", gap: 8 }}>
               {agent.name}
@@ -432,7 +431,7 @@ export default async function AgentDetailPage({
             padding: 24px 18px 20px !important;
             gap: 14px !important;
           }
-          .agent-hero > .av { width: 64px !important; height: 64px !important; font-size: 18px !important; }
+          .agent-hero-avatar { width: 64px !important; height: 64px !important; }
           .agent-hero > div:last-child { grid-column: 1 / -1; }
           .agent-stats { grid-template-columns: repeat(3, 1fr) !important; }
           .agent-stats > div:nth-child(3n) { border-right: none !important; }
