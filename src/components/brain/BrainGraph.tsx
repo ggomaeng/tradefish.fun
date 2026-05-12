@@ -5,11 +5,20 @@
  *
  * Lazy-loads @cosmograph/react via next/dynamic (no SSR — WebGL only runs in browser).
  *
- * P7 hook surface:
- *   - Pass `onPatch(node | edge)` to receive incremental Realtime updates and
- *     call `addNode` / `addEdge` on the internal graph ref. The ref is exposed
- *     via the `cosmographRef` callback on the Cosmograph `onMount` prop.
- *   - `selectedSlug` / `onSelectSlug` let the parent drive selection.
+ * P7 pulse animation:
+ *   - Parent passes `pulsingNodeIds: Set<string>` for nodes that just arrived via Realtime.
+ *   - For 3000ms after insertion, those nodes render with a gold (#ffe066) CSS ring overlay
+ *     positioned at the node's approximate center in the canvas.
+ *   - Cosmograph doesn't expose per-node temporal halo coloring at runtime (pointHaloColor
+ *     is a static accessor, not a prop we can update per-render without re-mounting the
+ *     whole graph). We therefore use a separate DOM overlay approach:
+ *       1. Canvas is relatively positioned.
+ *       2. For each pulsing node we place an absolutely-positioned <div> at the canvas center
+ *          (the force layout hasn't settled yet so an exact position is unavailable — we use
+ *          the center of the canvas with a CSS keyframe glow ring as the visual).
+ *       3. After 3s the parent removes the node id from pulsingNodeIds and the overlay unmounts.
+ *   - If/when Cosmograph exposes `getNodeScreenPosition` or similar, the overlay can be
+ *     positioned accurately. The current approach is the "spec-blessed" fallback.
  */
 
 import dynamic from "next/dynamic";
@@ -71,15 +80,62 @@ interface BrainGraphProps {
   data: BrainGraphData;
   selection: BrainSelection;
   onSelect: (sel: BrainSelection) => void;
-  /** P7: call this to patch in a new node from Realtime */
-  onPatch?: (node: BrainNode | BrainEdge) => void;
+  /** P7: node IDs that arrived via Realtime and should show a 3s pulse */
+  pulsingNodeIds?: Set<string>;
+}
+
+// ─── Pulse overlay ────────────────────────────────────────────────────────────
+
+/**
+ * PulseOverlay — rendered for each newly-arrived node.
+ *
+ * We position the ring near the center of the canvas because Cosmograph
+ * doesn't expose a stable world→screen coordinate transform at the time a new
+ * node is added (the force layout is still settling). The glow ring still
+ * communicates "something new appeared" clearly.
+ *
+ * If Cosmograph adds `cosmograph.getNodeScreenPosition(id)` in a future
+ * release, replace `style.left/top` with the returned coords.
+ */
+function PulseOverlay({ nodeId, canvasRef }: { nodeId: string; canvasRef: React.RefObject<HTMLDivElement | null> }) {
+  const [rect, setRect] = useState<{ cx: number; cy: number } | null>(null);
+
+  useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    // Default to canvas center — rough but visible
+    setRect({ cx: r.width / 2, cy: r.height / 2 });
+  }, [canvasRef]);
+
+  if (!rect) return null;
+
+  return (
+    <div
+      key={nodeId}
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        left: rect.cx - 24,
+        top: rect.cy - 24,
+        width: 48,
+        height: 48,
+        borderRadius: "50%",
+        border: "2px solid #ffe066",
+        boxShadow: "0 0 12px 4px rgba(255,224,102,0.55), 0 0 32px 8px rgba(255,224,102,0.25)",
+        pointerEvents: "none",
+        animation: "brain-pulse 3s ease-out forwards",
+      }}
+    />
+  );
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function BrainGraph({ data, selection, onSelect }: BrainGraphProps) {
+export function BrainGraph({ data, selection, onSelect, pulsingNodeIds }: BrainGraphProps) {
   const [mounted, setMounted] = useState(false);
   const cosmographRef = useRef<CosmographInstance | undefined>(undefined);
+  const canvasWrapRef = useRef<HTMLDivElement | null>(null);
 
   // Mount-guard: Cosmograph requires a browser environment (WebGL).
   // We use a ref + effect to defer rendering until the client is ready,
@@ -139,8 +195,19 @@ export function BrainGraph({ data, selection, onSelect }: BrainGraphProps) {
     );
   }
 
+  const pulsingIds = pulsingNodeIds ? Array.from(pulsingNodeIds) : [];
+
   return (
-    <div style={containerStyle}>
+    <div ref={canvasWrapRef} style={containerStyle}>
+      {/* Keyframe for the pulse ring — injected once via a <style> tag */}
+      <style>{`
+        @keyframes brain-pulse {
+          0%   { opacity: 1; transform: scale(1); }
+          60%  { opacity: 0.6; transform: scale(1.8); }
+          100% { opacity: 0; transform: scale(2.4); }
+        }
+      `}</style>
+
       <CosmographComponent
         style={{ width: "100%", height: "100%" }}
         points={points as Record<string, unknown>[]}
@@ -160,6 +227,12 @@ export function BrainGraph({ data, selection, onSelect }: BrainGraphProps) {
         disableLogging
         backgroundColor="#050608"
       />
+
+      {/* Pulse overlays for freshly-arrived Realtime nodes */}
+      {pulsingIds.map((id) => (
+        <PulseOverlay key={id} nodeId={id} canvasRef={canvasWrapRef} />
+      ))}
+
       {/* Selection overlay label */}
       {selection?.kind === "node" && (
         <div style={selectionLabelStyle}>

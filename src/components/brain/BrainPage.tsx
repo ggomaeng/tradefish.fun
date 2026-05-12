@@ -14,12 +14,13 @@
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import type { BrainGraph, BrainSelection } from "@/lib/brain/types";
+import type { BrainGraph, BrainNode, BrainEdge, BrainSelection } from "@/lib/brain/types";
 import { BrainGraph as BrainGraphComponent } from "./BrainGraph";
 import { SidePanel } from "./SidePanel";
 import type { CounterKind } from "./SidePanel";
 import { NoteDetail } from "./NoteDetail";
 import { Scrubber } from "./Scrubber";
+import { useBrainRealtime } from "@/lib/brain/realtime";
 
 // ─── Data fetching hook ───────────────────────────────────────────────────────
 
@@ -58,7 +59,7 @@ function useGraphData(atMs: number | null) {
     return () => { cancelled = true; };
   }, [atMs]);
 
-  return { data, loading, error };
+  return { data, setData, loading, error };
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -69,7 +70,10 @@ export function BrainPage() {
   const [selection, setSelection] = useState<BrainSelection>(null);
   const incrementCounterRef = useRef<((kind: CounterKind) => void) | null>(null);
 
-  const { data, loading, error } = useGraphData(scrubAtMs);
+  // P7: set of node IDs currently pulsing (inserted via Realtime)
+  const [pulsingNodeIds, setPulsingNodeIds] = useState<Set<string>>(new Set());
+
+  const { data, setData, loading, error } = useGraphData(scrubAtMs);
 
   const minAt = data.nodes.length > 0
     ? data.nodes.reduce((min, n) => n.created_at < min ? n.created_at : min, data.nodes[0].created_at)
@@ -96,6 +100,58 @@ export function BrainPage() {
   // Use a stable initial "now" from state to avoid rendering non-determinism
   const [initialNow] = useState(() => Date.now());
   const currentAtMs = scrubAtMs ?? initialNow;
+
+  // ── P7: Realtime handlers ──────────────────────────────────────────────────
+
+  const handleNodeInsert = useCallback((node: BrainNode) => {
+    // Only patch in live mode (scrubber at now)
+    if (scrubAtMs !== null) return;
+
+    setData((prev) => {
+      // Deduplicate — Realtime can fire twice on reconnect
+      if (prev.nodes.some((n) => n.id === node.id)) return prev;
+      return { ...prev, nodes: [node, ...prev.nodes] };
+    });
+
+    // Tick the lessons counter in SidePanel
+    incrementCounterRef.current?.("lesson");
+
+    // Trigger 3-second pulse animation for this node
+    setPulsingNodeIds((prev) => {
+      const next = new Set(prev);
+      next.add(node.id);
+      return next;
+    });
+    setTimeout(() => {
+      setPulsingNodeIds((prev) => {
+        const next = new Set(prev);
+        next.delete(node.id);
+        return next;
+      });
+    }, 3000);
+  }, [scrubAtMs, setData]);
+
+  const handleEdgeInsert = useCallback((edge: BrainEdge) => {
+    if (scrubAtMs !== null) return;
+
+    setData((prev) => {
+      // Deduplicate
+      if (prev.edges.some((e) => e.source === edge.source && e.target === edge.target)) return prev;
+      return { ...prev, edges: [edge, ...prev.edges] };
+    });
+  }, [scrubAtMs, setData]);
+
+  // Citation events don't change graph structure — the note_edges INSERT that
+  // follows will trigger handleEdgeInsert. Kept as a no-op hook for future
+  // "recent activity" wiring in SidePanel.
+  const handleCitation = useCallback(() => undefined, []);
+
+  // Wire realtime subscriptions (only in live mode)
+  useBrainRealtime({
+    onNodeInsert: handleNodeInsert,
+    onEdgeInsert: handleEdgeInsert,
+    onCitation: handleCitation,
+  });
 
   return (
     <div style={pageStyle}>
@@ -134,6 +190,7 @@ export function BrainPage() {
             data={data}
             selection={selection}
             onSelect={handleSelect}
+            pulsingNodeIds={pulsingNodeIds}
           />
         </div>
 
