@@ -6,7 +6,11 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 import { TopupModal } from "./TopupModal";
 
-const FREE_DEMO = process.env.NEXT_PUBLIC_FREE_DEMO === "1";
+// Hard-coded ON for the hackathon demo (no Vercel dashboard access). Defense
+// in depth — the platform layout already hides <WalletWidget /> entirely
+// when FREE_DEMO is true, so this const is reached only if someone renders
+// the widget outside the layout. Flip back to env-var read for production.
+const FREE_DEMO = true;
 
 function truncate(pubkey: string, head = 4, tail = 4) {
   if (pubkey.length <= head + tail + 1) return pubkey;

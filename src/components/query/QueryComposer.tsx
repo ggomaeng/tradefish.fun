@@ -9,7 +9,11 @@ import { TopupModal } from "@/components/wallet/TopupModal";
 import { useSolBalance, formatSol } from "@/components/wallet/useSolBalance";
 
 const CREDITS_PER_QUERY = 10;
-const FREE_DEMO = process.env.NEXT_PUBLIC_FREE_DEMO === "1";
+// Hard-coded ON for the hackathon demo (no Vercel dashboard access to set
+// NEXT_PUBLIC_FREE_DEMO=1). Flip back to env-var read when the paywall
+// should go live in production. Paired with: api/queries/route.ts,
+// (platform)/layout.tsx, WalletWidget.tsx — flip all four together.
+const FREE_DEMO = true;
 
 const TOKEN_GRID_SLUGS = ["BONK", "SOL", "JUP", "WIF", "PYTH", "JTO"];
 
@@ -220,24 +224,39 @@ export function QueryComposer() {
                     fontFamily: "var(--font-mono)",
                   }}
                 >
-                  <div className={tokenAvClass(t.symbol)}>
-                    {tokenLogoSrc(t.symbol) ? (
+                  {tokenLogoSrc(t.symbol) ? (
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        flex: "none",
+                        borderRadius: "50%",
+                        overflow: "hidden",
+                        background: "var(--bg-2)",
+                        border: "1px solid var(--line)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
                       <img
                         src={tokenLogoSrc(t.symbol)}
                         alt={`${t.symbol} logo`}
-                        width={28}
-                        height={28}
+                        width={32}
+                        height={32}
                         style={{
                           width: "100%",
                           height: "100%",
                           objectFit: "cover",
-                          borderRadius: "50%",
+                          display: "block",
                         }}
                       />
-                    ) : (
-                      tokenInitials(t.symbol)
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className={tokenAvClass(t.symbol)}>
+                      {tokenInitials(t.symbol)}
+                    </div>
+                  )}
                   <div style={{ flex: 1 }}>
                     <div
                       style={{

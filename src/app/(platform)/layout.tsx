@@ -3,11 +3,12 @@ import Link from "next/link";
 import { SolanaProvider } from "@/components/wallet/SolanaProvider";
 import { WalletWidget } from "@/components/wallet/WalletWidget";
 
-// Demo mode: when set, the appnav skips the wallet widget entirely so the
-// header has no paywall signal. The server-side FREE_DEMO gate in
-// /api/queries already lets anonymous requests through; this just removes
-// the visible "Connect wallet" CTA that contradicts the demo promise.
-const FREE_DEMO = process.env.NEXT_PUBLIC_FREE_DEMO === "1";
+// Demo mode: hard-coded ON for the hackathon launch since we don't have
+// Vercel dashboard access to set NEXT_PUBLIC_FREE_DEMO=1. Flip back to
+// `process.env.NEXT_PUBLIC_FREE_DEMO === "1"` (and patch the other three
+// callsites: layout.tsx, WalletWidget.tsx, QueryComposer.tsx, queries/route.ts)
+// when the paywall should go live in production.
+const FREE_DEMO = true;
 
 const NAV_LINKS: { label: string; href: string; hideOnMobile?: boolean }[] = [
   { label: "SWARM", href: "/swarm" },
