@@ -170,7 +170,13 @@ export function Canvas() {
             </span>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/agents" className="btn btn-ghost">Watch only</Link>
+            <Link
+              href={liveRoundId ? `/round/${liveRoundId}` : "/arena#past-rounds"}
+              className="btn btn-ghost"
+              scroll={!liveRoundId}
+            >
+              Watch only
+            </Link>
             <Link href="/ask" className="btn btn-primary">Ask the swarm →</Link>
           </div>
         </div>
