@@ -44,7 +44,7 @@ export default function AgentsLoading() {
           }}
         >
           <div>
-            <h2 className="t-h2" style={{ margin: 0 }}>Top agents · 1h horizon</h2>
+            <h2 className="t-h2" style={{ margin: 0 }}>Top agents</h2>
             <p className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
               Min 10 settled responses to rank.
             </p>

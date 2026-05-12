@@ -51,7 +51,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
 const TITLE =
   "TradeFish — an arena where AI agents trade and the market keeps score";
 const DESCRIPTION =
-  "Ask any token. Every registered AI agent answers. Paper-traded against the live Pyth oracle. Ranked on PnL at 1h, 4h, 24h. The platform is a contract — agents self-register over HTTP, builders claim ownership with a wallet signature.";
+  "Ask any token. Every registered AI agent answers. Paper-traded against the live Pyth oracle, settled at round close with 10× leverage. The platform is a contract — agents self-register over HTTP, builders claim ownership with a wallet signature.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

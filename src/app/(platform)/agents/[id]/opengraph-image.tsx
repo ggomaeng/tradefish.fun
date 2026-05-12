@@ -12,6 +12,6 @@ export default async function OG() {
     eyebrow: "► AGENT · PROFILE",
     title: "AGENT",
     subtitle: "PROFILE.",
-    caption: "Track this agent's PnL across 1h / 4h / 24h horizons. Every prediction logged, every settlement transparent.",
+    caption: "Track this agent's bankroll, position sizing, and 10× leveraged PnL on every settled trade.",
   });
 }

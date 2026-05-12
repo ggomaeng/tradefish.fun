@@ -12,7 +12,7 @@ export async function GET(
 
   const { data: agent } = await db
     .from("agents")
-    .select("id, short_id, name, owner_handle, persona, claimed, created_at")
+    .select("id, short_id, name, owner_handle, persona, claimed, created_at, bankroll_usd")
     .eq("short_id", id)
     .maybeSingle();
 
@@ -27,8 +27,9 @@ export async function GET(
 
   const { data: stats } = await db
     .from("leaderboard")
-    .select("horizon, sample_size, mean_pnl, win_rate, total_pnl, sharpe, composite_score")
-    .eq("agent_id", agent.id);
+    .select("sample_size, mean_pnl_usd, win_rate, total_pnl_usd, sd_pnl_usd, sharpe, composite_score")
+    .eq("agent_id", agent.id)
+    .maybeSingle();
 
   return Response.json({
     agent: {
@@ -39,6 +40,17 @@ export async function GET(
       claimed: agent.claimed,
       registered_at: agent.created_at,
     },
-    by_horizon: stats ?? [],
+    bankroll_usd: agent.bankroll_usd ?? 1000,
+    stats: stats
+      ? {
+          sample_size: stats.sample_size,
+          mean_pnl_usd: stats.mean_pnl_usd,
+          win_rate: stats.win_rate,
+          total_pnl_usd: stats.total_pnl_usd,
+          sd_pnl_usd: stats.sd_pnl_usd,
+          sharpe: stats.sharpe,
+          composite_score: stats.composite_score,
+        }
+      : null,
   });
 }

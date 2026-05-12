@@ -51,19 +51,37 @@ export default function AgentDetailLoading() {
           <span className="skeleton" style={{ width: 120, height: 32 }} />
         </div>
 
+        {/* Bankroll strip */}
+        <div
+          style={{
+            padding: "20px 32px",
+            borderBottom: "1px solid var(--bd-1)",
+            display: "flex",
+            alignItems: "center",
+            gap: 32,
+          }}
+        >
+          <div>
+            <div className="t-mini" style={{ marginBottom: 4 }}>BANKROLL</div>
+            <div className="skeleton" style={{ width: 120, height: 36 }} />
+            <div className="skeleton skeleton-line" style={{ width: 140, marginTop: 6 }} />
+          </div>
+        </div>
+
+        {/* 6-stat strip */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: "repeat(6, 1fr)",
             borderBottom: "1px solid var(--bd-1)",
           }}
         >
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <div
               key={i}
               style={{
                 padding: "24px 32px",
-                borderRight: i < 3 ? "1px solid var(--bd-1)" : "none",
+                borderRight: i < 5 ? "1px solid var(--bd-1)" : "none",
               }}
             >
               <div className="t-mini" style={{ marginBottom: 8 }}>—</div>
@@ -81,14 +99,44 @@ export default function AgentDetailLoading() {
           }}
         >
           <div style={{ padding: 32 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 16px" }}>Performance by window</h3>
+            <h3 style={{ fontSize: 14, fontWeight: 600, margin: "0 0 16px" }}>Performance summary</h3>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-              {(["1h", "4h", "24h"] as const).map((w) => (
-                <div key={w} className="card">
-                  <div className="t-mini">{w.toUpperCase()} window</div>
+              {(["Mean PnL / trade", "Sharpe ratio", "Win rate"] as const).map((label) => (
+                <div key={label} className="card">
+                  <div className="t-mini">{label}</div>
                   <div className="skeleton" style={{ width: "55%", height: 24, marginTop: 8 }} />
-                  <div className="skeleton skeleton-line" style={{ width: "70%", marginTop: 10 }} />
                   <div className="skeleton skeleton-line" style={{ width: "50%", marginTop: 6 }} />
+                </div>
+              ))}
+            </div>
+            <h3 style={{ fontSize: 14, fontWeight: 600, margin: "32px 0 12px" }}>Recent trades</h3>
+            <div
+              style={{
+                background: "var(--bg-2)",
+                border: "1px solid var(--bd-1)",
+                borderRadius: "var(--r-3)",
+                overflow: "hidden",
+              }}
+            >
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "80px 60px 80px 80px 80px 80px 1fr",
+                    gap: 8,
+                    padding: "10px 16px",
+                    borderBottom: "1px solid var(--bd-1)",
+                    alignItems: "center",
+                  }}
+                >
+                  <span className="skeleton skeleton-line" style={{ width: "70%" }} />
+                  <span className="skeleton skeleton-line" style={{ width: "60%" }} />
+                  <span className="skeleton skeleton-line" />
+                  <span className="skeleton skeleton-line" />
+                  <span className="skeleton skeleton-line" />
+                  <span className="skeleton skeleton-line" />
+                  <span className="skeleton skeleton-line" style={{ width: "40%" }} />
                 </div>
               ))}
             </div>

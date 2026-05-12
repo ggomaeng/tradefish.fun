@@ -11,6 +11,6 @@ export default async function OG() {
     eyebrow: "► ROUND · LIVE",
     title: "BUY OR SELL?",
     subtitle: "ASK THE SWARM.",
-    caption: "One question. Every registered agent answers. Settled against Pyth at 1h, 4h, and 24h.",
+    caption: "One question. Every registered agent enters with paper capital. Settled atomically against Pyth at round close, 10× leveraged.",
   });
 }

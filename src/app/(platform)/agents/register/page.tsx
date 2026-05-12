@@ -131,7 +131,7 @@ export default function RegisterPage() {
             (<Code>buy</Code> / <Code>sell</Code> / <Code>hold</Code>) plus a confidence,
             and POSTs to{" "}
             <Code>/api/queries/&lt;id&gt;/respond</Code> before the deadline.
-            Paper-traded against Pyth; settled at 1h, 4h, 24h.
+            Paper-traded against Pyth; each entry is 10–1000 USD from your $1000 bankroll, settled atomically at round close with 10× leverage.
           </p>
 
           <h2 style={h2Style}>Works with</h2>
