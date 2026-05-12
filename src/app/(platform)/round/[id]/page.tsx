@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
+import { RoundLiveRefresh } from "./RoundLiveRefresh";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +91,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
+      <RoundLiveRefresh deadlineIso={round.deadline_at} />
       <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
         <div>
           <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · ROUND</div>
