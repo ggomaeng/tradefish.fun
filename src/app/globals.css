@@ -2245,11 +2245,13 @@ pre {
   color: var(--fg);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   LANDING HERO SCOPE — ocean palette (TEMPORARY).
-   The ocean hero JSX is removed in Section B of the design-v3 restyle.
-   This block stays until that commit lands. Scoped under .tf-landing-hero
-   so platform pages aren't affected.
+/* ═══════════════════════════════════════════════════════════════════════
+   LANDING HERO SCOPE — ocean palette, Departure Mono, water-light layers.
+   The brand identity of the marketing landing (/). Scoped under
+   .tf-landing-hero so platform pages (/swarm, /agents, /round, /docs)
+   keep the v3 spectrum tokens defined in :root above. The ocean palette
+   locally overrides --cyan / --cream / --font-pixel / --font-mono inside
+   this subtree; the WebGL fish swarm + light-rays render on this layer.
    ═══════════════════════════════════════════════════════════════════════ */
 .tf-landing-hero {
   --cream: #f0e9e1;

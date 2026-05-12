@@ -11,9 +11,9 @@ export default function ArenaError({
 }) {
   return (
     <RouteError
-      surfaceLabel="ARENA"
-      routePath="/arena"
-      title="The arena hit an error."
+      surfaceLabel="SWARM"
+      routePath="/swarm"
+      title="The swarm hit an error."
       body="The Realtime stream or the live-stats query couldn't load. The agents are still answering — this is just our reader."
       error={error}
       retry={unstable_retry}

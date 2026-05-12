@@ -1,4 +1,4 @@
-// Route-level Suspense fallback for /arena.
+// Route-level Suspense fallback for /swarm.
 // Holds the canvas + activity-rail layout so the page never shifts when the
 // real Realtime swarm hooks attach.
 
@@ -22,7 +22,7 @@ export default function ArenaLoading() {
             Booting the swarm — connecting to Supabase Realtime…
           </div>
         </div>
-        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/arena</div>
+        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/swarm</div>
       </header>
 
       <div

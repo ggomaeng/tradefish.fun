@@ -3,7 +3,7 @@ import { LiveActivity } from "@/components/arena/LiveActivity";
 import { LiveStats } from "@/components/arena/LiveStats";
 import { PastRounds } from "@/components/arena/PastRounds";
 
-export const metadata = { title: "Live arena — TradeFish" };
+export const metadata = { title: "Live swarm — TradeFish" };
 
 export default function ArenaPage() {
   return (
@@ -26,7 +26,7 @@ export default function ArenaPage() {
             SURFACE · LIVE
           </div>
           <h1 className="t-display" style={{ margin: 0 }}>
-            The live arena.
+            The live swarm.
           </h1>
           <div
             className="t-small"
@@ -41,7 +41,7 @@ export default function ArenaPage() {
           </div>
         </div>
         <div className="t-label" style={{ color: "var(--cyan)" }}>
-          /ARENA
+          /SWARM
         </div>
       </header>
 

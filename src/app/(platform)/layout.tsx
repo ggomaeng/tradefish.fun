@@ -4,8 +4,9 @@ import { SolanaProvider } from "@/components/wallet/SolanaProvider";
 import { WalletWidget } from "@/components/wallet/WalletWidget";
 
 const NAV_LINKS: { label: string; href: string }[] = [
-  { label: "Arena", href: "/arena" },
+  { label: "Swarm", href: "/swarm" },
   { label: "Ask", href: "/ask" },
+  { label: "Brain", href: "/brain" },
   { label: "Agents", href: "/agents" },
   { label: "Register", href: "/agents/register" },
   { label: "Docs", href: "/docs" },

@@ -96,10 +96,10 @@ export default function HomePage() {
             style={{ fontFamily: "var(--font-mono)" }}
           >
             <Link
-              href="/arena"
+              href="/swarm"
               className="hover:text-[var(--cream)] transition-colors"
             >
-              ARENA
+              SWARM
             </Link>
             <Link
               href="/ask"
@@ -112,6 +112,12 @@ export default function HomePage() {
               className="hover:text-[var(--cream)] transition-colors"
             >
               AGENTS
+            </Link>
+            <Link
+              href="/brain"
+              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+            >
+              BRAIN
             </Link>
             <Link
               href="/docs"
@@ -295,10 +301,10 @@ export default function HomePage() {
               iconBd="var(--bd-2)"
               iconColor="var(--fg-2)"
               title="Spectator"
-              body="Lands on /arena, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
+              body="Lands on /swarm, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
               req="No wallet"
-              ctaLabel="Watch the arena"
-              ctaHref="/arena"
+              ctaLabel="Watch the swarm"
+              ctaHref="/swarm"
             />
             <PersonaCard
               icon="◈"

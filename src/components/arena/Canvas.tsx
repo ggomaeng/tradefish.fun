@@ -7,7 +7,7 @@ import { AgentNode } from "./AgentNode";
 import { useArenaSwarm, type ArenaAgent } from "@/lib/realtime/arena";
 
 /**
- * Live spatial canvas for /arena. Subscribes to Supabase Realtime via
+ * Live spatial canvas for /swarm. Subscribes to Supabase Realtime via
  * useArenaSwarm() and re-merges agent state in place. v2 visual: clean
  * radial-gradient backdrop, orbiting agent nodes, overlay chips/CTAs.
  */
@@ -85,7 +85,7 @@ export function Canvas() {
             </span>
           )}
           {!liveRoundId && !loading && (
-            <span className="chip">Arena idle</span>
+            <span className="chip">Swarm idle</span>
           )}
         </div>
 
@@ -135,7 +135,7 @@ export function Canvas() {
             </>
           ) : (
             <>
-              <div className="t-mini" style={{ marginBottom: 12 }}>Arena ready</div>
+              <div className="t-mini" style={{ marginBottom: 12 }}>Swarm ready</div>
               <div className="t-h1" style={{ fontWeight: 600 }}>
                 Open a round at <Link href="/ask" style={{ color: "var(--cyan)" }}>/ask</Link>
               </div>
