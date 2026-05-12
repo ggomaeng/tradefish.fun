@@ -35,9 +35,10 @@ const CosmographComponent = dynamic(
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
 function lerpColor(t: number): string {
-  // lerp between #555555 (dim) and #d4af37 (gold) based on t ∈ [0, 1]
-  const r0 = 0x55, g0 = 0x55, b0 = 0x55;
-  const r1 = 0xd4, g1 = 0xaf, b1 = 0x37;
+  // lerp between --fg-4 (#404048 = dim/no-PnL) and --hold (#FFB347 = amber/high-PnL)
+  // Hex values mirror the design tokens in globals.css — do not change independently.
+  const r0 = 0x40, g0 = 0x40, b0 = 0x48;
+  const r1 = 0xFF, g1 = 0xB3, b1 = 0x47;
   const r = Math.round(r0 + (r1 - r0) * t);
   const g = Math.round(g0 + (g1 - g0) * t);
   const b = Math.round(b0 + (b1 - b0) * t);
@@ -121,8 +122,8 @@ function PulseOverlay({ nodeId, canvasRef }: { nodeId: string; canvasRef: React.
         width: 48,
         height: 48,
         borderRadius: "50%",
-        border: "2px solid #ffe066",
-        boxShadow: "0 0 12px 4px rgba(255,224,102,0.55), 0 0 32px 8px rgba(255,224,102,0.25)",
+        border: "2px solid var(--hold)",
+        boxShadow: "0 0 12px 4px rgba(255,179,71,0.55), 0 0 32px 8px rgba(255,179,71,0.25)",
         pointerEvents: "none",
         animation: "brain-pulse 3s ease-out forwards",
       }}

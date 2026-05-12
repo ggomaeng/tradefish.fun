@@ -238,7 +238,7 @@ function CounterRow({
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 20,
+          fontSize: "var(--t-h2)",
           fontWeight: 600,
           color: flash ? "var(--cyan)" : "var(--fg)",
           transition: "color 200ms ease",
@@ -333,9 +333,10 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const sectionHeadStyle: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: "var(--t-mini)",
   fontWeight: 600,
   letterSpacing: "0.06em",
+  textTransform: "uppercase",
   color: "var(--fg-3)",
   margin: 0,
   padding: "12px 16px 8px",

@@ -21,6 +21,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
   const [playing, setPlaying] = useState(false);
   const playRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Keep a mutable ref so the setInterval callback always reads the latest atMs
+  // without needing to be recreated each tick (avoids stale-closure bug where
+  // every tick jumps DAY_MS from the original play-start position instead of
+  // from the most-recently-emitted position).
+  const atMsRef = useRef(atMs);
+  atMsRef.current = atMs;
 
   // Stable "now" captured on mount via useState initializer (not re-evaluated
   // on re-render). The range ceiling drifts by at most the session length,
@@ -46,13 +52,14 @@ export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
   const startPlay = useCallback(() => {
     setPlaying(true);
     playRef.current = setInterval(() => {
-      const nextMs = Math.min(nowMs, atMs + DAY_MS);
+      // Read latest position via ref — avoids stale closure
+      const nextMs = Math.min(nowMs, atMsRef.current + DAY_MS);
       onAtChange(nextMs);
       if (nextMs >= nowMs) {
         stopPlay();
       }
     }, 1000);
-  }, [atMs, nowMs, onAtChange, stopPlay]);
+  }, [nowMs, onAtChange, stopPlay]);
 
   // Auto-stop when playback reaches live — handled inside the interval callback.
   // Cleanup on unmount
@@ -182,7 +189,7 @@ const trackStyle: React.CSSProperties = {
   flex: 1,
   height: 4,
   background: "var(--bg-3)",
-  borderRadius: 2,
+  borderRadius: "var(--r-1)",
   position: "relative",
   cursor: "pointer",
   userSelect: "none",
@@ -194,7 +201,7 @@ const fillStyle: React.CSSProperties = {
   top: 0,
   bottom: 0,
   background: "var(--cyan)",
-  borderRadius: 2,
+  borderRadius: "var(--r-1)",
   transition: "width 300ms ease",
 };
 

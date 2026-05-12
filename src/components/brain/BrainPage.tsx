@@ -183,7 +183,7 @@ export function BrainPage() {
       </header>
 
       {/* Main grid: graph (flex 1) + side panel (360px) */}
-      <div style={gridStyle}>
+      <div className="brain-grid" style={gridStyle}>
         {/* Graph canvas */}
         <div style={{ flex: 1, minWidth: 0, position: "relative", minHeight: 500 }}>
           <BrainGraphComponent

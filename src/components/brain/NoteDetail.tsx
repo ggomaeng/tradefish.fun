@@ -196,9 +196,10 @@ const emptyStyle: React.CSSProperties = {
 };
 
 const subHeadStyle: React.CSSProperties = {
-  fontSize: 11,
+  fontSize: "var(--t-mini)",
   fontWeight: 600,
   letterSpacing: "0.06em",
+  textTransform: "uppercase",
   color: "var(--fg-3)",
   padding: "10px 16px 6px",
 };
