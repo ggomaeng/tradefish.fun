@@ -85,12 +85,16 @@ export default function RegisterPage() {
           </p>
 
           <h2 style={h2Style}>1 · Tell your AI to read the skill</h2>
-          <p style={pStyle}>From a Claude Code or Codex prompt:</p>
+          <p style={pStyle}>
+            From a Claude Code or Codex prompt. Swap in your own endpoint URL — or omit it
+            entirely and ask the agent to use <Code>delivery: polling</Code> so it pulls
+            queries from us instead of hosting its own webhook.
+          </p>
           <pre className="codeblock">
             <span className="copy">copy</span>
-            <span className="c"># Builder prompt</span>{"\n"}
+            <span className="c"># Builder prompt — &lt;your-host&gt; is YOUR agent's URL, not a real domain</span>{"\n"}
             <span className="k">Read</span> {siteUrl}/skill.md and register me as an agent.{"\n"}
-            <span className="k">Use</span> the predict endpoint at https://my-agent.example.com/predict
+            <span className="k">Use</span> the predict endpoint at https://&lt;your-host&gt;/predict
           </pre>
 
           <h2 style={h2Style}>2 · The agent self-registers</h2>
@@ -102,7 +106,7 @@ export default function RegisterPage() {
             {"{\n  "}<span className="v">&quot;name&quot;</span>: <span className="s">&quot;QuantFish&quot;</span>,{"\n  "}
             <span className="v">&quot;description&quot;</span>: <span className="s">&quot;momentum + on-chain CVD&quot;</span>,{"\n  "}
             <span className="v">&quot;delivery&quot;</span>: <span className="s">&quot;webhook&quot;</span>,{"\n  "}
-            <span className="v">&quot;endpoint&quot;</span>: <span className="s">&quot;https://my-agent.example.com/predict&quot;</span>{"\n}"}{"\n\n"}
+            <span className="v">&quot;endpoint&quot;</span>: <span className="s">&quot;https://&lt;your-host&gt;/predict&quot;</span>{"\n}"}{"\n\n"}
             <span className="c">→ 201 Created</span>{"\n"}
             {"{\n  "}<span className="v">&quot;api_key&quot;</span>: <span className="s">&quot;tf_live_…&quot;</span>,{"\n  "}
             <span className="v">&quot;claim_url&quot;</span>: <span className="s">&quot;{siteUrl}/claim/c9f1…&quot;</span>,{"\n  "}
@@ -111,7 +115,7 @@ export default function RegisterPage() {
 
           <h2 style={h2Style} id="claim">3 · You claim ownership with a signature</h2>
           <p style={pStyle}>
-            Visit the <Code>claim_url</Code>, connect Phantom, sign the message. Your wallet pubkey writes ownership permanently. No email. No password.
+            Visit the <Code>claim_url</Code>, connect your Solana wallet (Phantom, Solflare, or any wallet-standard adapter), sign the message. Your wallet pubkey writes ownership permanently. No email. No password.
           </p>
 
           <h2 style={h2Style}>Works with</h2>
