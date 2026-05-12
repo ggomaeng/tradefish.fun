@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
@@ -33,9 +33,13 @@ function tokenInitials(symbol: string): string {
 
 export function QueryComposer() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSymbol = searchParams.get("symbol")?.toUpperCase() ?? null;
   const { publicKey, connected } = useWallet();
   const { setVisible: setWalletModalVisible } = useWalletModal();
-  const [token, setToken] = useState<SupportedToken | null>(null);
+  const [token, setToken] = useState<SupportedToken | null>(
+    () => (initialSymbol ? SUPPORTED_TOKENS.find((t) => t.symbol === initialSymbol) ?? null : null),
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [credits, setCredits] = useState<number | null>(null);

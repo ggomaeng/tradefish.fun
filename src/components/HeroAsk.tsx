@@ -127,75 +127,23 @@ function useTypewriter(
 
 export function HeroAsk() {
   const router = useRouter();
-  const [token, setToken] = useState<SupportedToken>(
-    () => findTokenBySymbol(DEFAULT_SYMBOL) ?? SUPPORTED_TOKENS[0],
-  );
-  const [query, setQuery] = useState("");
-  const [focused, setFocused] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const query = "";
+  const focused = false;
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Pause the typewriter when the user has the input engaged so the
-  // placeholder doesn't advance invisibly behind a typed value.
-  const placeholderActive = query === "" && !focused;
-  const { text: phText, caret: phCaret } = useTypewriter(
-    PLACEHOLDERS,
-    placeholderActive,
-  );
+  // The landing input is a doorway, not a form — typewriter always runs.
+  const { text: phText, caret: phCaret } = useTypewriter(PLACEHOLDERS, true);
 
-  const onInputFocus = (): void => {
-    setFocused(true);
-    dispatchSwarm(EV_ATTENTION_ON);
-  };
-
-  const onInputBlur = (): void => {
-    setFocused(false);
-    dispatchSwarm(EV_ATTENTION_OFF);
-  };
-
-  /**
-   * Clicking a chip drops the canonical starter question into the input
-   * and focuses it. The backend currently accepts only buy/sell rounds,
-   * so the chip pre-fills that form rather than a free-form question.
-   * Also primes the swarm attention orbit.
-   */
   const pickStarter = (symbol: string): void => {
     const t = findTokenBySymbol(symbol);
     if (!t) return;
-    setToken(t);
-    setQuery(`Buy or sell $${symbol} right now?`);
-    inputRef.current?.focus();
+    dispatchSwarm(EV_SUBMIT_BURST);
+    router.push(`/ask?symbol=${encodeURIComponent(symbol)}`);
   };
 
-  const submit = async (): Promise<void> => {
-    if (submitting) return;
-    const parsed = extractToken(query);
-    const t = parsed ?? token;
-    if (!t) return;
-    setError(null);
-    setSubmitting(true);
+  const goToAsk = (): void => {
     dispatchSwarm(EV_SUBMIT_BURST);
-    try {
-      const fetchP = fetch("/api/queries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          token_mint: t.mint,
-          question_type: "buy_sell_now",
-        }),
-      });
-      const minWait = new Promise<void>((r) =>
-        setTimeout(r, BURST_NAVIGATE_DELAY_MS),
-      );
-      const [r] = await Promise.all([fetchP, minWait]);
-      const json = (await r.json()) as { query_id?: string; error?: string };
-      if (!r.ok) throw new Error(json.error ?? "submit_failed");
-      router.push(`/round/${json.query_id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "submit_failed");
-      setSubmitting(false);
-    }
+    router.push("/ask");
   };
 
   return (
@@ -213,7 +161,16 @@ export function HeroAsk() {
 
         <div
           data-swarm-anchor
-          className="relative w-full flex items-stretch transition-colors"
+          onClick={goToAsk}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              goToAsk();
+            }
+          }}
+          className="relative w-full flex items-stretch transition-colors cursor-pointer"
           style={{
             background: "rgba(13,24,48,0.78)",
             border: `1px solid ${focused ? "var(--cyan)" : "var(--line-strong)"}`,
@@ -225,40 +182,28 @@ export function HeroAsk() {
               "border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)",
           }}
         >
-          {/* Input + typewriter overlay. The overlay is rendered as an
-              absolutely-positioned span over the input only when the
-              field is empty AND unfocused — so the native caret takes
-              over the moment the user clicks in. */}
-          <div className="relative flex-1">
+          {/* Input acts as a doorway to /ask — readOnly + pointer cursor,
+              click anywhere on the row navigates. Typewriter overlay still
+              renders behind the empty field. */}
+          <div className="relative flex-1 pointer-events-none">
             <input
               ref={inputRef}
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={onInputFocus}
-              onBlur={onInputBlur}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  void submit();
-                } else if (e.key === "Escape") {
-                  setQuery("");
-                  inputRef.current?.blur();
-                }
-              }}
-              aria-label="ask the swarm a market question"
+              readOnly
+              tabIndex={-1}
+              aria-hidden
               spellCheck={false}
               autoComplete="off"
               autoCorrect="off"
-              maxLength={140}
-              className="w-full bg-transparent outline-none text-[14px] sm:text-[16px] tracking-[0.04em] px-5 py-4 sm:py-[18px]"
+              className="w-full bg-transparent outline-none text-[14px] sm:text-[16px] tracking-[0.04em] px-5 py-4 sm:py-[18px] cursor-pointer"
               style={{
                 fontFamily: "var(--font-mono)",
                 color: "var(--cream)",
-                caretColor: "var(--cyan-bright)",
+                caretColor: "transparent",
               }}
             />
-            {query === "" && !focused && (
+            {query === "" && (
               <span
                 aria-hidden
                 className="absolute inset-0 pointer-events-none flex items-center px-5 text-[14px] sm:text-[16px] tracking-[0.04em] whitespace-nowrap overflow-hidden"
@@ -283,16 +228,9 @@ export function HeroAsk() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={submit}
-            // Prevent the input's blur from firing before the click —
-            // keeps the swarm's attention/orbit alive into the burst.
-            onMouseDown={(e) => e.preventDefault()}
-            disabled={submitting}
-            aria-label="ask the swarm"
-            title="Ask the swarm"
-            className="inline-flex items-center justify-center w-12 h-auto self-stretch transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          <div
+            aria-hidden
+            className="inline-flex items-center justify-center w-12 h-auto self-stretch transition-all pointer-events-none"
             style={{
               background: "var(--cyan)",
               color: "var(--bg-0)",
@@ -305,20 +243,11 @@ export function HeroAsk() {
               style={{ fontFamily: "var(--font-pixel)", fontSize: 18 }}
               aria-hidden
             >
-              {submitting ? "…" : "▸"}
+              ▸
             </span>
-          </button>
+          </div>
         </div>
       </div>
-
-      {error && (
-        <div
-          className="text-[11px] tracking-[0.18em] uppercase"
-          style={{ color: "var(--short)", fontFamily: "var(--font-mono)" }}
-        >
-          ⚠ {error.replace(/_/g, " ")}
-        </div>
-      )}
 
       <div
         className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[10px] tracking-[0.22em] uppercase"
