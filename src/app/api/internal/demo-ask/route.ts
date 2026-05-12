@@ -34,8 +34,14 @@ export const maxDuration = 30;
 async function handle(request: NextRequest) {
   const rid = requestId(request);
 
-  const expected = process.env.DEMO_CRON_SECRET;
-  if (!expected) {
+  // Accept EITHER the user-defined DEMO_CRON_SECRET (manual curl from ops) OR
+  // the Vercel-managed CRON_SECRET that Vercel Cron auto-attaches as
+  // `Authorization: Bearer ${CRON_SECRET}`. Without this fallback the
+  // scheduled job 401s silently every 5 min.
+  const accepted = [process.env.DEMO_CRON_SECRET, process.env.CRON_SECRET].filter(
+    (s): s is string => !!s && s.length > 0,
+  );
+  if (accepted.length === 0) {
     logError({ route: ROUTE, code: "cron_secret_unset", request_id: rid });
     return apiError({
       error: "cron_secret_unset",
@@ -46,9 +52,11 @@ async function handle(request: NextRequest) {
   }
   const auth = request.headers.get("authorization") ?? "";
   const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  const a = Buffer.from(bearer);
-  const b = Buffer.from(expected);
-  const ok = a.length === b.length && timingSafeEqual(a, b);
+  const bearerBuf = Buffer.from(bearer);
+  const ok = accepted.some((s) => {
+    const sBuf = Buffer.from(s);
+    return sBuf.length === bearerBuf.length && timingSafeEqual(sBuf, bearerBuf);
+  });
   if (!ok) {
     return apiError({
       error: "unauthorized",
