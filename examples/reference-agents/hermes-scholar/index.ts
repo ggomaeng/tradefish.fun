@@ -110,6 +110,7 @@ type Trade = {
   entry_price: number;
   exit_price: number;
   pnl_usd: number;
+  reasoning: string | null;  // responses.reasoning — quoted in diary entries
 };
 
 type SettledRound = {
@@ -178,6 +179,7 @@ async function fetchSettledRounds(since: string): Promise<SettledRound[]> {
         id,
         answer,
         confidence,
+        reasoning,
         position_size_usd,
         pyth_price_at_response,
         agents!inner (name),
@@ -209,6 +211,7 @@ async function fetchSettledRounds(since: string): Promise<SettledRound[]> {
           entry_price: parseFloat(pt.entry_price),
           exit_price: parseFloat(pt.exit_price),
           pnl_usd: parseFloat(pt.pnl_usd),
+          reasoning: r.reasoning ?? null,
         };
       })
       .sort((a, b) => b.pnl_usd - a.pnl_usd);
@@ -239,24 +242,62 @@ function buildDistillationPrompt(round: SettledRound): string {
   const direction = round.close_price_usd >= round.entry_price_usd ? "UP" : "DOWN";
 
   const tradeLines = round.trades
-    .slice(0, 6)
-    .map(
-      (t) =>
+    .slice(0, 8)
+    .map((t) => {
+      const reasoning = t.reasoning ? ` — "${t.reasoning.slice(0, 140)}"` : "";
+      return (
         `  - ${t.agent_name}: ${t.direction.toUpperCase()} @ ${t.confidence.toFixed(2)} conf` +
-        ` · $${t.position_size_usd.toFixed(0)} position → ${t.pnl_usd >= 0 ? "+" : ""}$${t.pnl_usd.toFixed(2)} PnL`
-    )
+        ` · $${t.position_size_usd.toFixed(0)} → ${t.pnl_usd >= 0 ? "+" : ""}$${t.pnl_usd.toFixed(2)} PnL${reasoning}`
+      );
+    })
     .join("\n");
 
-  return `A round just settled on tradefish:
-Token: ${round.token_symbol} (${round.token_mint})
-Question: "buy/sell ${round.token_symbol} now?"
+  // Classify the outcome for the structured tag.
+  const winners = round.trades.filter((t) => t.pnl_usd > 0);
+  const losers = round.trades.filter((t) => t.pnl_usd < 0);
+  const majorityBuy = round.trades.filter((t) => t.direction === "buy").length >
+                      round.trades.filter((t) => t.direction === "sell").length;
+  const priceWentUp = round.close_price_usd > round.entry_price_usd;
+  let outcomeHint = "outcome:mixed";
+  if (winners.length === 0 && losers.length === 0) outcomeHint = "outcome:flat";
+  else if (majorityBuy === priceWentUp) outcomeHint = "outcome:consensus-won";
+  else outcomeHint = "outcome:contrarian-won";
+
+  return `You are the brain's diarist. A round just settled on tradefish — write the
+diary entry that future agents will read BEFORE they make the same call.
+
+Round: ${round.token_symbol} (${round.token_mint})
 Pyth entry → close: $${round.entry_price_usd} → $${round.close_price_usd} (${direction} ${priceChange}%)
 Trades on this round (10× leveraged):
 ${tradeLines || "  (no trades recorded)"}
 
-Write a 1-paragraph (~80-120 word) lesson future agents could use.
-Focus on what was non-obvious or generalizable about this outcome.
-Output JSON: { "title": "...", "content": "...", "tokens": [...], "tags": [...] }`;
+Write a faithful diary entry, NOT a textbook lesson. Cover, in order:
+1. WHAT HAPPENED — outcome in one sentence (who won, who lost, by how much).
+2. WHO WAS WRONG AND WHY — for each losing agent, name the assumption that
+   broke. Quote their reasoning if it's available above.
+3. WHO WAS RIGHT AND WHY — what did the winners see that the others missed?
+4. WHAT TO REMEMBER — one falsifiable pattern, framed conditionally
+   ("when X happens on Solana, expect Y"). If nothing generalizable can
+   honestly be drawn from this round, write "this round was noise" — that
+   is a valid entry. Do not invent patterns.
+
+Voice: an honest trader's journal. Include the embarrassing parts. Avoid
+hedging ("could be", "might"), survivorship bias, and moralizing. Quote
+real agent reasoning where shown. Keep the title concrete and narrative
+(e.g. "BONK fakeout — Hermes shorted dispersion, retail won"), NOT a
+textbook heading.
+
+Tags MUST include exactly one of: outcome:consensus-won,
+outcome:contrarian-won, outcome:mixed, outcome:flat.
+Based on this round's data the suggested outcome tag is "${outcomeHint}".
+
+Output JSON (no surrounding prose):
+{
+  "title": "...",       // ~6-12 words, narrative, no period at the end
+  "content": "...",     // ~120-200 words, the diary entry above
+  "tokens": [...],      // tickers mentioned (uppercased)
+  "tags": [...]         // include the outcome:* tag plus 2-5 topical tags
+}`;
 }
 
 // ---------------------------------------------------------------------------
