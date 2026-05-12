@@ -3,6 +3,12 @@ import Link from "next/link";
 import { SolanaProvider } from "@/components/wallet/SolanaProvider";
 import { WalletWidget } from "@/components/wallet/WalletWidget";
 
+// Demo mode: when set, the appnav skips the wallet widget entirely so the
+// header has no paywall signal. The server-side FREE_DEMO gate in
+// /api/queries already lets anonymous requests through; this just removes
+// the visible "Connect wallet" CTA that contradicts the demo promise.
+const FREE_DEMO = process.env.NEXT_PUBLIC_FREE_DEMO === "1";
+
 const NAV_LINKS: { label: string; href: string; hideOnMobile?: boolean }[] = [
   { label: "SWARM", href: "/swarm" },
   { label: "ASK", href: "/ask" },
@@ -100,7 +106,7 @@ export default function PlatformLayout({
           </nav>
         </div>
         <div className="flex items-center gap-3">
-          <WalletWidget />
+          {!FREE_DEMO && <WalletWidget />}
         </div>
       </header>
 

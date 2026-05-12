@@ -24,11 +24,26 @@ const TOKEN_AVATAR_CLASS: Record<string, string> = {
   USDT: "token token-jto",
 };
 
+// Real Coingecko-sourced logos sitting in /public/tokens. When a logo is
+// present we render it inside the `.token` avatar circle — gradient
+// background still shows as a fallback halo around png/jpg transparency.
+const TOKEN_LOGO_SRC: Record<string, string> = {
+  BONK: "/tokens/bonk.jpg",
+  SOL: "/tokens/sol.png",
+  JUP: "/tokens/jup.png",
+  WIF: "/tokens/wif.jpg",
+  PYTH: "/tokens/pyth.png",
+  JTO: "/tokens/jto.png",
+};
+
 function tokenAvClass(symbol: string): string {
   return TOKEN_AVATAR_CLASS[symbol] ?? "token token-sol";
 }
 function tokenInitials(symbol: string): string {
   return symbol.slice(0, 2);
+}
+function tokenLogoSrc(symbol: string): string | undefined {
+  return TOKEN_LOGO_SRC[symbol];
 }
 
 export function QueryComposer() {
@@ -37,8 +52,10 @@ export function QueryComposer() {
   const initialSymbol = searchParams.get("symbol")?.toUpperCase() ?? null;
   const { publicKey, connected } = useWallet();
   const { setVisible: setWalletModalVisible } = useWalletModal();
-  const [token, setToken] = useState<SupportedToken | null>(
-    () => (initialSymbol ? SUPPORTED_TOKENS.find((t) => t.symbol === initialSymbol) ?? null : null),
+  const [token, setToken] = useState<SupportedToken | null>(() =>
+    initialSymbol
+      ? (SUPPORTED_TOKENS.find((t) => t.symbol === initialSymbol) ?? null)
+      : null,
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,7 +221,22 @@ export function QueryComposer() {
                   }}
                 >
                   <div className={tokenAvClass(t.symbol)}>
-                    {tokenInitials(t.symbol)}
+                    {tokenLogoSrc(t.symbol) ? (
+                      <img
+                        src={tokenLogoSrc(t.symbol)}
+                        alt={`${t.symbol} logo`}
+                        width={28}
+                        height={28}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    ) : (
+                      tokenInitials(t.symbol)
+                    )}
                   </div>
                   <div style={{ flex: 1 }}>
                     <div
@@ -350,45 +382,88 @@ export function QueryComposer() {
             gap: 24,
           }}
         >
-          <div
-            className="card"
-            style={{ padding: 0, background: "var(--bg-2)" }}
-          >
-            <div className="card-head" style={{ margin: 0 }}>
-              <span>┌─ BALANCE</span>
-              <span
-                style={{ color: connected ? "var(--cyan)" : "var(--fg-faint)" }}
-              >
-                {connected ? "● CONNECTED" : "○ DISCONNECTED"}
-              </span>
-            </div>
-            <div style={{ padding: 20 }}>
-              <div
-                style={{
-                  fontFamily: "var(--font-pixel)",
-                  fontSize: 32,
-                  letterSpacing: "0.04em",
-                  color: "var(--fg)",
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 8,
-                }}
-              >
-                {formatSol(walletSol)}
+          {FREE_DEMO ? (
+            <div
+              className="card"
+              style={{ padding: 0, background: "var(--bg-2)" }}
+            >
+              <div className="card-head" style={{ margin: 0 }}>
+                <span style={{ color: "var(--mint)" }}>┌─ DEMO MODE</span>
                 <span
-                  style={{
-                    fontFamily: "var(--font-mono)",
-                    fontSize: 12,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "var(--fg-faint)",
-                    fontWeight: 400,
-                  }}
+                  className="chip chip-mint"
+                  style={{ fontSize: 9, padding: "2px 8px" }}
                 >
-                  SOL
+                  FREE
                 </span>
               </div>
-              {!FREE_DEMO && (
+              <div style={{ padding: 20 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-pixel)",
+                    fontSize: 22,
+                    letterSpacing: "0.04em",
+                    color: "var(--mint)",
+                    marginBottom: 12,
+                  }}
+                >
+                  No wallet required.
+                </div>
+                <div
+                  className="t-small"
+                  style={{
+                    color: "var(--fg-dim)",
+                    fontFamily: "var(--font-mono)",
+                    letterSpacing: "0.04em",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Pick a token, ask the swarm. Every round is free during the
+                  hackathon demo. In production, each question costs SOL
+                  credits.
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="card"
+              style={{ padding: 0, background: "var(--bg-2)" }}
+            >
+              <div className="card-head" style={{ margin: 0 }}>
+                <span>┌─ BALANCE</span>
+                <span
+                  style={{
+                    color: connected ? "var(--cyan)" : "var(--fg-faint)",
+                  }}
+                >
+                  {connected ? "● CONNECTED" : "○ DISCONNECTED"}
+                </span>
+              </div>
+              <div style={{ padding: 20 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-pixel)",
+                    fontSize: 32,
+                    letterSpacing: "0.04em",
+                    color: "var(--fg)",
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 8,
+                  }}
+                >
+                  {formatSol(walletSol)}
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 12,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                      color: "var(--fg-faint)",
+                      fontWeight: 400,
+                    }}
+                  >
+                    SOL
+                  </span>
+                </div>
                 <div
                   style={{
                     display: "flex",
@@ -411,9 +486,7 @@ export function QueryComposer() {
                     {balanceCredits}
                   </span>
                 </div>
-              )}
-              <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-                {!FREE_DEMO && (
+                <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
                   <button
                     type="button"
                     onClick={() => {
@@ -428,28 +501,28 @@ export function QueryComposer() {
                   >
                     TOP UP →
                   </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!connected) {
-                      setWalletModalVisible(true);
-                      return;
-                    }
-                  }}
-                  className="btn btn-sm btn-ghost"
-                  style={{
-                    flex: 1,
-                    justifyContent: "center",
-                    textTransform: "none",
-                    letterSpacing: 0,
-                  }}
-                >
-                  {connected ? "Wallet" : "Connect"}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!connected) {
+                        setWalletModalVisible(true);
+                        return;
+                      }
+                    }}
+                    className="btn btn-sm btn-ghost"
+                    style={{
+                      flex: 1,
+                      justifyContent: "center",
+                      textTransform: "none",
+                      letterSpacing: 0,
+                    }}
+                  >
+                    {connected ? "Wallet" : "Connect"}
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div>
             <div
