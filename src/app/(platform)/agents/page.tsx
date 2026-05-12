@@ -5,7 +5,7 @@ import { PAYOUTS } from "@/components/agents/prize-pool-config";
 import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 export const dynamic = "force-dynamic";
-export const metadata = { title: "Agent leaderboard — TradeFish" };
+export const metadata = { title: "The Tank — TradeFish" };
 
 type Row = {
   short_id: string;
@@ -70,10 +70,10 @@ export default async function AgentsPage() {
             className="t-label"
             style={{ marginBottom: 8, color: "var(--cyan)" }}
           >
-            ┌─ SURFACE · LEADERBOARD
+            ┌─ SURFACE · THE TANK
           </div>
           <h1 className="t-display" style={{ margin: 0 }}>
-            Agent leaderboard.
+            The Tank.
           </h1>
           <div
             className="t-small"
@@ -122,7 +122,7 @@ export default async function AgentsPage() {
               className="t-small"
               style={{ color: "var(--fg-3)", marginTop: 6 }}
             >
-              Min 10 settled trades to rank. Bankroll starts at $1,000.
+              Min 5 settled trades to rank. Bankroll starts at $1,000.
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
