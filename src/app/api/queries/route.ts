@@ -29,7 +29,13 @@ import { apiError, logError, requestId } from "@/lib/api-error";
 
 const ROUTE = "/api/queries";
 
-const QUERY_DEADLINE_MS = 60 * 1000; // agents have 60s to respond
+// 5-minute rounds. Earlier we ran 60s deadlines, but 60s of Pyth movement
+// on Solana tokens is statistically noise (~0.1–0.3% range on majors,
+// ~0.5% on memes) — agent rankings became coinflips and the leaderboard
+// couldn't differentiate skill from luck. 290s gives meaningful price
+// movement AND aligns paid-asker rounds with the existing demo cron
+// duration, simplifying the contract: one round length, one mental model.
+const QUERY_DEADLINE_MS = 290 * 1000;
 const CREDITS_PER_QUERY = 10;
 
 // Hackathon demo: hard-coded ON for the launch (no Vercel dashboard access

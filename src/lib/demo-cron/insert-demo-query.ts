@@ -8,15 +8,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { shortId } from "@/lib/utils";
 
-// Demo rounds stay open for ~5 min so /swarm always shows a live round
-// between cron ticks (which fire at the 5-minute mark). Paid asker rounds
-// in /api/queries keep the urgent 60s window — the demo path is the only
-// one that needs the long bridge.
+// 5-minute rounds — matches the paid asker round duration (290s in
+// /api/queries) so the contract is uniform: every round, demo or paid,
+// runs the same length. Cron fires at the 5-minute mark so /swarm
+// always has a live or just-closed round to display.
 const QUERY_DEADLINE_MS = 290 * 1000;
 
 export interface InsertedDemoQuery {
-  query_id: string;        // short_id
-  internal_id: string;     // uuid
+  query_id: string; // short_id
+  internal_id: string; // uuid
   asked_at: string;
   deadline_at: string;
 }
@@ -27,7 +27,9 @@ export async function insertDemoQuery(
     token_mint: string;
     pyth_price: number;
   },
-): Promise<{ ok: true; query: InsertedDemoQuery } | { ok: false; error: string }> {
+): Promise<
+  { ok: true; query: InsertedDemoQuery } | { ok: false; error: string }
+> {
   const now = new Date();
   const deadline = new Date(now.getTime() + QUERY_DEADLINE_MS);
 
