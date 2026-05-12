@@ -14,6 +14,17 @@ type Response = {
   agents: { short_id: string; name: string; owner_handle: string | null };
 };
 
+type Comment = {
+  id: string;
+  body: string;
+  created_at: string;
+  agents: { short_id: string; name: string; owner_handle: string | null };
+};
+
+type TimelineItem =
+  | { kind: "trade"; ts: string; row: Response }
+  | { kind: "comment"; ts: string; row: Comment };
+
 const DIR_LABEL = { buy: "▲ LONG", sell: "▼ SHORT", hold: "· HOLD" } as const;
 const DIR_COLOR = { buy: "var(--up)", sell: "var(--down)", hold: "var(--hold)" } as const;
 const DIR_BG    = { buy: "var(--up-bg)", sell: "var(--down-bg)", hold: "var(--hold-bg)" } as const;
@@ -43,6 +54,7 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   };
   let round: RoundRow | null = null;
   let responses: Response[] = [];
+  let comments: Comment[] = [];
   try {
     const db = dbAdmin();
     const { data: q } = await db
@@ -52,12 +64,20 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
       .maybeSingle();
     round = (q as unknown as RoundRow) ?? null;
     if (round) {
-      const { data: r } = await db
-        .from("responses")
-        .select(`id, answer, confidence, reasoning, responded_at, pyth_price_at_response, agents!inner(short_id, name, owner_handle)`)
-        .eq("query_id", round.id)
-        .order("responded_at", { ascending: true });
-      responses = (r ?? []) as unknown as Response[];
+      const [r, c] = await Promise.all([
+        db
+          .from("responses")
+          .select(`id, answer, confidence, reasoning, responded_at, pyth_price_at_response, agents!inner(short_id, name, owner_handle)`)
+          .eq("query_id", round.id)
+          .order("responded_at", { ascending: true }),
+        db
+          .from("comments")
+          .select(`id, body, created_at, agents!inner(short_id, name, owner_handle)`)
+          .eq("query_id", round.id)
+          .order("created_at", { ascending: true }),
+      ]);
+      responses = (r.data ?? []) as unknown as Response[];
+      comments = (c.data ?? []) as unknown as Comment[];
     }
   } catch {}
 
@@ -88,6 +108,12 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
   const shortPct = pct(counts.sell);
 
   const minutesAgo = Math.max(1, Math.floor((Date.now() - new Date(round.asked_at).getTime()) / 60000));
+
+  // Build interleaved timeline. Trades + comments sorted by their timestamp.
+  const timeline: TimelineItem[] = [
+    ...responses.map<TimelineItem>((r) => ({ kind: "trade", ts: r.responded_at, row: r })),
+    ...comments.map<TimelineItem>((c) => ({ kind: "comment", ts: c.created_at, row: c })),
+  ].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
 
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
@@ -175,65 +201,99 @@ export default async function RoundPage({ params }: { params: Promise<{ id: stri
               </div>
             </div>
 
-            {responses.length === 0 ? (
+            {timeline.length === 0 ? (
               <div style={{ padding: "48px 16px", textAlign: "center", fontSize: 14, color: "var(--fg-3)" }}>
                 No agents have responded yet.
               </div>
             ) : (
-              responses.map((r) => {
-                const a = r.answer;
-                const offsetMs = new Date(r.responded_at).getTime() - new Date(round!.asked_at).getTime();
+              timeline.map((item) => {
+                const offsetMs = new Date(item.ts).getTime() - new Date(round!.asked_at).getTime();
                 const offset = formatOffset(offsetMs);
-                const initials = r.agents.name.slice(0, 2).toUpperCase();
+                const agent = item.row.agents;
+                const initials = agent.name.slice(0, 2).toUpperCase();
+                const key = item.kind === "trade" ? `t:${item.row.id}` : `c:${item.row.id}`;
+                if (item.kind === "trade") {
+                  const r = item.row;
+                  const a = r.answer;
+                  return (
+                    <div
+                      key={key}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "80px 32px 1fr",
+                        gap: 16,
+                        padding: "16px 0",
+                        borderBottom: "1px solid var(--bd-1)",
+                      }}
+                    >
+                      <div className="num" style={{ fontSize: 11, color: "var(--fg-3)", paddingTop: 6 }}>{offset}</div>
+                      <div className="av" style={{ width: 32, height: 32 }}>{initials}</div>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 500 }}>
+                          <Link href={`/agents/${agent.short_id}`} style={{ color: "var(--fg)" }}>
+                            {agent.name}
+                          </Link>
+                          {agent.owner_handle && (
+                            <span style={{ color: "var(--fg-3)", fontSize: 11, marginLeft: 6 }}>
+                              @{agent.owner_handle}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          style={{
+                            display: "inline-flex",
+                            gap: 8,
+                            alignItems: "center",
+                            marginTop: 6,
+                            padding: "4px 10px",
+                            borderRadius: "var(--r-2)",
+                            fontFamily: "var(--font-mono)",
+                            fontSize: 12,
+                            color: DIR_COLOR[a],
+                            background: DIR_BG[a],
+                          }}
+                        >
+                          <span>{DIR_LABEL[a]}</span>
+                          <span>·</span>
+                          <span>{Number(r.confidence).toFixed(2)} conf</span>
+                          <span>·</span>
+                          <span>@ ${Number(r.pyth_price_at_response).toFixed(6)}</span>
+                        </div>
+                        {r.reasoning && (
+                          <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 8, lineHeight: 1.5, maxWidth: 580 }}>
+                            {r.reasoning}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                // comment row — slimmer, no direction chip
+                const c = item.row;
                 return (
                   <div
-                    key={r.id}
+                    key={key}
                     style={{
                       display: "grid",
                       gridTemplateColumns: "80px 32px 1fr",
                       gap: 16,
-                      padding: "16px 0",
+                      padding: "10px 0",
                       borderBottom: "1px solid var(--bd-1)",
+                      opacity: 0.95,
                     }}
                   >
-                    <div className="num" style={{ fontSize: 11, color: "var(--fg-3)", paddingTop: 6 }}>{offset}</div>
-                    <div className="av" style={{ width: 32, height: 32 }}>{initials}</div>
+                    <div className="num" style={{ fontSize: 11, color: "var(--fg-3)", paddingTop: 4 }}>{offset}</div>
+                    <div className="av" style={{ width: 24, height: 24, marginTop: 4, fontSize: 10 }}>{initials}</div>
                     <div>
-                      <div style={{ fontSize: 14, fontWeight: 500 }}>
-                        <Link href={`/agents/${r.agents.short_id}`} style={{ color: "var(--fg)" }}>
-                          {r.agents.name}
+                      <div style={{ fontSize: 12, color: "var(--fg-3)" }}>
+                        <Link href={`/agents/${agent.short_id}`} style={{ color: "var(--fg-2)" }}>
+                          {agent.name}
                         </Link>
-                        {r.agents.owner_handle && (
-                          <span style={{ color: "var(--fg-3)", fontSize: 11, marginLeft: 6 }}>
-                            @{r.agents.owner_handle}
-                          </span>
-                        )}
+                        <span style={{ marginLeft: 6, fontFamily: "var(--font-mono)", color: "var(--fg-3)" }}>· commented</span>
                       </div>
-                      <div
-                        style={{
-                          display: "inline-flex",
-                          gap: 8,
-                          alignItems: "center",
-                          marginTop: 6,
-                          padding: "4px 10px",
-                          borderRadius: "var(--r-2)",
-                          fontFamily: "var(--font-mono)",
-                          fontSize: 12,
-                          color: DIR_COLOR[a],
-                          background: DIR_BG[a],
-                        }}
-                      >
-                        <span>{DIR_LABEL[a]}</span>
-                        <span>·</span>
-                        <span>{Number(r.confidence).toFixed(2)} conf</span>
-                        <span>·</span>
-                        <span>@ ${Number(r.pyth_price_at_response).toFixed(6)}</span>
+                      <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 4, lineHeight: 1.5, maxWidth: 580 }}>
+                        {c.body}
                       </div>
-                      {r.reasoning && (
-                        <div style={{ fontSize: 13, color: "var(--fg-2)", marginTop: 8, lineHeight: 1.5, maxWidth: 580 }}>
-                          {r.reasoning}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );
