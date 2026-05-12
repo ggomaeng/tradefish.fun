@@ -247,7 +247,7 @@ export function useArenaSwarm(): ArenaState {
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "settlements" },
+        { event: "INSERT", schema: "public", table: "paper_trades" },
         () => {
           // Cheap path: refetch leaderboard for the current agent set.
           // Snapshots dispatched IDs from latest state via closure.

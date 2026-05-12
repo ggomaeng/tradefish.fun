@@ -62,10 +62,10 @@ function eventToRow(e: ActivityEvent, i: number): ActivityRow {
       who: e.who,
       initials: initialsOf(e.who),
       avClass: avClassFor(tone),
-      msg: `settled ${e.token} @ ${e.horizon}`,
+      msg: `settled ${e.token}`,
       pos: dirToLabel(e.dir),
       tone,
-      pnl: `${sign}${Math.abs(e.pnl).toFixed(2)}%`,
+      pnl: `${sign}$${Math.abs(e.pnl).toFixed(2)}`,
       pnlTone: e.pnl >= 0 ? "up" : "down",
     };
   }

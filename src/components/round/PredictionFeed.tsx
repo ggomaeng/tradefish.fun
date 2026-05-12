@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * PredictionFeed — animated card list of agent responses for a round.
+ * PredictionFeed — animated card list of agent responses (and comments-with-direction)
+ * for a round.
  *
- * Each card shows: agent name (linked), direction chip, confidence,
- * entry price, reasoning text, and settlement PnL badges for each
- * horizon (1h/4h/24h) when settled.
+ * Each card shows: agent name (linked), direction chip, confidence, position size,
+ * entry price, reasoning/thesis text, and a single pnl_usd badge when settled.
+ * The 1h/4h/24h triple is replaced by a single USD PnL badge.
  *
  * "Deliberating" pulse shown if round is open and 0 responses.
  */
@@ -13,7 +14,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import type { RoundResponse, RoundSettlement } from "@/lib/realtime/round";
+import type { RoundResponse, RoundPaperTrade, RoundComment } from "@/lib/realtime/round";
 
 const DIR_LABEL = { buy: "▲ LONG", sell: "▼ SHORT", hold: "· HOLD" } as const;
 const DIR_COLOR = { buy: "var(--up)", sell: "var(--down)", hold: "var(--hold)" } as const;
@@ -22,7 +23,8 @@ const DIR_BD = { buy: "var(--up-bd)", sell: "var(--down-bd)", hold: "var(--hold-
 
 interface Props {
   responses: RoundResponse[];
-  settlements: RoundSettlement[];
+  comments: RoundComment[];
+  paperTrades: RoundPaperTrade[];
   isOpen: boolean;
   askedAt: string;
 }
@@ -44,8 +46,14 @@ function fmtPrice(p: number): string {
   return `$${p.toFixed(6)}`;
 }
 
-function PnlBadge({ horizon, settlement }: { horizon: "1h" | "4h" | "24h"; settlement?: RoundSettlement }) {
-  if (!settlement) {
+function fmtUsd(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `$${abs.toFixed(2)}`;
+}
+
+function PnlBadge({ pnlUsd }: { pnlUsd: number | undefined }) {
+  if (pnlUsd === undefined) {
     return (
       <span
         style={{
@@ -58,14 +66,14 @@ function PnlBadge({ horizon, settlement }: { horizon: "1h" | "4h" | "24h"; settl
           border: "1px solid var(--bd-1)",
         }}
       >
-        {horizon} —
+        unsettled
       </span>
     );
   }
-  const sign = settlement.pnl_pct >= 0 ? "+" : "";
-  const color = settlement.pnl_pct >= 0 ? "var(--up)" : "var(--down)";
-  const bg = settlement.pnl_pct >= 0 ? "var(--up-bg)" : "var(--down-bg)";
-  const bd = settlement.pnl_pct >= 0 ? "var(--up-bd)" : "var(--down-bd)";
+  const sign = pnlUsd >= 0 ? "+" : "−";
+  const color = pnlUsd >= 0 ? "var(--up)" : "var(--down)";
+  const bg = pnlUsd >= 0 ? "var(--up-bg)" : "var(--down-bg)";
+  const bd = pnlUsd >= 0 ? "var(--up-bd)" : "var(--down-bd)";
   return (
     <span
       style={{
@@ -78,12 +86,26 @@ function PnlBadge({ horizon, settlement }: { horizon: "1h" | "4h" | "24h"; settl
         border: `1px solid ${bd}`,
       }}
     >
-      {horizon} {sign}{settlement.pnl_pct.toFixed(2)}%
+      {sign}{fmtUsd(pnlUsd)} PnL
     </span>
   );
 }
 
-export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Props) {
+// Unified entry: either a response or a comment-with-direction
+type EntryCard = {
+  id: string;
+  kind: "response" | "comment";
+  agentName: string;
+  agentShortId: string;
+  direction: "buy" | "sell" | "hold";
+  confidence: number;
+  positionSizeUsd: number;
+  entryPrice: number;
+  thesis: string | null;
+  enteredAt: string;
+};
+
+export function PredictionFeed({ responses, comments, paperTrades, isOpen, askedAt }: Props) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -91,18 +113,60 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
     return () => clearInterval(id);
   }, []);
 
-  const settleByResponseAndHorizon = new Map<string, RoundSettlement>();
-  for (const s of settlements) {
-    settleByResponseAndHorizon.set(`${s.response_id}:${s.horizon}`, s);
+  // Build pnl lookup: response_id → pnl_usd and comment_id → pnl_usd
+  const pnlByResponseId = new Map<string, number>();
+  const pnlByCommentId = new Map<string, number>();
+  for (const pt of paperTrades) {
+    if (pt.response_id) pnlByResponseId.set(pt.response_id, pt.pnl_usd);
+    if (pt.comment_id) pnlByCommentId.set(pt.comment_id, pt.pnl_usd);
   }
+
+  // Merge responses + comments-with-direction into unified entry list
+  const entries: EntryCard[] = [];
+
+  for (const r of responses) {
+    entries.push({
+      id: r.id,
+      kind: "response",
+      agentName: r.agent_name,
+      agentShortId: r.agent_short_id,
+      direction: r.answer,
+      confidence: r.confidence,
+      positionSizeUsd: r.position_size_usd,
+      entryPrice: r.pyth_price_at_response,
+      thesis: r.reasoning,
+      enteredAt: r.responded_at,
+    });
+  }
+
+  for (const c of comments) {
+    if (c.direction && c.position_size_usd !== null && c.entry_price !== null) {
+      entries.push({
+        id: c.id,
+        kind: "comment",
+        agentName: c.agent_name,
+        agentShortId: c.agent_short_id,
+        direction: c.direction,
+        confidence: c.confidence ?? 0,
+        positionSizeUsd: c.position_size_usd,
+        entryPrice: c.entry_price,
+        thesis: c.body,
+        enteredAt: c.created_at,
+      });
+    }
+  }
+
+  // Sort by entered time ascending
+  entries.sort((a, b) => new Date(a.enteredAt).getTime() - new Date(b.enteredAt).getTime());
 
   const [filter, setFilter] = useState<"all" | "buy" | "sell" | "hold">("all");
 
-  const visible = responses.filter((r) => filter === "all" || r.answer === filter);
+  const totalResponses = responses.length;
+  const visible = entries.filter((e) => filter === "all" || e.direction === filter);
   const counts = {
-    buy: responses.filter((r) => r.answer === "buy").length,
-    sell: responses.filter((r) => r.answer === "sell").length,
-    hold: responses.filter((r) => r.answer === "hold").length,
+    buy: entries.filter((e) => e.direction === "buy").length,
+    sell: entries.filter((e) => e.direction === "sell").length,
+    hold: entries.filter((e) => e.direction === "hold").length,
   };
 
   return (
@@ -116,10 +180,10 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
           padding: "20px 32px 16px",
         }}
       >
-        <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Agent responses</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Agent predictions</h3>
         <div style={{ display: "flex", gap: 6 }}>
           <FilterBtn active={filter === "all"} onClick={() => setFilter("all")}>
-            All <Count n={responses.length} />
+            All <Count n={entries.length} />
           </FilterBtn>
           <FilterBtn active={filter === "buy"} onClick={() => setFilter("buy")} color="var(--up)">
             ▲ <Count n={counts.buy} />
@@ -133,7 +197,7 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
         </div>
       </div>
 
-      {responses.length === 0 && isOpen ? (
+      {totalResponses === 0 && isOpen ? (
         <DeliberatingPulse />
       ) : visible.length === 0 ? (
         <div
@@ -144,23 +208,22 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
             color: "var(--fg-3)",
           }}
         >
-          No {filter !== "all" ? `${filter} ` : ""}responses yet.
+          No {filter !== "all" ? `${filter} ` : ""}predictions yet.
         </div>
       ) : (
         <AnimatePresence initial={false}>
-          {visible.map((r, i) => {
-            const a = r.answer;
+          {visible.map((entry, i) => {
+            const a = entry.direction;
             const offsetMs =
-              new Date(r.responded_at).getTime() - new Date(askedAt).getTime();
-            const s1h = settleByResponseAndHorizon.get(`${r.id}:1h`);
-            const s4h = settleByResponseAndHorizon.get(`${r.id}:4h`);
-            const s24h = settleByResponseAndHorizon.get(`${r.id}:24h`);
-            const hasAnySettlement = !!(s1h || s4h || s24h);
-            const initials = r.agent_name.slice(0, 2).toUpperCase();
+              new Date(entry.enteredAt).getTime() - new Date(askedAt).getTime();
+            const pnlUsd = entry.kind === "response"
+              ? pnlByResponseId.get(entry.id)
+              : pnlByCommentId.get(entry.id);
+            const initials = entry.agentName.slice(0, 2).toUpperCase();
 
             return (
               <motion.div
-                key={r.id}
+                key={entry.id}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i < 6 ? i * 0.04 : 0, duration: 0.25 }}
@@ -207,7 +270,7 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
                     }}
                   >
                     <Link
-                      href={`/agents/${r.agent_short_id}`}
+                      href={`/agents/${entry.agentShortId}`}
                       style={{
                         fontSize: 14,
                         fontWeight: 600,
@@ -215,8 +278,25 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
                         textDecoration: "none",
                       }}
                     >
-                      {r.agent_name}
+                      {entry.agentName}
                     </Link>
+                    {/* Comment badge */}
+                    {entry.kind === "comment" && (
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: 9,
+                          padding: "1px 5px",
+                          borderRadius: "var(--r-1)",
+                          background: "var(--bg-3)",
+                          color: "var(--fg-4)",
+                          border: "1px solid var(--bd-1)",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        RE-ENTRY
+                      </span>
+                    )}
                     <span
                       style={{
                         fontFamily: "var(--font-mono)",
@@ -234,35 +314,39 @@ export function PredictionFeed({ responses, settlements, isOpen, askedAt }: Prop
                       className="num"
                       style={{ fontSize: 11, color: "var(--fg-3)" }}
                     >
-                      {Number(r.confidence).toFixed(2)} conf
+                      {Number(entry.confidence).toFixed(2)} conf
                     </span>
                     <span
                       className="num"
                       style={{ fontSize: 11, color: "var(--fg-3)" }}
                     >
-                      @ {fmtPrice(r.pyth_price_at_response)}
+                      ${entry.positionSizeUsd.toFixed(0)} size
+                    </span>
+                    <span
+                      className="num"
+                      style={{ fontSize: 11, color: "var(--fg-3)" }}
+                    >
+                      @ {fmtPrice(entry.entryPrice)}
                     </span>
                   </div>
 
-                  {r.reasoning && (
+                  {entry.thesis && (
                     <div
                       style={{
                         fontSize: 13,
                         color: "var(--fg-2)",
                         lineHeight: 1.6,
                         maxWidth: 560,
-                        marginBottom: hasAnySettlement ? 10 : 0,
+                        marginBottom: 10,
                       }}
                     >
-                      {r.reasoning}
+                      {entry.thesis}
                     </div>
                   )}
 
-                  {/* Settlement PnL badges */}
-                  <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
-                    <PnlBadge horizon="1h" settlement={s1h} />
-                    <PnlBadge horizon="4h" settlement={s4h} />
-                    <PnlBadge horizon="24h" settlement={s24h} />
+                  {/* Settlement PnL badge — single, USD-denominated */}
+                  <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                    <PnlBadge pnlUsd={pnlUsd} />
                   </div>
                 </div>
               </motion.div>

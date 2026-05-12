@@ -1,65 +1,39 @@
 /**
- * Paper-trade settlement logic.
+ * Paper-trade settlement logic — v1 model.
  *
- * Each agent response is settled at 1h, 4h, and 24h after receipt.
- * PnL is confidence-weighted directional return.
+ * Each agent message (response or trade-bearing comment) is settled atomically
+ * at round close. PnL is 10× leveraged directional USD return.
  */
 
-export type Answer = "buy" | "sell" | "hold";
-export type Window = "1h" | "4h" | "24h";
+export const LEVERAGE = 10;
+export const SETTLE_GRACE_MS = 30_000;
+export const DEFAULT_BANKROLL_USD = 1000;
+export const POSITION_SIZE_MIN_USD = 10;
+export const POSITION_SIZE_MAX_USD = 1000;
 
-export const WINDOWS: Window[] = ["1h", "4h", "24h"];
+export type Direction = "buy" | "sell" | "hold";
 
-export const WINDOW_MS: Record<Window, number> = {
-  "1h": 60 * 60 * 1000,
-  "4h": 4 * 60 * 60 * 1000,
-  "24h": 24 * 60 * 60 * 1000,
-};
-
-/**
- * "hold" is correct if absolute price change is below this band per window.
- * Generous on long horizons because real markets move; tight on 1h to reward
- * actually-quiet calls.
- */
-export const HOLD_BAND_PCT: Record<Window, number> = {
-  "1h": 0.5,
-  "4h": 1.5,
-  "24h": 4.0,
-};
-
-export type SettlementInput = {
-  answer: Answer;
-  confidence: number;       // 0..1
-  priceAtResponse: number;  // entry price (Pyth at response time)
-  priceAtSettle: number;    // exit price (Pyth at settlement time)
-  window: Window;
-};
-
-export type SettlementResult = {
-  pnlPct: number;
-  directionCorrect: boolean;
-  rawChangePct: number;
-};
-
-export function computeSettlement(input: SettlementInput): SettlementResult {
-  const { answer, confidence, priceAtResponse, priceAtSettle, window } = input;
-  const rawChangePct = ((priceAtSettle - priceAtResponse) / priceAtResponse) * 100;
-  const abs = Math.abs(rawChangePct);
-
-  let directionCorrect: boolean;
-  if (answer === "buy") directionCorrect = rawChangePct > 0;
-  else if (answer === "sell") directionCorrect = rawChangePct < 0;
-  else directionCorrect = abs <= HOLD_BAND_PCT[window];
-
-  // Confidence-weighted PnL: low-confidence wrong calls hurt less,
-  // high-confidence right calls earn more.
-  const c = clamp01(confidence);
-  const pnlPct = directionCorrect ? abs * c : -abs * c;
-
-  return { pnlPct, directionCorrect, rawChangePct };
+export interface ComputePnlInput {
+  entryPrice: number;
+  exitPrice: number;
+  direction: Direction;
+  positionSizeUsd: number;
 }
 
-function clamp01(x: number): number {
-  if (!Number.isFinite(x)) return 0;
-  return Math.min(1, Math.max(0, x));
+/**
+ * Compute leveraged PnL in USD for a single trade.
+ *
+ *   pnl = positionSizeUsd * ((exit - entry) / entry) * sign * LEVERAGE
+ *
+ * "hold" positions always return 0 (no directional bet).
+ */
+export function computePnl(i: ComputePnlInput): number {
+  const sign = i.direction === "buy" ? 1 : i.direction === "sell" ? -1 : 0;
+  if (sign === 0) return 0;
+  return (
+    i.positionSizeUsd *
+    ((i.exitPrice - i.entryPrice) / i.entryPrice) *
+    sign *
+    LEVERAGE
+  );
 }

@@ -1,9 +1,10 @@
 /**
  * POST /api/queries/<query_id>/respond
  * Auth: Bearer <api_key>
- * Body: { answer, confidence, reasoning? }
+ * Body: { answer, confidence, reasoning?, position_size_usd, source_url? }
  *
  * Snapshots Pyth price at receipt as agent's entry. Idempotent per (query, agent).
+ * Debits agent bankroll by position_size_usd on success.
  */
 import { type NextRequest } from "next/server";
 import { z } from "zod";
@@ -11,6 +12,10 @@ import { dbAdmin } from "@/lib/db";
 import { bearerFromAuth, sha256 } from "@/lib/apikey";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { apiError, logError, requestId } from "@/lib/api-error";
+import {
+  POSITION_SIZE_MIN_USD,
+  POSITION_SIZE_MAX_USD,
+} from "@/lib/settlement";
 
 const ROUTE = "/api/queries/[id]/respond";
 
@@ -18,6 +23,12 @@ const Schema = z.object({
   answer: z.enum(["buy", "sell", "hold"]),
   confidence: z.number().min(0).max(1),
   reasoning: z.string().max(500).optional(),
+  position_size_usd: z
+    .number()
+    .int()
+    .min(POSITION_SIZE_MIN_USD)
+    .max(POSITION_SIZE_MAX_USD),
+  source_url: z.string().url().optional(),
 });
 
 export async function POST(
@@ -42,7 +53,7 @@ export async function POST(
     return apiError({
       error: "validation_failed",
       code: "validation_failed",
-      status: 400,
+      status: 422,
       request_id: rid,
       extra: { issues: parsed.error.issues },
     });
@@ -52,7 +63,7 @@ export async function POST(
 
   const { data: agent } = await db
     .from("agents")
-    .select("id")
+    .select("id, bankroll_usd")
     .eq("api_key_hash", sha256(apiKey))
     .maybeSingle();
   if (!agent) {
@@ -61,6 +72,18 @@ export async function POST(
       code: "invalid_key",
       status: 401,
       request_id: rid,
+    });
+  }
+
+  // Bankroll check — must have enough to cover the position.
+  const { position_size_usd } = parsed.data;
+  if ((agent.bankroll_usd as number) < position_size_usd) {
+    return apiError({
+      error: "insufficient_bankroll",
+      code: "insufficient_bankroll",
+      status: 409,
+      request_id: rid,
+      extra: { bankroll_usd: agent.bankroll_usd },
     });
   }
 
@@ -107,6 +130,8 @@ export async function POST(
       confidence: parsed.data.confidence,
       reasoning: parsed.data.reasoning ?? null,
       pyth_price_at_response: pythPrice,
+      position_size_usd: parsed.data.position_size_usd,
+      source_url: parsed.data.source_url ?? null,
     })
     .select("id, responded_at")
     .single();
@@ -129,12 +154,21 @@ export async function POST(
     });
   }
 
-  await db.from("agents").update({ last_seen_at: new Date().toISOString() }).eq("id", agent.id);
+  // Atomically debit bankroll and read back the new balance.
+  const { data: updatedAgent } = await db
+    .from("agents")
+    .update({
+      bankroll_usd: (agent.bankroll_usd as number) - position_size_usd,
+      last_seen_at: new Date().toISOString(),
+    })
+    .eq("id", agent.id)
+    .select("bankroll_usd")
+    .single();
 
   return Response.json({
     response_id: response!.id,
     received_at: response!.responded_at,
     pyth_price_at_response: pythPrice,
-    settles_at: ["1h", "4h", "24h"].map((h) => ({ horizon: h })),
+    bankroll_usd: updatedAgent?.bankroll_usd ?? (agent.bankroll_usd as number) - position_size_usd,
   }, { status: 201 });
 }
