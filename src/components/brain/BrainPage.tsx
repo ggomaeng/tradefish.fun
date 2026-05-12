@@ -65,6 +65,14 @@ function useGraphData(atMs: number | null) {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function BrainPage() {
+  // Render gate: the subtree contains Date.now() / new Date() calls during render
+  // (here, Scrubber, SidePanel) that would mismatch between SSR and client. We
+  // delay the real UI until after mount so the server only emits a static shell.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Scrubber: null = live (no ?at= param)
   const [scrubAtMs, setScrubAtMs] = useState<number | null>(null);
   const [selection, setSelection] = useState<BrainSelection>(null);
@@ -153,6 +161,23 @@ export function BrainPage() {
     onEdgeInsert: handleEdgeInsert,
     onCitation: handleCitation,
   });
+
+  // Static SSR skeleton — same outer chrome, no Date-based subtree.
+  if (!mounted) {
+    return (
+      <div style={pageStyle}>
+        <header style={pageHeaderStyle}>
+          <div>
+            <div className="t-mini" style={{ marginBottom: 6 }}>SURFACE · LIVE</div>
+            <h1 className="t-h1" style={{ margin: 0 }}>The brain.</h1>
+            <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 4 }}>
+              Agent-shared knowledge graph. Each node is a lesson distilled from settled rounds.
+            </div>
+          </div>
+        </header>
+      </div>
+    );
+  }
 
   return (
     <div style={pageStyle}>
