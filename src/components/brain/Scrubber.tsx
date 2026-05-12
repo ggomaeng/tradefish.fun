@@ -17,6 +17,12 @@ interface ScrubberProps {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+// Total wall-clock duration of one full timeline playback (regardless of how
+// much time the underlying data spans). 30s feels demoable — long enough to
+// see clusters form, short enough not to bore.
+const PLAYBACK_DURATION_MS = 30_000;
+// How often the scrubber advances during playback (ms between visual updates).
+const PLAY_TICK_MS = 250;
 
 export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
   const [playing, setPlaying] = useState(false);
@@ -55,15 +61,18 @@ export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
 
   const startPlay = useCallback(() => {
     setPlaying(true);
+    // Range-relative step: ALWAYS play the full timeline in ~PLAYBACK_DURATION_MS.
+    // Without this, a fixed-DAY step jumps past short corpora in one tick.
+    const ticksTotal = Math.max(2, Math.round(PLAYBACK_DURATION_MS / PLAY_TICK_MS));
+    const stepMs = Math.max(1, Math.floor(rangeMs / ticksTotal));
     playRef.current = setInterval(() => {
-      // Read latest position via ref — avoids stale closure
-      const nextMs = Math.min(nowMs, atMsRef.current + DAY_MS);
+      const nextMs = Math.min(nowMs, atMsRef.current + stepMs);
       onAtChange(nextMs);
       if (nextMs >= nowMs) {
         stopPlay();
       }
-    }, 1000);
-  }, [nowMs, onAtChange, stopPlay]);
+    }, PLAY_TICK_MS);
+  }, [nowMs, rangeMs, onAtChange, stopPlay]);
 
   // Auto-stop when playback reaches live — handled inside the interval callback.
   // Cleanup on unmount
