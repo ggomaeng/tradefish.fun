@@ -260,25 +260,11 @@ export async function PastRounds() {
                 }}
                 className="past-round-row"
               >
-                {/* Token chip */}
+                {/* Token chip — demo and paid rounds render identically */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span className="chip" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
                     {round.supported_tokens.symbol}
                   </span>
-                  {round.is_demo && (
-                    <span
-                      className="chip"
-                      style={{
-                        fontSize: 9,
-                        padding: "2px 5px",
-                        color: "var(--hold)",
-                        background: "var(--hold-bg)",
-                        borderColor: "var(--hold-bd)",
-                      }}
-                    >
-                      DEMO
-                    </span>
-                  )}
                 </div>
 
                 {/* Question text */}
