@@ -63,17 +63,32 @@ function toPointRecords(nodes: BrainNode[], maxPnl: number): Record<string, unkn
   }));
 }
 
-function toLinkRecords(edges: BrainEdge[], maxFlow: number): Record<string, unknown>[] {
-  return edges.map((e) => ({
-    source: e.source,
-    target: e.target,
-    similarity: e.similarity,
-    co_cite_count: e.co_cite_count,
-    pnl_flow_usd: e.pnl_flow_usd,
-    _width: 1 + Math.log(e.co_cite_count + 1),
-    // Gold base color, alpha encoded via RGBA array [r, g, b, a] in 0-1 range
-    _alpha: maxFlow > 0 ? Math.min(1, e.pnl_flow_usd / maxFlow) : 0.15,
-  }));
+function toLinkRecords(
+  edges: BrainEdge[],
+  maxFlow: number,
+  slugIndex: Map<string, number>,
+): Record<string, unknown>[] {
+  // Cosmograph requires integer index columns (linkSourceIndexBy /
+  // linkTargetIndexBy) pointing at the row index of each endpoint in the
+  // points array. We carry the slug strings too for click-through lookups.
+  const out: Record<string, unknown>[] = [];
+  for (const e of edges) {
+    const si = slugIndex.get(e.source);
+    const ti = slugIndex.get(e.target);
+    if (si === undefined || ti === undefined) continue; // orphan edge — drop
+    out.push({
+      source: e.source,
+      target: e.target,
+      _source_index: si,
+      _target_index: ti,
+      similarity: e.similarity,
+      co_cite_count: e.co_cite_count,
+      pnl_flow_usd: e.pnl_flow_usd,
+      _width: 1 + Math.log(e.co_cite_count + 1),
+      _alpha: maxFlow > 0 ? Math.min(1, e.pnl_flow_usd / maxFlow) : 0.15,
+    });
+  }
+  return out;
 }
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -153,7 +168,9 @@ export function BrainGraph({ data, selection, onSelect, pulsingNodeIds }: BrainG
   const maxFlow = Math.max(1, ...data.edges.map((e) => e.pnl_flow_usd));
 
   const points = toPointRecords(data.nodes, maxPnl);
-  const links = toLinkRecords(data.edges, maxFlow);
+  // Build slug→index map for the link records' integer-index columns.
+  const slugIndex = new Map<string, number>(data.nodes.map((n, i) => [n.id, i]));
+  const links = toLinkRecords(data.edges, maxFlow, slugIndex);
 
   const handlePointClick = useCallback(
     (index: number) => {
@@ -220,6 +237,8 @@ export function BrainGraph({ data, selection, onSelect, pulsingNodeIds }: BrainG
         pointSizeBy="_size"
         linkSourceBy="source"
         linkTargetBy="target"
+        linkSourceIndexBy="_source_index"
+        linkTargetIndexBy="_target_index"
         linkWidthBy="_width"
         linkColorBy="_color"
         enableSimulation
