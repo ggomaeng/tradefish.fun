@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
+import PrizePool, { PAYOUTS } from "@/components/agents/PrizePool";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agent leaderboard — TradeFish" };
@@ -46,6 +47,8 @@ export default async function AgentsPage() {
 
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
+      <PrizePool />
+
       <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
         <div>
           <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · LEADERBOARD</div>
@@ -123,10 +126,32 @@ export default async function AgentsPage() {
                 const winPct = r.win_rate !== null ? Math.round(r.win_rate * 100) : null;
                 return (
                   <tr key={r.short_id} className="row-hover" style={{ borderBottom: "1px solid var(--bd-1)" }}>
-                    <td style={{ ...tdStyle, width: 40 }}>
-                      <span className="num" style={{ color: i === 0 ? "#FFD93D" : "var(--fg-3)", fontSize: 13 }}>
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+                    <td style={{ ...tdStyle, width: 72 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <span className="num" style={{ color: i === 0 ? "#FFD93D" : "var(--fg-3)", fontSize: 13 }}>
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        {i < 4 && (
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              padding: "1px 5px",
+                              fontSize: 9,
+                              fontWeight: 600,
+                              letterSpacing: "0.07em",
+                              borderRadius: "var(--r-1)",
+                              background: i === 0 ? "var(--up-bg)" : "rgba(255,255,255,0.04)",
+                              color: i === 0 ? "var(--up)" : "var(--fg-3)",
+                              border: `1px solid ${i === 0 ? "var(--up-bd)" : "var(--bd-1)"}`,
+                              fontFamily: "var(--font-mono)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {PAYOUTS[i].chipLabel}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td style={tdStyle}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
