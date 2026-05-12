@@ -8,7 +8,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { shortId } from "@/lib/utils";
 
-const QUERY_DEADLINE_MS = 60 * 1000;
+// Demo rounds stay open for ~5 min so /arena always shows a live round
+// between cron ticks (which fire at the 5-minute mark). Paid asker rounds
+// in /api/queries keep the urgent 60s window — the demo path is the only
+// one that needs the long bridge.
+const QUERY_DEADLINE_MS = 290 * 1000;
 
 export interface InsertedDemoQuery {
   query_id: string;        // short_id
