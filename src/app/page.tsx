@@ -70,83 +70,89 @@ export default function HomePage() {
           }}
         />
 
-        {/* ── Top nav (minimal) ─────────────────────────────────── */}
+        {/* ── Top nav — links cluster on the left next to the wordmark,
+            mirroring (platform)/layout.tsx so the header structure is shared
+            across landing and platform. ──────────────────────────── */}
         <nav
-          className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 sm:px-10 py-5"
+          className="absolute top-0 left-0 right-0 flex items-center px-6 sm:px-10 py-5"
           style={{ zIndex: 30 }}
         >
-          <Link href="/" className="flex items-center gap-3 group">
-            <Image
-              src="/logo-mark.png"
-              alt="TradeFish"
-              width={36}
-              height={36}
-              priority
-              style={{ filter: "drop-shadow(0 0 12px rgba(168,216,232,0.35))" }}
-            />
-            <span
-              className="text-[14px] tracking-[0.22em] text-[var(--cream)]"
-              style={{ fontFamily: "var(--font-pixel)" }}
-            >
-              TRADEFISH
-            </span>
-          </Link>
-          <div
-            className="flex items-center gap-5 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            <Link
-              href="/swarm"
-              className="hover:text-[var(--cream)] transition-colors"
-            >
-              SWARM
+          <div className="flex items-center gap-6 sm:gap-8">
+            <Link href="/" className="flex items-center gap-3 group">
+              <Image
+                src="/logo-mark.png"
+                alt="TradeFish"
+                width={36}
+                height={36}
+                priority
+                style={{
+                  filter: "drop-shadow(0 0 12px rgba(168,216,232,0.35))",
+                }}
+              />
+              <span
+                className="text-[14px] tracking-[0.22em] text-[var(--cream)]"
+                style={{ fontFamily: "var(--font-pixel)" }}
+              >
+                TRADEFISH
+              </span>
             </Link>
-            <Link
-              href="/ask"
-              className="hover:text-[var(--cream)] transition-colors"
+            <div
+              className="flex items-center gap-4 sm:gap-5 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)]"
+              style={{ fontFamily: "var(--font-mono)" }}
             >
-              ASK
-            </Link>
-            <Link
-              href="/agents"
-              className="hover:text-[var(--cream)] transition-colors"
-            >
-              AGENTS
-            </Link>
-            <Link
-              href="/brain"
-              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
-            >
-              BRAIN
-            </Link>
-            <Link
-              href="/docs"
-              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
-            >
-              DOCS
-            </Link>
-            <span
-              aria-hidden
-              className="hidden sm:inline text-[var(--fg-faintest)]"
-            >
-              ·
-            </span>
-            <a
-              href="https://x.com/tradefish_fun"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[var(--cream)] transition-colors"
-            >
-              X / TWITTER
-            </a>
-            <a
-              href="https://github.com/tradefish-fun/tradefish.fun"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
-            >
-              GITHUB
-            </a>
+              <Link
+                href="/swarm"
+                className="hover:text-[var(--cream)] transition-colors"
+              >
+                SWARM
+              </Link>
+              <Link
+                href="/ask"
+                className="hover:text-[var(--cream)] transition-colors"
+              >
+                ASK
+              </Link>
+              <Link
+                href="/agents"
+                className="hover:text-[var(--cream)] transition-colors"
+              >
+                AGENTS
+              </Link>
+              <Link
+                href="/brain"
+                className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+              >
+                BRAIN
+              </Link>
+              <Link
+                href="/docs"
+                className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+              >
+                DOCS
+              </Link>
+              <span
+                aria-hidden
+                className="hidden sm:inline text-[var(--fg-faintest)]"
+              >
+                ·
+              </span>
+              <a
+                href="https://x.com/tradefish_fun"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-[var(--cream)] transition-colors hidden sm:inline"
+              >
+                X / TWITTER
+              </a>
+              <a
+                href="https://github.com/tradefish-fun/tradefish.fun"
+                target="_blank"
+                rel="noreferrer"
+                className="hidden md:inline hover:text-[var(--cream)] transition-colors"
+              >
+                GITHUB
+              </a>
+            </div>
           </div>
         </nav>
 
@@ -432,9 +438,9 @@ export default function HomePage() {
       >
         <span>
           TradeFish ·{" "}
-          <a href="/" style={{ color: "var(--cyan)" }}>
+          <Link href="/" style={{ color: "var(--cyan)" }}>
             tradefish.fun
-          </a>
+          </Link>
         </span>
         <span>
           Solana mainnet · Pyth settlement · Paper trading — not investment

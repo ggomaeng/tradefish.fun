@@ -1,28 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const jbMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-jbmono",
-  display: "swap",
-});
 
 // Design v3 typography stack — three-tier ladder:
 //   PIXEL    Departure Mono (self-hosted) — hero numerics, "logo voice"
 //   MONO     Geist Mono — chrome (headings, labels, buttons, code)
 //   SANS     Geist — body prose
-// Inter + JetBrains Mono remain loaded as fallbacks during the design v3
-// migration window. Remove once all platform pages are restyled.
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
@@ -122,7 +106,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jbMono.variable} ${geist.variable} ${geistMono.variable} ${departureMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} ${departureMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

@@ -369,10 +369,17 @@ export function HeroSwarm() {
     const brightnesses = new Float32Array(count);
     const headings = new Float32Array(count);
     const swimPhases = new Float32Array(count);
+    // Per-fish focus-stagger phase ∈ [0, 1]. The shader treats this as
+    // each fish's "activation threshold" along the global uFocusDrive
+    // ramp — fish with low phase light up to Solana neon first when the
+    // input focuses, high-phase fish trail behind. Deterministic from
+    // particle index so the cascade pattern is stable across reloads.
+    const focusPhases = new Float32Array(count);
     buildPaletteIndices(paletteIndices, count);
     // Per-fish swim wiggle phase desync — some bend left, some right.
     for (let i = 0; i < count; i++) {
       swimPhases[i] = hash01(i * 39769 + 7) * TAU;
+      focusPhases[i] = hash01(i * 24917 + 41);
     }
     sizes.fill(1.0); // Main school: uniform baseline size; pulse via aIntensity.
 
@@ -443,6 +450,10 @@ export function HeroSwarm() {
       "aSwimPhase",
       new THREE.BufferAttribute(swimPhases, 1),
     );
+    geometry.setAttribute(
+      "aFocusPhase",
+      new THREE.BufferAttribute(focusPhases, 1),
+    );
 
     // Custom shader for the pixel-CRT retrofit: each particle is a hard-edged
     // pixel rectangle drawn in one of 5 phosphor colors selected from a
@@ -469,6 +480,15 @@ export function HeroSwarm() {
     // so a fish keeps its "species" (its aPaletteIdx) across the mix.
     const paletteAltUniform = { value: buildPaletteUniform(SOLANA_HEX) };
     const paletteMixUniform = { value: 0 };
+    // Focus-stagger uniforms. `uFocusDrive` is the global ramp value
+    // (0 → 0.65 over the focus lerp window). Each fish lights up when
+    // the drive crosses its `aFocusPhase * 0.5` threshold — low-phase
+    // fish first, high-phase fish last → random-scatter cascade.
+    // `uFocusIntensity` caps the per-fish mix amount (0.6 default,
+    // pulses ±0.15 sinusoidally while focus is held). Submit-burst
+    // still drives `uPaletteMix` directly and the shader takes max().
+    const focusDriveUniform = { value: 0 };
+    const focusIntensityUniform = { value: 0.6 };
     // Global brightness multiplier. Pumped during the submit burst so the
     // entire school visibly flares as the page hands off to /round/[id].
     const burstBrightUniform = { value: 1.0 };
@@ -662,8 +682,10 @@ export function HeroSwarm() {
     const ambientBrightnesses = new Float32Array(ambientCount);
     const ambientHeadings = new Float32Array(ambientCount); // all zeros — ambient = squares, rotation no-op
     const ambientSwimPhases = new Float32Array(ambientCount);
+    const ambientFocusPhases = new Float32Array(ambientCount);
     for (let i = 0; i < ambientCount; i++) {
       ambientSwimPhases[i] = hash01(i * 39769 + 113) * TAU;
+      ambientFocusPhases[i] = hash01(i * 24917 + 211);
     }
     const ambientVelocities = new Float32Array(ambientCount * 3);
 
@@ -695,6 +717,10 @@ export function HeroSwarm() {
     ambientGeometry.setAttribute(
       "aSwimPhase",
       new THREE.BufferAttribute(ambientSwimPhases, 1),
+    );
+    ambientGeometry.setAttribute(
+      "aFocusPhase",
+      new THREE.BufferAttribute(ambientFocusPhases, 1),
     );
 
     const ambientSizeUniform = {
