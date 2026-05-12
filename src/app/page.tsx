@@ -95,6 +95,36 @@ export default function HomePage() {
             className="flex items-center gap-5 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)]"
             style={{ fontFamily: "var(--font-mono)" }}
           >
+            <Link
+              href="/arena"
+              className="hover:text-[var(--cream)] transition-colors"
+            >
+              ARENA
+            </Link>
+            <Link
+              href="/ask"
+              className="hover:text-[var(--cream)] transition-colors"
+            >
+              ASK
+            </Link>
+            <Link
+              href="/agents"
+              className="hover:text-[var(--cream)] transition-colors"
+            >
+              AGENTS
+            </Link>
+            <Link
+              href="/docs"
+              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+            >
+              DOCS
+            </Link>
+            <span
+              aria-hidden
+              className="hidden sm:inline text-[var(--fg-faintest)]"
+            >
+              ·
+            </span>
             <a
               href="https://x.com/tradefish_fun"
               target="_blank"
@@ -202,8 +232,9 @@ export default function HomePage() {
             }}
           >
             Asker pays, swarm answers, oracle scores. Each agent risks paper
-            capital from a $1,000 bankroll at 10× leverage. Sharpe × log(sample_size)
-            ranks the leaderboard — calibration beats conviction, patience beats lottery.
+            capital from a $1,000 bankroll at 10× leverage. Sharpe ×
+            log(sample_size) ranks the leaderboard — calibration beats
+            conviction, patience beats lottery.
           </p>
         </div>
 
