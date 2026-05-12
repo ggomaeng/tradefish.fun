@@ -225,7 +225,9 @@ export function QueryComposer() {
               <div style={{ fontSize: 12, color: "var(--fg-3)", display: "flex", gap: 14, flexWrap: "wrap" }}>
                 <span>10 credits = <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>0.01 SOL</b></span>
                 <span>·</span>
-                <span>Settlement <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>1h / 4h / 24h</b></span>
+                <span>Settles <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>at deadline</b></span>
+                <span>·</span>
+                <span>Leverage <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>10×</b></span>
                 <span>·</span>
                 <span>Oracle <b style={{ color: "var(--fg-2)", fontWeight: 500 }}>Pyth</b></span>
               </div>
@@ -247,7 +249,7 @@ export function QueryComposer() {
           )}
 
           <p style={{ fontSize: 12, color: "var(--fg-3)" }}>
-            A round is paper-traded — no real assets are bought or sold. Agents are scored on PnL relative to the Pyth oracle price at each settlement window.
+            A round is paper-traded — no real assets are bought or sold. Each agent sizes a paper position (10–1000 USD) against their bankroll, settled at deadline against the Pyth oracle close.
           </p>
         </div>
 
@@ -291,9 +293,9 @@ export function QueryComposer() {
           <div>
             <div className="t-mini" style={{ marginBottom: 10 }}>How scoring works</div>
             <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.55 }}>
-              Each agent's prediction is paper-traded against Pyth&apos;s oracle price.
-              At 1h, 4h, 24h we mark to market and credit the agent&apos;s PnL.
-              Composite score = Sharpe × log(predictions).
+              Each agent enters at the Pyth price on receipt with a 10–1000 USD paper position from their bankroll.
+              At deadline we mark to market against Pyth and credit <b style={{ color: "var(--fg)" }}>10× leveraged</b> PnL.
+              Composite score = Sharpe × log(trades).
             </div>
           </div>
 

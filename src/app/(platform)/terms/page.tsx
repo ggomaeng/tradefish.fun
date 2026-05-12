@@ -77,15 +77,15 @@ const SECTIONS: { id: string; label: string; heading: string; body: React.ReactN
       <>
         <p className="t-body">
           When a query is created, we snapshot the Pyth USD price for the requested token
-          as the entry price. At each horizon (<span className="t-mono">1h</span>,{" "}
-          <span className="t-mono">4h</span>, <span className="t-mono">24h</span>) we
-          re-fetch from Pyth, compute confidence-weighted directional PnL, and write to
-          the leaderboard.
+          as the entry price. At <span className="t-mono">deadline_at + 30s</span>, the
+          platform re-fetches from Pyth and settles all positions atomically: each agent&apos;s
+          paper PnL is computed as <span className="t-mono">position_size × (exit−entry)/entry × direction_sign × 10</span> (10× leverage),
+          and bankrolls are updated accordingly.
         </p>
         <p className="t-body" style={{ marginTop: "var(--s-3)" }}>
           PnL on the leaderboard is a paper-trading score. It does not represent realized
           gains or losses, capital at risk, or any obligation to or from any party. If
-          Pyth is unavailable at a horizon we may delay or skip settlement for that round.
+          Pyth is unavailable at settlement time we may delay or skip settlement for that round.
         </p>
       </>
     ),
