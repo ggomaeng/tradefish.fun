@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState } from "react";
-import type { BrainNoteDetail } from "@/lib/brain/types";
+import type { BrainNoteDetail, BrainRecentAnswer } from "@/lib/brain/types";
 import Link from "next/link";
 
 interface NoteDetailProps {
@@ -138,15 +138,7 @@ export function NoteDetail({ slug, onClose, onFocusSlug }: NoteDetailProps) {
             <div>
               <div style={subHeadStyle}>CITED IN</div>
               {data.recent_answers.slice(0, 5).map((a) => (
-                <div
-                  key={a.answer_id}
-                  style={{ padding: "8px 16px", borderBottom: "1px solid var(--bd-1)", fontSize: 12, color: "var(--fg-3)" }}
-                >
-                  <span className="chip" style={{ fontSize: 10, marginRight: 6 }}>
-                    {a.source === "explicit" ? "cited" : "retrieved"}
-                  </span>
-                  {a.answer_id.slice(0, 8)}…
-                </div>
+                <AnswerRow key={a.answer_id} answer={a} />
               ))}
             </div>
           )}
@@ -155,6 +147,103 @@ export function NoteDetail({ slug, onClose, onFocusSlug }: NoteDetailProps) {
     </aside>
   );
 }
+
+// ─── AnswerRow sub-component ─────────────────────────────────────────────────
+
+function AnswerRow({ answer }: { answer: BrainRecentAnswer }) {
+  const { answer_id, source, response, trade } = answer;
+
+  const agentLabel = response?.agent_id
+    ? response.agent_id.slice(0, 8) + "…"
+    : answer_id.slice(0, 8) + "…";
+
+  const queryShortId = response?.queries?.short_id;
+  const roundId = response?.queries?.id;
+
+  return (
+    <div style={answerRowStyle}>
+      {/* Top row: source chip + agent id + PnL chip */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+        <span className="chip" style={{ fontSize: 10 }}>
+          {source === "explicit" ? "cited" : "retrieved"}
+        </span>
+        <span style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--fg-3)" }}>
+          {agentLabel}
+        </span>
+        {queryShortId && roundId && (
+          <Link
+            href={`/round/${roundId}`}
+            style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--cyan)", marginLeft: "auto" }}
+          >
+            {queryShortId} →
+          </Link>
+        )}
+        {/* PnL chip — settled trade */}
+        {trade && trade.exit_price !== null && (
+          <span style={pnlChipStyle(trade.pnl_usd)}>
+            {trade.pnl_usd >= 0 ? "+" : "−"}${Math.abs(trade.pnl_usd).toFixed(2)}
+          </span>
+        )}
+        {/* Open / settling pill — trade row exists but not yet closed */}
+        {trade && trade.exit_price === null && (
+          <span style={openPillStyle}>settling</span>
+        )}
+        {/* No trade row yet */}
+        {!trade && (
+          <span style={openPillStyle}>open</span>
+        )}
+      </div>
+
+      {/* Second row: position sizing */}
+      {trade && (
+        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--fg-3)", marginTop: 4, paddingLeft: 2 }}>
+          ${trade.position_size_usd.toFixed(0)} @ 10×{" "}
+          <span style={{ color: trade.direction === "long" ? "var(--up)" : "var(--down)" }}>
+            {trade.direction}
+          </span>
+        </div>
+      )}
+
+      {/* Answer preview */}
+      {response?.answer && (
+        <div style={{ fontSize: 11, color: "var(--fg-4)", marginTop: 4, lineHeight: 1.4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const }}>
+          {response.answer}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function pnlChipStyle(pnl: number): React.CSSProperties {
+  const positive = pnl >= 0;
+  return {
+    fontFamily: "var(--font-mono)",
+    fontSize: 11,
+    fontWeight: 600,
+    color: positive ? "var(--up)" : "var(--down)",
+    background: positive ? "var(--up-bg)" : "var(--down-bg)",
+    border: `1px solid ${positive ? "var(--up-bd)" : "var(--down-bd)"}`,
+    borderRadius: 4,
+    padding: "1px 6px",
+    marginLeft: "auto",
+  };
+}
+
+const openPillStyle: React.CSSProperties = {
+  fontFamily: "var(--font-mono)",
+  fontSize: 10,
+  color: "var(--cyan)",
+  background: "var(--cyan-bg)",
+  border: "1px solid var(--cyan-bd)",
+  borderRadius: 4,
+  padding: "1px 5px",
+  marginLeft: "auto",
+};
+
+const answerRowStyle: React.CSSProperties = {
+  padding: "10px 16px",
+  borderBottom: "1px solid var(--bd-1)",
+};
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

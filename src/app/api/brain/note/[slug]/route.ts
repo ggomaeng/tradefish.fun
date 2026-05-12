@@ -89,18 +89,66 @@ export async function GET(
       .order("answer_id", { ascending: false })
       .limit(10);
 
-    const recentAnswers = (citations ?? []).map((c) => {
-      const row = c as {
-        answer_id: string;
-        source: string;
-        weight: number;
-        responses?: unknown;
-      };
+    type CitationResponse = {
+      id: string;
+      answer: string;
+      confidence: number;
+      reasoning: string | null;
+      responded_at: string;
+      agent_id: string | null;
+      queries: { id: string; short_id: string; token_mint: string; asked_at: string } | null;
+    };
+
+    const citationRows = (citations ?? []) as unknown as Array<{
+      answer_id: string;
+      source: string;
+      weight: number;
+      responses?: CitationResponse | CitationResponse[] | null;
+    }>;
+
+    // Helper: Supabase returns FK-joined rows as array or single depending on relation type;
+    // answer_citations.answer_id → responses is a many-to-one so it may arrive as an array.
+    function normalizeResponse(r: CitationResponse | CitationResponse[] | null | undefined): CitationResponse | null {
+      if (!r) return null;
+      if (Array.isArray(r)) return r[0] ?? null;
+      return r;
+    }
+
+    // 4. Fetch paper_trades for each response_id in one query
+    const responseIds = citationRows
+      .map((c) => normalizeResponse(c.responses)?.id)
+      .filter((id): id is string => !!id);
+
+    type TradeRow = {
+      response_id: string;
+      pnl_usd: number;
+      position_size_usd: number;
+      direction: "long" | "short";
+      entry_price: number;
+      exit_price: number | null;
+    };
+
+    let tradesByResponseId: Map<string, TradeRow> = new Map();
+    if (responseIds.length > 0) {
+      const { data: trades } = await db
+        .from("paper_trades")
+        .select("response_id, pnl_usd, position_size_usd, direction, entry_price, exit_price")
+        .in("response_id", responseIds);
+
+      tradesByResponseId = new Map(
+        (trades ?? []).map((t) => [t.response_id as string, t as TradeRow]),
+      );
+    }
+
+    // 5. Merge
+    const recentAnswers = citationRows.map((c) => {
+      const resp = normalizeResponse(c.responses);
       return {
-        answer_id: row.answer_id,
-        source: row.source,
-        weight: row.weight,
-        response: row.responses ?? null,
+        answer_id: c.answer_id,
+        source: c.source,
+        weight: c.weight,
+        response: resp,
+        trade: resp?.id ? (tradesByResponseId.get(resp.id) ?? null) : null,
       };
     });
 

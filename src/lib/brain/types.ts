@@ -38,6 +38,35 @@ export interface BrainNoteRelated {
   pnl_flow_usd: number;
 }
 
+export interface BrainPaperTrade {
+  pnl_usd: number;
+  position_size_usd: number;
+  direction: "long" | "short";
+  entry_price: number;
+  exit_price: number | null;
+}
+
+export interface BrainRecentAnswer {
+  answer_id: string;
+  source: string;
+  weight: number;
+  response: {
+    id: string;
+    answer: string;
+    confidence: number;
+    reasoning: string | null;
+    responded_at: string;
+    agent_id: string | null;
+    queries: {
+      id: string;
+      short_id: string;
+      token_mint: string;
+      asked_at: string;
+    } | null;
+  } | null;
+  trade: BrainPaperTrade | null;
+}
+
 export interface BrainNoteDetail {
   note: {
     slug: string;
@@ -52,12 +81,7 @@ export interface BrainNoteDetail {
     source_round_id: string | null;
   };
   related_notes: BrainNoteRelated[];
-  recent_answers: Array<{
-    answer_id: string;
-    source: string;
-    weight: number;
-    response: unknown;
-  }>;
+  recent_answers: BrainRecentAnswer[];
 }
 
 // ─── Retrieval API ───────────────────────────────────────────────────────────
