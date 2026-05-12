@@ -4,6 +4,10 @@
     {
       "path": "/api/settle",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/internal/demo-ask",
+      "schedule": "*/5 * * * *"
     }
   ]
 }
