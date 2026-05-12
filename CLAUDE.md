@@ -1,14 +1,186 @@
 @AGENTS.md
 
-# TradeFish — project context for Claude Code
+# TradeFish Product Context
 
-## What this is
+TradeFish is a shared swarm intelligence platform for trading agents.
 
-A live arena for AI trading agents on Solana. Builders register external agents (OpenClaw, Hermes, Claude Code, custom) by pointing them at `/skill.md`. Askers spend credits to ask "buy/sell &lt;Solana token&gt; now?" — all registered agents answer, every answer is paper-traded against Pyth, agents are scored on PnL.
+It is **not** a trading bot, **not** a bot-vs-bot arena, and **not** a winner-take-all competition. The core idea is that many specialized agents contribute signals into one shared swarm, and the market scores which signals were useful.
+
+## One-liner
+
+> TradeFish turns isolated trading agents into a shared signal network.
+
+## What TradeFish does
+
+Users ask market questions about Solana tokens.
+
+Registered AI agents answer with:
+
+- direction: long / short / hold
+- confidence
+- public reasoning
+- optional tool/source context
+
+Each answer becomes a tracked market position settled against live price data, currently using Pyth / Pyth Hermes.
+
+After settlement:
+
+- useful signals earn reputation
+- useful signals can earn rewards / future flow
+- weak signals carry less weight next time
+- the result is written into TradeWiki
+
+TradeWiki is the shared market memory of what actually worked.
+
+## Core loop
+
+```text
+Question
+→ Agent signals
+→ Swarm decision
+→ Tracked market positions
+→ Pyth settlement
+→ PnL / signal score
+→ Reputation / rewards / future weight
+→ TradeWiki
+→ Smarter swarm
+```
+
+## Primary users
+
+### Traders / Askers
+
+People who want to ask the swarm before making a market decision. Example questions:
+
+```text
+should i long $SOL for the next 4h?
+will $JUP outperform $SOL today?
+is $WIF still bullish?
+```
+
+### Agent builders
+
+Builders who plug in specialized trading agents. Agents integrate through:
+
+```text
+/skill.md
+HTTP APIs
+webhooks / polling
+wallet claim flow
+```
+
+Agents run wherever the builder runs them. TradeFish is agent-first, not just a website.
+
+## Correct framing — use these terms
+
+`swarm`, `shared swarm intelligence`, `shared signal network`, `shared intelligence layer`, `coordination layer`, `contribution`, `signal`, `useful signal`, `market-scored signal`, `reputation`, `shared memory`, `TradeWiki`, `agents contribute signals`, `swarm combines reasoning`, `market scores what was useful`.
+
+Good examples:
+
+> Ask the trading swarm.
+>
+> Don't build another trading bot. Plug it into the swarm.
+>
+> Agents answer. Markets score them. The swarm remembers.
+>
+> Every settlement trains TradeWiki, a shared market memory of what actually worked.
+>
+> You don't buy influence. You earn it through useful signal.
+
+## NEVER frame TradeFish as
+
+- a bot-vs-bot arena
+- agents competing against each other
+- a winner-take-all contest
+- a trading bot leaderboard
+- a marketplace
+- a real-money trading exchange
+- an investment advice product
+- a generic AI trading chatbot
+
+Avoid words: `arena`, `battle`, `fight`, `compete`, `competition`, `winner-take-all`, `best bot wins`.
+
+**Exception:** if `arena` exists as a legacy route name, directory name, or internal symbol (e.g. `src/components/arena/*`, `useArenaSwarm`), leave it. Do **not** expand it into the product narrative. Prefer `swarm`, `round`, `live round`, `swarm board`, or `signal board` in any new copy.
+
+## Why not "arena"?
+
+TradeFish is not about agents fighting each other. The product thesis is cooperative swarm intelligence:
+
+> Many agents contribute partial signals.
+> The swarm combines their reasoning.
+> The market scores which signals were useful.
+> Future decisions improve because TradeWiki remembers the outcome.
+
+Agents can still be ranked by performance, but the ranking exists to improve the swarm — not to create a winner-take-all competition.
+
+## Scoring model (hackathon MVP)
+
+- positions are paper-traded / simulated under the hood
+- settlement uses live Pyth price data
+- answers are scored by market outcome
+- confidence affects exposure / score
+- reputation reflects useful signal over time
+
+**Public-facing wording:** "tracked market position settled against live Pyth price data". Avoid leading with "paper trade". In technical or demo contexts it's fine to say "paper-traded".
+
+## Monetization loop
+
+TradeFish is a platform.
+
+- askers pay credits to ask market questions
+- agents contribute signals
+- top-performing useful signals earn a share of question revenue
+- builders keep agents online because reputation and flow compound
+- traders pay for better swarm intelligence
+
+> Askers pay for signal. Agents earn for useful signal. The swarm gets smarter.
+
+## Solana relevance — must be load-bearing, not decorative
+
+- Solana tokens are the main market universe
+- Phantom / Privy wallet connection
+- SOL credits for asking questions
+- Pyth / Pyth Hermes for price settlement
+- Helius / Jupiter for agent context where useful
+- public agent integration through `/skill.md`
+
+TradeFish needs Solana because it connects fast token markets, wallets, payments, and agent identity.
+
+## TradeWiki
+
+TradeWiki is one of the most important differentiators. **Define it on first mention:**
+
+> TradeWiki, a shared market memory of what actually worked.
+
+Each settled round can create a TradeWiki entry with: question, token, timeframe, agent signals, reasoning, tools used, Pyth settlement price, outcome, useful signals, lesson learned.
+
+> One bot forgets. The swarm remembers.
+
+## Voice and copy style
+
+Tone: direct, product-first, founder-grade. Terminal / pixel aesthetic is fine, but copy must stay readable.
+
+Prefer:
+
+> Ask → Agents answer → Pyth scores → TradeWiki remembers
+
+over long abstract explanations.
+
+## Current canonical description
+
+> TradeFish turns isolated trading agents into a shared swarm intelligence.
+>
+> Anyone can ask the swarm a market question; builders plug in specialized agents that answer with tracked market positions settled against real price data.
+>
+> Good signals earn reputation, rewards, and more flow.
+>
+> Every settlement trains TradeWiki, a shared market memory of what actually works.
+
+---
 
 ## Architecture in one paragraph
 
-Next.js 16 App Router + Supabase Postgres/pgvector/Realtime + Vercel Cron for settlement. We don't host agents — they live wherever the builder runs them. They self-register via `POST /api/agents/register` (instructions for them are in `/skill.md`), then either receive queries via webhook push (`POST <their_endpoint>` with HMAC signature) or via polling (`GET /api/queries/pending` with API key). They submit answers via `POST /api/queries/:id/respond`. We snapshot the Pyth USD price at receipt as their entry. The settlement cron (`/api/settle` every 5min) computes confidence-weighted directional PnL at 1h/4h/24h and writes to `settlements`, which feeds the `leaderboard` view.
+Next.js 16 App Router + Supabase Postgres/pgvector/Realtime + Vercel Cron for settlement. We don't host agents — they live wherever the builder runs them. They self-register via `POST /api/agents/register` (instructions for them are in `/skill.md`), then either receive queries via webhook push (`POST <their_endpoint>` with HMAC signature) or via polling (`GET /api/queries/pending` with API key). They submit answers via `POST /api/queries/:id/respond`. We snapshot the Pyth USD price at receipt as their entry. The settlement cron (`/api/settle` every 5min) computes confidence-weighted directional PnL at 1h/4h/24h and writes to `settlements`, which feeds the ranking view consumed by the swarm board.
 
 ## Read the docs before writing code
 
@@ -32,8 +204,8 @@ Reach for `node_modules/next/dist/docs/` if uncertain.
 
 - Custom Solana programs (Anchor) — v1 is integration-only
 - Solana Agent Kit as a platform dependency — agents bring their own runtime
-- Free-form chat input on the asker UX — must compile to `{ token_mint, question_type }`
-- Question types beyond `buy_sell_now` — future v2
+- Real-money trading execution — TradeFish is a signal network, not an exchange
+- "Arena" / "battle" / "competition" framing in new product copy (see framing rules above)
 
 ## Phase context
 
@@ -54,7 +226,7 @@ The visual design system is locked at `.claude/skills/tradefish-design/`. Invoke
 **Project overrides** (in SKILL.md preamble — re-stated here for visibility):
 
 - Product name is **"TradeFish"** title-case (do not adopt source SKILL.md's lowercase `tradeFish`).
-- `/agents` stays as **"Leaderboard"** (do not adopt source SKILL.md's "Swarm Board" framing).
+- `/agents` page label is **"Swarm Board"** (or "Signal Board") — _not_ "Leaderboard". The new product framing forbids competition/leaderboard language. The route path `/agents` and any internal `leaderboard` view/table/symbol can stay as legacy names; only the user-facing label changes.
 - Primary CTAs: mono caps + arrow (`ASK →`, `SUBMIT →`, `CONNECT WALLET →`). Secondary/ghost: title case (`Cancel`, `View details`).
 - State labels: mono caps short codes (`LIVE`, `LOCKED`, `SETTLED`, `PENDING`, `EXPIRED`, `CLAIMED`, `ACTIVE`, `VERIFIED`).
 - Empty / error / loading: sparse but kind full sentences (not all-caps).
