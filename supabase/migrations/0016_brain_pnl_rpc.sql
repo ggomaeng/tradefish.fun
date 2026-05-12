@@ -1,35 +1,27 @@
--- 0013_brain_pnl_rpc_paper_trades.sql
+-- 0016_brain_pnl_rpc.sql
 --
--- Rewrites brain_accrue_pnl(response_id) to read from paper_trades.pnl_usd
--- instead of settlements.pnl_pct, following the v1 trade-model migration
--- documented at docs/superpowers/handoffs/2026-05-12-brain-adopts-v1-trade-model.md.
+-- Defines brain_accrue_pnl(response_id) — the citation-pair PnL accrual RPC
+-- called by the settle cron at src/app/api/settle/route.ts after each
+-- paper_trades insert. Reads paper_trades.pnl_usd (real leveraged USD)
+-- keyed by response_id and propagates it into the brain graph:
+--   - wiki_entries.pnl_attributed_usd += abs(pnl_usd) * weight    (per cited slug)
+--   - note_edges.pnl_flow_usd        += abs(pnl_usd) * min(weights) (per pair)
+--   - note_edges.co_cite_count       += 1                         (per pair)
 --
--- Ordering dependency: this migration MUST land AFTER the trade-model migration
--- that creates `paper_trades` and drops `settlements`. If applied out of order,
--- the function body will fail to compile (paper_trades unknown) — Postgres will
--- reject the CREATE OR REPLACE. Re-run after the trade-model migration lands.
+-- Lands after 0014_v1_trade_model.sql (creates paper_trades, drops settlements)
+-- and 0015_agent_revivals.sql. plpgsql late-binds table references, so the
+-- CREATE OR REPLACE itself is safe even if applied before 0014 — only on call
+-- would it error.
 --
--- Semantics change:
---   Before: v_pnl_pct = settlements.pnl_pct (percent-points used as $1-notional proxy)
---   After:  v_pnl_usd = paper_trades.pnl_usd (real leveraged USD)
--- Column names on wiki_entries/note_edges are already `_usd`, so the downstream
--- UI and graph display continue to work — values simply become meaningful USD.
---
--- Zero-out: paired with the new RPC, we wipe the stale pct-proxy values from
--- wiki_entries.pnl_attributed_usd, note_edges.pnl_flow_usd, and
--- note_edges.co_cite_count so the post-cutover values are clean. The backfill
--- cron will re-populate them with real USD as it walks closed rounds.
+-- abs(pnl) by design: edges encode knowledge-usage intensity, not directional
+-- outcome. Signed pnl would cancel out across balanced right/wrong calls and
+-- destroy the co-citation signal. Per-note directional performance is captured
+-- elsewhere (responses → paper_trades).
 --
 -- Comments-as-trades: this RPC remains response-only. Per the handoff Option A,
 -- comment-trades are excluded from brain accrual (they aren't a citation
 -- surface). If that changes, add a sibling brain_accrue_pnl_comment(comment_id).
 
--- ── 1. Zero out the stale pct-proxy values ─────────────────────────────────────
-update wiki_entries set pnl_attributed_usd = 0 where pnl_attributed_usd <> 0;
-update note_edges    set pnl_flow_usd = 0, co_cite_count = 0
-  where pnl_flow_usd <> 0 or co_cite_count <> 0;
-
--- ── 2. Rewrite the accrual RPC against paper_trades ────────────────────────────
 create or replace function brain_accrue_pnl(p_response_id uuid)
 returns void
 language plpgsql

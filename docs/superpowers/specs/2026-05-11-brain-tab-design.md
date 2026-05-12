@@ -279,15 +279,20 @@ Scholar agent's API key is provisioned via existing agent-registration flow; mar
 
 P1, P2, P4, P8 can run in parallel. P3 depends on P1. P5 depends on P1+P3. P6 depends on P4. P7 depends on P6. P9 depends on P6. P10 last.
 
-## v1 trade-model dependency (added 2026-05-12)
+## v1 trade-model integration (resolved 2026-05-12)
 
-A parallel workstream is migrating TradeFish from `settlements` (per-horizon: 1h/4h/24h pct PnL) to `paper_trades` (per-query atomic USD PnL with 10× leverage). See handoff at `docs/superpowers/handoffs/2026-05-12-brain-adopts-v1-trade-model.md`.
+PR #20 (v1 trade model — `0014_v1_trade_model.sql`) merged to main on 2026-05-12, dropping the per-horizon `settlements` table in favor of per-query atomic `paper_trades` with 10× leverage. See handoff at `docs/superpowers/handoffs/2026-05-12-brain-adopts-v1-trade-model.md`.
 
-**Brain impact:** `brain_accrue_pnl(response_id)` originally read `settlements.pnl_pct WHERE horizon='24h'`. Replaced with `paper_trades.pnl_usd` in `supabase/migrations/0013_brain_pnl_rpc_paper_trades.sql`, which also zeroes the stale pct-proxy values in `wiki_entries.pnl_attributed_usd` / `note_edges.pnl_flow_usd` / `note_edges.co_cite_count` so post-cutover values are clean.
+**How brain reconciles after the rebase:**
+- `brain_accrue_pnl(response_id)` is defined once in `supabase/migrations/0016_brain_pnl_rpc.sql`, reading `paper_trades.pnl_usd` directly. The intermediate settlements-based RPC was dropped during the rebase — never landed in main.
+- The settle cron call site is owned by `src/app/api/settle/route.ts` (PR #20). It already invokes `brain_accrue_pnl` per response-trade in a non-fatal wrapper. Our P5 standalone commit was discarded during rebase.
+- `respond/route.ts` is a 3-way merge: PR #20's bankroll + position-size logic, our `retrieval_id`/`cited_slugs` schema fields, and the `captureCitations()` helper.
+- Brain read endpoints (`/api/brain/note/:slug`, `/api/brain/retrieval/:id`) don't select PnL columns from `responses`, so they're unaffected by the schema swap. Optional future enhancement: join `paper_trades.pnl_usd` for richer NoteDetail.
+- Hermes scholar's `/api/rounds/settled` consumer shape needs updating: per-query atomic (one settle event per round, single `pnl_usd` per response/comment-trade), not per-horizon. Tracked under P13.
 
-**Ordering:** `0013` MUST run after the trade-model migration (which creates `paper_trades`). Do not merge `feat/brain-tab` to main before the trade-model PR lands.
+**Migration sequence on main:** 0011 (brain schema) → 0014 (v1 trade model) → 0015 (agent revivals) → 0016 (brain PnL RPC).
 
-**Comments-as-trades:** chose Option A — brain accrual is response-only. Comment-trades feed leaderboards/round verdicts but not citation PnL.
+**Comments-as-trades:** Option A — brain accrual is response-only. Comment-trades feed leaderboards/round verdicts but not citation PnL.
 
 ## Open questions deferred to implementation
 

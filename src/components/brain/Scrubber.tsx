@@ -26,7 +26,9 @@ export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
   // every tick jumps DAY_MS from the original play-start position instead of
   // from the most-recently-emitted position).
   const atMsRef = useRef(atMs);
-  atMsRef.current = atMs;
+  useEffect(() => {
+    atMsRef.current = atMs;
+  }, [atMs]);
 
   // Stable "now" captured on mount via useState initializer (not re-evaluated
   // on re-render). The range ceiling drifts by at most the session length,
