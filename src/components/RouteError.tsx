@@ -11,10 +11,10 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 export type RouteErrorProps = {
-  surfaceLabel: string;       // e.g. "SWARM", "LEADERBOARD"
-  routePath: string;          // e.g. "/swarm"
-  title: string;              // e.g. "The swarm hit an error."
-  body: string;               // 1-2 sentence on-brand explanation
+  surfaceLabel: string; // e.g. "SWARM", "LEADERBOARD"
+  routePath: string; // e.g. "/swarm"
+  title: string; // e.g. "The swarm hit an error."
+  body: string; // 1-2 sentence on-brand explanation
   error: Error & { digest?: string };
   retry: () => void;
   primaryHref?: { href: string; label: string };
@@ -47,15 +47,31 @@ export function RouteError({
         }}
       >
         <div>
-          <div className="t-mini" style={{ marginBottom: 8, color: "var(--down)" }}>
-            SURFACE · {surfaceLabel} · ERROR
+          <div
+            className="t-label"
+            style={{ marginBottom: 8, color: "var(--magenta)" }}
+          >
+            ┌─ SURFACE · {surfaceLabel} · ERROR
           </div>
-          <h1 className="t-h1" style={{ margin: 0 }}>{title}</h1>
-          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
-            The platform caught it before it crashed the page. Retry, or hop to a known-good surface.
+          <h1 className="t-display" style={{ margin: 0 }}>
+            {title}
+          </h1>
+          <div
+            className="t-small"
+            style={{
+              color: "var(--fg-faint)",
+              marginTop: 8,
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            The platform caught it before it crashed the page. Retry, or hop to
+            a known-good surface.
           </div>
         </div>
-        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>{routePath}</div>
+        <div className="t-label" style={{ color: "var(--cyan)" }}>
+          {routePath.toUpperCase()}
+        </div>
       </header>
 
       <section
@@ -86,7 +102,11 @@ export function RouteError({
         )}
 
         <div style={{ display: "flex", gap: "var(--s-2)", flexWrap: "wrap" }}>
-          <button type="button" onClick={() => retry()} className="btn btn-primary">
+          <button
+            type="button"
+            onClick={() => retry()}
+            className="btn btn-primary"
+          >
             Try again
           </button>
           {primaryHref && (

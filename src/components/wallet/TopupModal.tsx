@@ -11,10 +11,15 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { explorerClusterQuery, getTreasuryPubkey } from "@/lib/solana-config";
 import { useSolBalance, formatSol } from "@/components/wallet/useSolBalance";
 
-const AMOUNTS: { sol: number; lamports: number; credits: number; label: string }[] = [
-  { sol: 0.01, lamports: 10_000_000,  credits: 10,  label: "" },
-  { sol: 0.05, lamports: 50_000_000,  credits: 50,  label: "most picked" },
-  { sol: 0.10, lamports: 100_000_000, credits: 100, label: "" },
+const AMOUNTS: {
+  sol: number;
+  lamports: number;
+  credits: number;
+  label: string;
+}[] = [
+  { sol: 0.01, lamports: 10_000_000, credits: 10, label: "" },
+  { sol: 0.05, lamports: 50_000_000, credits: 50, label: "most picked" },
+  { sol: 0.1, lamports: 100_000_000, credits: 100, label: "" },
 ];
 const NETWORK_FEE_SOL = 0.00001;
 
@@ -155,21 +160,15 @@ export function TopupModal({
         style={{
           width: "100%",
           maxWidth: 440,
-          background: "var(--bg-1)",
-          border: "1px solid var(--bd-2)",
-          borderRadius: "var(--r-4)",
+          background: "var(--surface-deep)",
+          border: "1px solid var(--line-strong)",
           overflow: "hidden",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+          boxShadow: "var(--halo-cyan), 0 24px 80px rgba(0,0,0,0.6)",
         }}
       >
         {/* Head */}
-        <div style={{ padding: "22px 24px 14px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <h3 className="t-h3" style={{ margin: 0, fontSize: 18 }}>Top up SOL</h3>
-            <div style={{ fontSize: 13, color: "var(--fg-3)", marginTop: 4 }}>
-              Sent to TradeFish treasury · spent on rounds
-            </div>
-          </div>
+        <div className="card-head" style={{ margin: 0 }}>
+          <span>┌─ TOP UP · SOL → CREDITS</span>
           <button
             type="button"
             onClick={onClose}
@@ -177,8 +176,9 @@ export function TopupModal({
             style={{
               background: "transparent",
               border: "none",
-              color: "var(--fg-3)",
-              fontSize: 20,
+              color: "var(--fg-faint)",
+              fontFamily: "var(--font-mono)",
+              fontSize: 16,
               lineHeight: 1,
               cursor: "pointer",
             }}
@@ -186,9 +186,28 @@ export function TopupModal({
             ×
           </button>
         </div>
+        <div style={{ padding: "16px 24px 14px" }}>
+          <div
+            className="t-small"
+            style={{
+              color: "var(--fg-dim)",
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Sent to TradeFish treasury. Spent on rounds.
+          </div>
+        </div>
 
         {/* Amount picker */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, padding: "0 24px 20px" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 8,
+            padding: "0 24px 20px",
+          }}
+        >
           {AMOUNTS.map((amt, i) => {
             const sel = i === selectedIdx;
             return (
@@ -208,8 +227,12 @@ export function TopupModal({
                   transition: "all 120ms",
                 }}
               >
-                <div className="num" style={{ fontSize: 18, fontWeight: 500 }}>{amt.sol} SOL</div>
-                <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>
+                <div className="num" style={{ fontSize: 18, fontWeight: 500 }}>
+                  {amt.sol} SOL
+                </div>
+                <div
+                  style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}
+                >
                   {amt.credits} credits{amt.label ? ` · ${amt.label}` : ""}
                 </div>
               </button>
@@ -218,7 +241,9 @@ export function TopupModal({
         </div>
 
         {/* Rows */}
-        <div style={{ padding: "8px 24px", borderTop: "1px solid var(--bd-1)" }}>
+        <div
+          style={{ padding: "8px 24px", borderTop: "1px solid var(--bd-1)" }}
+        >
           <div style={rowStyle}>
             <span style={{ color: "var(--fg-3)" }}>Amount</span>
             <span className="num">{selected.sol.toFixed(5)} SOL</span>
@@ -229,21 +254,49 @@ export function TopupModal({
           </div>
           <div style={rowStyle}>
             <span style={{ color: "var(--fg-3)" }}>Credits granted</span>
-            <span className="num" style={{ color: "var(--cyan)" }}>+ {selected.credits}</span>
+            <span className="num" style={{ color: "var(--cyan)" }}>
+              + {selected.credits}
+            </span>
           </div>
-          <div style={{ ...rowStyle, borderTop: "1px solid var(--bd-1)", marginTop: 4, fontWeight: 500, color: "var(--fg)", paddingTop: 14 }}>
+          <div
+            style={{
+              ...rowStyle,
+              borderTop: "1px solid var(--bd-1)",
+              marginTop: 4,
+              fontWeight: 500,
+              color: "var(--fg)",
+              paddingTop: 14,
+            }}
+          >
             <span>Total</span>
-            <span className="num">{(selected.sol + NETWORK_FEE_SOL).toFixed(5)} SOL</span>
+            <span className="num">
+              {(selected.sol + NETWORK_FEE_SOL).toFixed(5)} SOL
+            </span>
           </div>
         </div>
 
         {/* Status line */}
-        <div style={{ padding: "6px 24px 12px", fontSize: 12, minHeight: 22, color: "var(--fg-2)" }}>
+        <div
+          style={{
+            padding: "6px 24px 12px",
+            fontSize: 12,
+            minHeight: 22,
+            color: "var(--fg-2)",
+          }}
+        >
           <PhaseStatus phase={phase} walletSol={walletSol} />
         </div>
 
         {/* Foot */}
-        <div style={{ padding: "16px 24px", background: "var(--bg-2)", borderTop: "1px solid var(--bd-1)", display: "flex", gap: 8 }}>
+        <div
+          style={{
+            padding: "16px 24px",
+            background: "var(--bg-2)",
+            borderTop: "1px solid var(--bd-1)",
+            display: "flex",
+            gap: 8,
+          }}
+        >
           <button
             type="button"
             onClick={onClose}
@@ -288,15 +341,26 @@ const rowStyle: React.CSSProperties = {
 
 function phaseLabel(phase: Phase): string {
   switch (phase.kind) {
-    case "signing":    return "Signing…";
-    case "confirming": return "Confirming…";
-    case "verifying":  return "Verifying…";
-    case "error":      return "Retry";
-    default:           return "Sign & send";
+    case "signing":
+      return "Signing…";
+    case "confirming":
+      return "Confirming…";
+    case "verifying":
+      return "Verifying…";
+    case "error":
+      return "Retry";
+    default:
+      return "Sign & send";
   }
 }
 
-function PhaseStatus({ phase, walletSol }: { phase: Phase; walletSol: number | null }) {
+function PhaseStatus({
+  phase,
+  walletSol,
+}: {
+  phase: Phase;
+  walletSol: number | null;
+}) {
   if (phase.kind === "idle") {
     return (
       <span style={{ color: "var(--fg-3)" }}>
@@ -313,8 +377,15 @@ function PhaseStatus({ phase, walletSol }: { phase: Phase; walletSol: number | n
   if (phase.kind === "confirming" || phase.kind === "verifying") {
     return (
       <span>
-        {phase.kind === "confirming" ? "Waiting for cluster…" : "Verifying transfer…"}{" "}
-        <a href={explorerUrl(phase.signature)} target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
+        {phase.kind === "confirming"
+          ? "Waiting for cluster…"
+          : "Verifying transfer…"}{" "}
+        <a
+          href={explorerUrl(phase.signature)}
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "var(--cyan)" }}
+        >
           {truncate(phase.signature, 6, 6)}
         </a>
       </span>
@@ -324,7 +395,12 @@ function PhaseStatus({ phase, walletSol }: { phase: Phase; walletSol: number | n
     return (
       <span style={{ color: "var(--up)" }}>
         ✓ Credited. Balance: {phase.credits} cr ·{" "}
-        <a href={explorerUrl(phase.signature)} target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
+        <a
+          href={explorerUrl(phase.signature)}
+          target="_blank"
+          rel="noreferrer"
+          style={{ color: "var(--cyan)" }}
+        >
           tx
         </a>
       </span>
@@ -335,8 +411,14 @@ function PhaseStatus({ phase, walletSol }: { phase: Phase; walletSol: number | n
       ⚠ {phase.message}
       {phase.signature ? (
         <>
-          {" "}·{" "}
-          <a href={explorerUrl(phase.signature)} target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
+          {" "}
+          ·{" "}
+          <a
+            href={explorerUrl(phase.signature)}
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: "var(--cyan)" }}
+          >
             tx
           </a>
         </>

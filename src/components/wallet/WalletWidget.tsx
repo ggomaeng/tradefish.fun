@@ -51,7 +51,11 @@ export function WalletWidget() {
 
   if (!connected || !publicKey) {
     return (
-      <button type="button" onClick={() => setVisible(true)} className="btn btn-sm">
+      <button
+        type="button"
+        onClick={() => setVisible(true)}
+        className="btn btn-sm"
+      >
         Connect wallet
       </button>
     );
@@ -62,7 +66,14 @@ export function WalletWidget() {
 
   return (
     <>
-      <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 6 }}>
+      <div
+        style={{
+          position: "relative",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+        }}
+      >
         <button
           type="button"
           onClick={() => setTopupOpen(true)}
@@ -88,13 +99,12 @@ export function WalletWidget() {
               position: "absolute",
               top: "calc(100% + 6px)",
               right: 0,
-              background: "var(--bg-1)",
-              border: "1px solid var(--bd-2)",
-              borderRadius: "var(--r-2)",
+              background: "var(--surface-deep)",
+              border: "1px solid var(--line-strong)",
               padding: 4,
               zIndex: 200,
               minWidth: 160,
-              boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+              boxShadow: "var(--halo-cyan)",
             }}
           >
             <button
@@ -105,7 +115,7 @@ export function WalletWidget() {
               }}
               style={menuItemStyle}
             >
-              Top up
+              TOP UP →
             </button>
             <button
               type="button"
@@ -115,7 +125,7 @@ export function WalletWidget() {
               }}
               style={menuItemStyle}
             >
-              Disconnect
+              DISCONNECT →
             </button>
           </div>
         )}
@@ -142,9 +152,12 @@ const menuItemStyle: React.CSSProperties = {
   textAlign: "left",
   background: "transparent",
   border: "none",
-  padding: "8px 10px",
-  fontSize: 13,
-  color: "var(--fg-2)",
+  padding: "8px 12px",
+  fontFamily: "var(--font-mono)",
+  fontSize: 11,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "var(--fg-dim)",
   cursor: "pointer",
-  borderRadius: "var(--r-1)",
+  borderRadius: 0,
 };
