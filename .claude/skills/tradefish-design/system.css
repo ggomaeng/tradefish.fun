@@ -1,0 +1,1729 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   TRADEFISH — System · component classes
+   Departure Mono titles, Geist body, sharp corners, glow (no drop
+   shadows), box-drawing chrome, 5-stop spectrum accents.
+   Consumes tokens from colors_and_type.css.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Base reset and ::selection live in colors_and_type.css (foundation). */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   UTILITIES
+   ───────────────────────────────────────────────────────────────────── */
+.upper {
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+}
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.fg {
+  color: var(--fg);
+}
+.fg-dim {
+  color: var(--fg-dim);
+}
+.fg-faint {
+  color: var(--fg-faint);
+}
+.long {
+  color: var(--long);
+}
+.short {
+  color: var(--short);
+}
+.hold {
+  color: var(--hold);
+}
+.cyan {
+  color: var(--cyan);
+}
+.magenta {
+  color: var(--magenta);
+}
+.mint {
+  color: var(--mint);
+}
+.violet {
+  color: var(--violet);
+}
+.spectrum {
+  background: var(--grad-spectrum);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── CRT scanlines (overlay any container) ─────────────────────── */
+.tf-scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(76, 216, 232, 0.022) 3px,
+    rgba(0, 0, 0, 0) 4px
+  );
+  z-index: 50;
+  mix-blend-mode: overlay;
+}
+
+/* Dot-grid background — pixel lattice */
+.tf-grid-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(
+    circle,
+    rgba(76, 216, 232, 0.08) 1px,
+    transparent 1px
+  );
+  background-size: 24px 24px;
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
+}
+
+/* Caret blink */
+@keyframes tf-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.tf-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  margin-left: 2px;
+  background: currentColor;
+  vertical-align: -2px;
+  animation: tf-blink 1s steps(1) infinite;
+}
+
+/* Pixel divider */
+.tf-hr {
+  border: 0;
+  border-top: 1px dashed var(--line);
+  margin: var(--s-2) 0;
+}
+
+/* Spin / pulse */
+@keyframes tf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes tf-pulse-cyan {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 216, 232, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(76, 216, 232, 0);
+  }
+}
+@keyframes tf-pulse-mint {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(76, 232, 172, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(76, 232, 172, 0);
+  }
+}
+@keyframes tf-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   BUTTONS — partner's hierarchy, terminal skin
+   ───────────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg);
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  transition:
+    background var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out);
+  position: relative;
+  cursor: pointer;
+}
+.btn:hover {
+  background: var(--surface-glass);
+  border-color: var(--line-bright);
+}
+.btn:focus-visible {
+  outline: 0;
+  box-shadow:
+    0 0 0 1px var(--cyan),
+    var(--glow-cyan);
+  border-color: var(--cyan);
+}
+
+.btn-primary {
+  background: transparent;
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow:
+    inset 0 0 0 0 transparent,
+    0 0 0 0 transparent;
+}
+.btn-primary:hover {
+  background: var(--cyan);
+  color: var(--bg-0);
+  box-shadow: var(--glow-cyan);
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--fg-dim);
+}
+.btn-ghost:hover {
+  background: var(--surface-glass);
+  color: var(--fg);
+  border-color: transparent;
+}
+
+.btn-danger {
+  border-color: var(--line-magenta);
+  color: var(--magenta);
+}
+.btn-danger:hover {
+  background: var(--magenta);
+  color: var(--bg-0);
+  box-shadow: var(--glow-magenta);
+}
+
+.btn-success {
+  border-color: var(--line-mint);
+  color: var(--mint);
+}
+.btn-success:hover {
+  background: var(--mint);
+  color: var(--bg-0);
+  box-shadow: var(--glow-mint);
+}
+
+.btn-sol {
+  border-color: transparent;
+  color: var(--bg-0);
+  background: var(--grad-spectrum);
+  font-weight: 400;
+}
+.btn-sol:hover {
+  filter: brightness(1.12);
+  box-shadow: var(--halo-cyan), var(--halo-mint);
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+}
+.btn-lg {
+  padding: 11px 18px;
+  font-size: 13px;
+}
+.btn-icon-only {
+  padding: 8px;
+  aspect-ratio: 1;
+}
+.btn[disabled],
+.btn.is-disabled {
+  opacity: 0.32;
+  pointer-events: none;
+}
+.btn.is-loading {
+  color: transparent;
+  pointer-events: none;
+}
+.btn.is-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 12px;
+  height: 12px;
+  border: 1px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  color: var(--cyan);
+  animation: tf-spin 0.8s linear infinite;
+}
+.btn-primary.is-loading::after {
+  color: var(--cyan);
+}
+
+.icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  stroke-width: 1.5;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   INPUTS
+   ───────────────────────────────────────────────────────────────────── */
+.input-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  margin-bottom: var(--s-2);
+}
+.input {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-body);
+  color: var(--fg);
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    box-shadow var(--t-fast);
+}
+.input::placeholder {
+  color: var(--fg-faint);
+}
+.input:hover {
+  border-color: var(--line-bright);
+}
+.input:focus-visible {
+  outline: 0;
+  border-color: var(--cyan);
+  background: var(--bg-1);
+  box-shadow:
+    0 0 0 1px var(--cyan),
+    var(--glow-cyan);
+}
+.input:focus:not(:focus-visible) {
+  outline: 0;
+}
+.input.is-error {
+  border-color: var(--magenta);
+  box-shadow: 0 0 0 1px var(--magenta);
+}
+.input.is-success {
+  border-color: var(--mint);
+}
+.input-wrap {
+  position: relative;
+}
+.input-wrap .lead,
+.input-wrap .trail {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  color: var(--fg-faint);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.input-wrap .lead {
+  left: 10px;
+}
+.input-wrap .trail {
+  right: 10px;
+}
+.input.has-lead {
+  padding-left: 30px;
+}
+.input.has-trail {
+  padding-right: 44px;
+}
+.input-help {
+  font-size: var(--t-mini);
+  color: var(--fg-faint);
+  margin-top: 6px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.input-help.is-error {
+  color: var(--magenta);
+}
+
+/* Switch — pixel toggle */
+.switch {
+  width: 32px;
+  height: 16px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  position: relative;
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast);
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--fg-dim);
+  top: 2px;
+  left: 2px;
+  transition: all var(--t-fast) var(--ease-out);
+}
+.switch.on {
+  background: var(--surface-glass);
+  border-color: var(--cyan);
+}
+.switch.on::after {
+  left: 18px;
+  background: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+/* Checkbox — pixel x */
+.check {
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-family: var(--font-mono);
+}
+.check.checked {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: var(--bg-0);
+  box-shadow: var(--glow-cyan);
+}
+.check.checked::after {
+  content: "×";
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Radio — pixel dot (still 0 radius, just a square indicator) */
+.radio {
+  width: 16px;
+  height: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.radio.checked {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+.radio.checked::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   CHIPS · STATUS PILLS
+   ───────────────────────────────────────────────────────────────────── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-dim);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  white-space: nowrap;
+}
+.chip-cyan {
+  color: var(--cyan);
+  background: rgba(76, 216, 232, 0.08);
+  border-color: var(--line-cyan);
+}
+.chip-magenta {
+  color: var(--magenta);
+  background: rgba(232, 76, 201, 0.08);
+  border-color: var(--line-magenta);
+}
+.chip-mint {
+  color: var(--mint);
+  background: rgba(76, 232, 172, 0.08);
+  border-color: var(--line-mint);
+}
+.chip-violet {
+  color: var(--violet);
+  background: rgba(156, 92, 232, 0.08);
+  border-color: rgba(156, 92, 232, 0.32);
+}
+.chip-up {
+  color: var(--long);
+  background: var(--long-bg);
+  border-color: var(--line-mint);
+}
+.chip-down {
+  color: var(--short);
+  background: var(--short-bg);
+  border-color: var(--line-magenta);
+}
+.chip-hold {
+  color: var(--hold);
+  background: var(--hold-bg);
+  border-color: rgba(200, 204, 220, 0.32);
+}
+.chip-spec {
+  color: var(--bg-0);
+  background: var(--grad-spectrum);
+  border-color: transparent;
+  font-weight: 400;
+}
+.chip-live {
+  color: var(--cyan);
+  background: rgba(76, 216, 232, 0.08);
+  border-color: var(--line-cyan);
+}
+.chip-live .dot {
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  animation: tf-pulse-cyan 1.6s steps(1) infinite;
+}
+.chip-lg {
+  padding: 5px 12px;
+  font-size: var(--t-small);
+}
+
+/* Status pill — same as chip but with leading dot */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: var(--r-0);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--fg-dim);
+}
+.status-pill .dot {
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+}
+.status-pill.live {
+  color: var(--cyan);
+  border-color: var(--line-cyan);
+  background: rgba(76, 216, 232, 0.08);
+}
+.status-pill.live .dot {
+  box-shadow: 0 0 6px currentColor;
+  animation: tf-pulse-cyan 1.6s steps(1) infinite;
+}
+.status-pill.sett {
+  color: var(--mint);
+  border-color: var(--line-mint);
+  background: var(--long-bg);
+}
+.status-pill.final {
+  color: var(--fg-faint);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   CARDS — terminal panels with optional head/foot
+   ───────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-0);
+  padding: var(--s-4);
+  position: relative;
+}
+.card-hover {
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    box-shadow var(--t-fast);
+  cursor: pointer;
+}
+.card-hover:hover {
+  border-color: var(--line-cyan);
+  background: var(--surface-2);
+  box-shadow: var(--glow-cyan);
+}
+.card-head {
+  margin: calc(var(--s-4) * -1) calc(var(--s-4) * -1) var(--s-3);
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  background: linear-gradient(180deg, rgba(76, 216, 232, 0.04), transparent);
+}
+.card-foot {
+  margin: var(--s-3) calc(var(--s-4) * -1) calc(var(--s-4) * -1);
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--s-2);
+}
+
+/* Terminal window chrome (when a card needs traffic-light dots) */
+.tf-term {
+  background: var(--surface-deep);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-0);
+  position: relative;
+}
+.tf-term-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(76, 216, 232, 0.05), transparent);
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.tf-term-head .dots {
+  display: flex;
+  gap: 4px;
+}
+.tf-term-head .dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--magenta);
+}
+.tf-term-head .dots span:nth-child(2) {
+  background: var(--cyan);
+}
+.tf-term-head .dots span:nth-child(3) {
+  background: var(--mint);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   TABLES
+   ───────────────────────────────────────────────────────────────────── */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+}
+.tbl thead {
+  background: rgba(76, 216, 232, 0.04);
+  border-bottom: 1px solid var(--line-strong);
+}
+.tbl th {
+  text-align: left;
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  font-weight: 400;
+}
+.tbl th.r {
+  text-align: right;
+}
+.tbl td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--t-body);
+}
+.tbl td.r {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+.tbl tbody tr {
+  transition: background var(--t-fast);
+}
+.tbl tbody tr:hover td {
+  background: var(--surface-glass);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   TABS
+   ───────────────────────────────────────────────────────────────────── */
+.tabs-line {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+}
+.tabs-line button {
+  background: transparent;
+  border: 0;
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+  border-bottom: 1px solid transparent;
+  margin-bottom: -1px;
+  transition:
+    color var(--t-fast),
+    border-color var(--t-fast);
+}
+.tabs-line button:hover {
+  color: var(--fg);
+}
+.tabs-line button.active {
+  color: var(--cyan);
+  border-bottom-color: var(--cyan);
+  box-shadow: 0 1px 0 var(--cyan);
+}
+.tabs-line button:focus-visible {
+  outline: 0;
+  color: var(--cyan);
+  box-shadow:
+    inset 0 0 0 1px var(--cyan),
+    var(--glow-cyan);
+}
+
+.tabs {
+  display: inline-flex;
+  padding: 2px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.tabs button {
+  background: transparent;
+  border: 0;
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fg-faint);
+}
+.tabs button.active {
+  background: var(--bg-3);
+  color: var(--fg);
+}
+.tabs button:focus-visible {
+  outline: 0;
+  color: var(--cyan);
+  box-shadow:
+    inset 0 0 0 1px var(--cyan),
+    var(--glow-cyan);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   TOAST · BANNER · TOOLTIP
+   ───────────────────────────────────────────────────────────────────── */
+.toast {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--cyan);
+  border-radius: var(--r-0);
+  max-width: 420px;
+  box-shadow: var(--glow-cyan);
+}
+.toast .ico {
+  font-family: var(--font-mono);
+  color: var(--cyan);
+  font-weight: 700;
+}
+.toast .body .t {
+  font-size: var(--t-body);
+  color: var(--fg);
+}
+.toast .body .d {
+  font-size: var(--t-small);
+  color: var(--fg-dim);
+  margin-top: 2px;
+}
+.toast .x {
+  color: var(--fg-faint);
+  cursor: pointer;
+}
+.toast.t-up {
+  border-left-color: var(--mint);
+  box-shadow: var(--glow-mint);
+}
+.toast.t-up .ico {
+  color: var(--mint);
+}
+.toast.t-down {
+  border-left-color: var(--magenta);
+  box-shadow: var(--glow-magenta);
+}
+.toast.t-down .ico {
+  color: var(--magenta);
+}
+.toast.t-hold {
+  border-left-color: var(--hold);
+  box-shadow: none;
+}
+.toast.t-hold .ico {
+  color: var(--hold);
+}
+
+.banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 14px;
+  background: rgba(76, 216, 232, 0.06);
+  border: 1px solid var(--line-cyan);
+  border-radius: var(--r-0);
+  font-size: var(--t-small);
+  color: var(--fg);
+}
+.banner.warn {
+  background: var(--hold-bg);
+  border-color: rgba(200, 204, 220, 0.32);
+}
+.banner.danger {
+  background: rgba(232, 76, 201, 0.08);
+  border-color: var(--line-magenta);
+}
+.banner.success {
+  background: rgba(76, 232, 172, 0.06);
+  border-color: var(--line-mint);
+}
+.banner .ico {
+  font-family: var(--font-mono);
+  color: var(--cyan);
+}
+.banner.warn .ico {
+  color: var(--hold);
+}
+.banner.danger .ico {
+  color: var(--magenta);
+}
+.banner.success .ico {
+  color: var(--mint);
+}
+
+.tt-host {
+  position: relative;
+  display: inline-flex;
+}
+.tt {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface-deep);
+  border: 1px solid var(--line-strong);
+  color: var(--fg);
+  padding: 6px 10px;
+  border-radius: var(--r-0);
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: var(--glow-cyan);
+}
+.tt::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--line-strong);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   LOADING — skeleton, spinner, progress
+   ───────────────────────────────────────────────────────────────────── */
+.skel {
+  background: linear-gradient(90deg, var(--bg-2), var(--bg-3), var(--bg-2));
+  background-size: 200% 100%;
+  animation: tf-shimmer 1.6s steps(8) infinite;
+}
+/* Dotmatrix loader — 12 dots stepping around a 24×24 square perimeter.
+   Pattern borrowed from dotmatrix.dev's dotm-square-12. Pixel-honest, no
+   smooth rotation — reads as "querying" not "buffering". Markup:
+       <span class="tf-spinner"><i></i>×12</span>                          */
+.tf-spinner {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  vertical-align: middle;
+}
+.tf-spinner i {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: var(--cyan);
+  opacity: 0.18;
+  animation: tf-dotm 1.2s linear infinite;
+  animation-delay: calc(var(--i) * -0.1s);
+}
+.tf-spinner i:nth-child(1) {
+  --i: 0;
+  left: 0;
+  top: 0;
+}
+.tf-spinner i:nth-child(2) {
+  --i: 1;
+  left: 7px;
+  top: 0;
+}
+.tf-spinner i:nth-child(3) {
+  --i: 2;
+  left: 15px;
+  top: 0;
+}
+.tf-spinner i:nth-child(4) {
+  --i: 3;
+  left: 22px;
+  top: 0;
+}
+.tf-spinner i:nth-child(5) {
+  --i: 4;
+  left: 22px;
+  top: 7px;
+}
+.tf-spinner i:nth-child(6) {
+  --i: 5;
+  left: 22px;
+  top: 15px;
+}
+.tf-spinner i:nth-child(7) {
+  --i: 6;
+  left: 22px;
+  top: 22px;
+}
+.tf-spinner i:nth-child(8) {
+  --i: 7;
+  left: 15px;
+  top: 22px;
+}
+.tf-spinner i:nth-child(9) {
+  --i: 8;
+  left: 7px;
+  top: 22px;
+}
+.tf-spinner i:nth-child(10) {
+  --i: 9;
+  left: 0;
+  top: 22px;
+}
+.tf-spinner i:nth-child(11) {
+  --i: 10;
+  left: 0;
+  top: 15px;
+}
+.tf-spinner i:nth-child(12) {
+  --i: 11;
+  left: 0;
+  top: 7px;
+}
+
+/* size variants — override --tf-spinner-size, dots scale via the same grid */
+.tf-spinner.is-lg {
+  width: 36px;
+  height: 36px;
+}
+.tf-spinner.is-lg i {
+  width: 3px;
+  height: 3px;
+}
+.tf-spinner.is-lg i:nth-child(1) {
+  left: 0;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(2) {
+  left: 11px;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(3) {
+  left: 22px;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(4) {
+  left: 33px;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(5) {
+  left: 33px;
+  top: 11px;
+}
+.tf-spinner.is-lg i:nth-child(6) {
+  left: 33px;
+  top: 22px;
+}
+.tf-spinner.is-lg i:nth-child(7) {
+  left: 33px;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(8) {
+  left: 22px;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(9) {
+  left: 11px;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(10) {
+  left: 0;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(11) {
+  left: 0;
+  top: 22px;
+}
+.tf-spinner.is-lg i:nth-child(12) {
+  left: 0;
+  top: 11px;
+}
+
+@keyframes tf-dotm {
+  0%,
+  15% {
+    opacity: 1;
+    box-shadow: 0 0 4px var(--cyan);
+  }
+  25%,
+  100% {
+    opacity: 0.18;
+    box-shadow: none;
+  }
+}
+.progress {
+  height: 4px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+.progress > div {
+  height: 100%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px var(--cyan);
+}
+.progress.spec > div {
+  background: var(--grad-spectrum);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   CODE BLOCK
+   ───────────────────────────────────────────────────────────────────── */
+.code {
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--cyan);
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--fg-dim);
+  white-space: pre;
+  overflow-x: auto;
+}
+.code .k {
+  color: var(--cyan);
+}
+.code .s {
+  color: var(--mint);
+}
+.code .c {
+  color: var(--fg-faint);
+}
+.code .v {
+  color: var(--violet);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   PATTERNS — wallet, agent avatar, response card, price tile
+   ───────────────────────────────────────────────────────────────────── */
+.wallet {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+}
+.wallet .av {
+  width: 18px;
+  height: 18px;
+  background: var(--grad-spectrum);
+}
+.wallet .pk {
+  color: var(--fg);
+  letter-spacing: 0.04em;
+}
+.wallet .bal {
+  color: var(--fg-faint);
+  border-left: 1px solid var(--line);
+  padding-left: 8px;
+  margin-left: 4px;
+}
+
+/* Agent avatar — pixel block */
+.av {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--spec-4), var(--spec-2));
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bg-0);
+  flex: none;
+  border-radius: var(--r-0);
+}
+.av-1 {
+  background: linear-gradient(135deg, var(--spec-5), var(--spec-4));
+}
+.av-2 {
+  background: linear-gradient(135deg, var(--spec-2), var(--spec-1));
+}
+.av-3 {
+  background: linear-gradient(135deg, var(--spec-4), var(--spec-1));
+}
+.av-4 {
+  background: linear-gradient(135deg, var(--spec-3), var(--spec-5));
+}
+.av-5 {
+  background: linear-gradient(135deg, var(--spec-1), var(--spec-2));
+}
+.av-6 {
+  background: linear-gradient(135deg, var(--spec-5), var(--spec-2));
+}
+.av.sm {
+  width: 22px;
+  height: 22px;
+  font-size: 9px;
+}
+.av.lg {
+  width: 56px;
+  height: 56px;
+  font-size: 16px;
+}
+.av.xl {
+  width: 88px;
+  height: 88px;
+  font-size: 22px;
+}
+
+/* Response / agent card */
+.resp {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-0);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 14px;
+}
+.resp .av {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+.resp .name {
+  font-size: var(--t-body);
+  color: var(--fg);
+  letter-spacing: 0.02em;
+}
+.resp .name .v {
+  color: var(--cyan);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  margin-left: 8px;
+  vertical-align: 2px;
+}
+.resp .meta {
+  font-size: var(--t-mini);
+  color: var(--fg-faint);
+  margin-top: 2px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.resp .ans-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 12px;
+}
+.resp .ans {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  border-radius: var(--r-0);
+}
+.resp .ans.long {
+  background: var(--long-bg);
+  color: var(--long);
+  border: 1px solid var(--line-mint);
+}
+.resp .ans.short {
+  background: var(--short-bg);
+  color: var(--short);
+  border: 1px solid var(--line-magenta);
+}
+.resp .ans.hold {
+  background: var(--hold-bg);
+  color: var(--hold);
+  border: 1px solid rgba(200, 204, 220, 0.32);
+}
+.resp .conf {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--fg-faint);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.resp .rationale {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  color: var(--fg-dim);
+  margin-top: 12px;
+  line-height: 1.6;
+}
+.resp .rationale code {
+  background: var(--bg-1);
+  padding: 1px 5px;
+  font-size: 12px;
+  color: var(--cyan);
+  border: 1px solid var(--line);
+}
+
+/* Agent card row (leaderboard-style) */
+.agent-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    box-shadow var(--t-fast);
+}
+.agent-card:hover {
+  border-color: var(--line-cyan);
+  background: var(--surface-2);
+  box-shadow: var(--glow-cyan);
+}
+.agent-card .av {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+.agent-card .name {
+  font-size: var(--t-body);
+}
+.agent-card .meta {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--fg-faint);
+  margin-top: 2px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.agent-card .pnl {
+  font-family: var(--font-mono);
+  font-size: var(--t-body);
+}
+
+/* Price tile */
+.price-tile {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 32px 1fr auto;
+  gap: 12px;
+  align-items: center;
+}
+.price-tile .tk {
+  width: 32px;
+  height: 32px;
+  background: var(--grad-spectrum);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bg-0);
+}
+.price-tile .meta .sym {
+  font-size: var(--t-body);
+  letter-spacing: 0.04em;
+}
+.price-tile .meta .name {
+  font-size: var(--t-mini);
+  color: var(--fg-faint);
+  margin-top: 2px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.price-tile .right {
+  text-align: right;
+  font-family: var(--font-mono);
+}
+.price-tile .right .p {
+  font-size: var(--t-body);
+}
+.price-tile .right .d {
+  font-size: var(--t-mini);
+  margin-top: 2px;
+  letter-spacing: 0.06em;
+}
+
+/* Solana ecosystem chip — each tool gets a spectrum stop */
+.tool-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px 4px 4px;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  letter-spacing: 0.04em;
+}
+.tool-chip .glyph {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--bg-0);
+}
+.tool-chip.t-sol {
+  color: var(--c-solana);
+  border-color: rgba(156, 92, 232, 0.32);
+}
+.tool-chip.t-sol .glyph {
+  background: var(--c-solana);
+}
+.tool-chip.t-jupiter {
+  color: var(--c-jupiter);
+  border-color: var(--line-magenta);
+}
+.tool-chip.t-jupiter .glyph {
+  background: var(--c-jupiter);
+}
+.tool-chip.t-helius {
+  color: var(--c-helius);
+  border-color: rgba(92, 127, 232, 0.32);
+}
+.tool-chip.t-helius .glyph {
+  background: var(--c-helius);
+}
+.tool-chip.t-dex {
+  color: var(--c-dexscreener);
+  border-color: var(--line-cyan);
+}
+.tool-chip.t-dex .glyph {
+  background: var(--c-dexscreener);
+}
+.tool-chip.t-rug {
+  color: var(--c-rugcheck);
+  border-color: var(--line-magenta);
+}
+.tool-chip.t-rug .glyph {
+  background: var(--c-rugcheck);
+}
+.tool-chip.t-phantom {
+  color: var(--c-phantom);
+  border-color: rgba(156, 92, 232, 0.32);
+}
+.tool-chip.t-phantom .glyph {
+  background: var(--c-phantom);
+}
+.tool-chip.t-agentkit {
+  color: var(--c-agentkit);
+  border-color: var(--line-mint);
+}
+.tool-chip.t-agentkit .glyph {
+  background: var(--c-agentkit);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   DATA VIZ
+   ───────────────────────────────────────────────────────────────────── */
+.pnl-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 80px;
+  gap: 12px;
+  align-items: center;
+}
+.pnl-row .l {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+}
+.pnl-row .v {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  text-align: right;
+}
+.pnl-bar {
+  position: relative;
+  height: 8px;
+  background: var(--bg-3);
+}
+.pnl-bar .center {
+  position: absolute;
+  inset: -2px auto;
+  left: 50%;
+  width: 1px;
+  background: var(--line-strong);
+}
+.pnl-bar .pos {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  background: var(--mint);
+  box-shadow: 0 0 6px var(--mint);
+}
+.pnl-bar .neg {
+  position: absolute;
+  right: 50%;
+  top: 0;
+  bottom: 0;
+  background: var(--magenta);
+  box-shadow: 0 0 6px var(--magenta);
+}
+
+.tally {
+  display: flex;
+  height: 8px;
+  background: var(--bg-3);
+  overflow: hidden;
+  width: 100%;
+}
+.tally .b-up {
+  background: var(--mint);
+  box-shadow: inset 0 0 8px rgba(76, 232, 172, 0.5);
+}
+.tally .b-down {
+  background: var(--magenta);
+  box-shadow: inset 0 0 8px rgba(232, 76, 201, 0.5);
+}
+.tally .b-hold {
+  background: var(--hold);
+}
+
+.conf-meter {
+  height: 4px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+.conf-meter > div {
+  height: 100%;
+  background: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+}
+
+.round-tl {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  position: relative;
+  padding: 24px 0 8px;
+}
+.round-tl::before {
+  content: "";
+  position: absolute;
+  top: 33px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 1px;
+  background: var(--line-strong);
+}
+.round-tl .pt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+}
+.round-tl .pt .dot {
+  width: 14px;
+  height: 14px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  position: relative;
+  z-index: 1;
+}
+.round-tl .pt.done .dot {
+  background: var(--mint);
+  border-color: var(--mint);
+  box-shadow: var(--glow-mint);
+}
+.round-tl .pt.now .dot {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  animation: tf-pulse-cyan 1.6s steps(1) infinite;
+}
+.round-tl .pt .l {
+  font-family: var(--font-mono);
+  font-size: var(--t-mini);
+  color: var(--fg-faint);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.round-tl .pt .v {
+  font-family: var(--font-mono);
+  font-size: var(--t-small);
+  color: var(--fg-dim);
+  margin-top: 2px;
+}
+.round-tl .pt.done .l,
+.round-tl .pt.now .l {
+  color: var(--fg);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   TAGS · field-scope markers (borrowed from arena.colosseum.org)
+   Distinct from .chip — chips carry direction/status (long/short/hold);
+   tags carry visibility/scope (public/private/required/draft).
+   ───────────────────────────────────────────────────────────────────── */
+.tf-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: rgba(76, 232, 172, 0.12);
+  color: var(--mint-bright);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+.tf-tag.tf-tag-cyan {
+  background: rgba(76, 216, 232, 0.12);
+  color: var(--cyan-bright);
+}
+.tf-tag.tf-tag-magenta {
+  background: rgba(232, 76, 201, 0.12);
+  color: var(--magenta-bright);
+}
+.tf-tag.tf-tag-violet {
+  background: rgba(156, 92, 232, 0.12);
+  color: var(--violet-bright);
+}
+.tf-tag.tf-tag-muted {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--fg-faint);
+}
+.tf-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+}
+.tf-tag-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+.tf-tag-label .req {
+  color: var(--magenta);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   INFO PANEL · blueprint-style corner-tick callout
+   Four L-shaped ticks make it read as a technical drawing.
+   .tf-info-warn = magenta border, .tf-info-ok = mint border.
+   ───────────────────────────────────────────────────────────────────── */
+.tf-info {
+  position: relative;
+  padding: 16px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-1);
+  max-width: 520px;
+}
+.tf-info .corner {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  color: var(--fg);
+  pointer-events: none;
+}
+.tf-info .corner.tl {
+  top: -1px;
+  left: -1px;
+}
+.tf-info .corner.tr {
+  top: -1px;
+  right: -1px;
+  transform: rotate(90deg);
+}
+.tf-info .corner.br {
+  bottom: -1px;
+  right: -1px;
+  transform: rotate(180deg);
+}
+.tf-info .corner.bl {
+  bottom: -1px;
+  left: -1px;
+  transform: rotate(270deg);
+}
+.tf-info-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.tf-info-icon {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  color: var(--violet-bright);
+  font-family: var(--font-pixel);
+  font-size: 16px;
+  letter-spacing: 0;
+  border: 1px solid var(--line);
+}
+.tf-info-text {
+  flex: 1;
+  min-width: 0;
+}
+.tf-info-text h4 {
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  letter-spacing: -0.005em;
+}
+.tf-info-text p {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--fg-dim);
+  letter-spacing: -0.003em;
+}
+.tf-info-text p strong {
+  color: var(--fg);
+  font-weight: 600;
+}
+.tf-info-text a {
+  color: var(--cyan);
+  text-decoration: none;
+  border-bottom: 1px dashed var(--line-cyan);
+}
+.tf-info.tf-info-warn {
+  border-color: var(--line-magenta);
+}
+.tf-info.tf-info-warn .tf-info-icon {
+  color: var(--magenta-bright);
+}
+.tf-info.tf-info-ok {
+  border-color: var(--line-mint);
+}
+.tf-info.tf-info-ok .tf-info-icon {
+  color: var(--mint-bright);
+}
+
+/* ─────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY — reduced motion
+   Respects the user's OS-level "reduce motion" preference. Holds
+   keyframe-based pulses, shimmers, the dot-chase loader, flicker,
+   and view-transitions to a near-zero duration. Static contrast and
+   layout are untouched.
+   ───────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
