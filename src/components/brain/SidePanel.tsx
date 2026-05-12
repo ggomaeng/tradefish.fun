@@ -13,7 +13,7 @@
  *     Export `useBrainCounters` to let P7 wire in Realtime events.
  */
 
-import React, { useMemo, useState, useCallback, useEffect } from "react";
+import React, { useMemo, useState, useCallback, useEffect, useRef } from "react";
 import type { BrainNode, BrainGraph, BrainSelection } from "@/lib/brain/types";
 
 // ─── Counter hook (P7 entry point) ───────────────────────────────────────────
@@ -33,27 +33,57 @@ interface CounterFlash {
 }
 
 /**
- * useBrainCounters — exposes incrementCounter for P7 to call on Realtime events.
- * Initial values are derived from graph data in SidePanel, but can be bumped.
+ * useBrainCounters — source of truth is the /api/brain/counters endpoint,
+ * which aggregates `wiki_entries` / `queries` / `responses` for today.
+ *
+ * Polls every 15s (matches endpoint cache). Realtime callers can invoke
+ * refresh() to cache-bust immediately on a new wiki_entries INSERT.
+ * Counter increases flash for 700ms.
  */
-export function useBrainCounters(initial: Counters) {
-  // delta tracks increments from Realtime events layered on top of initial
-  const [delta, setDelta] = useState<Counters>({ lesson: 0, round: 0, agent: 0 });
+export function useBrainCounters() {
+  const [counters, setCounters] = useState<Counters>({ lesson: 0, round: 0, agent: 0 });
   const [flash, setFlash] = useState<CounterFlash>({ lesson: false, round: false, agent: false });
+  const prevRef = useRef<Counters>({ lesson: 0, round: 0, agent: 0 });
 
-  const counters: Counters = {
-    lesson: initial.lesson + delta.lesson,
-    round: initial.round + delta.round,
-    agent: initial.agent + delta.agent,
-  };
-
-  const incrementCounter = useCallback((kind: CounterKind) => {
-    setDelta((prev) => ({ ...prev, [kind]: prev[kind] + 1 }));
-    setFlash((prev) => ({ ...prev, [kind]: true }));
-    setTimeout(() => setFlash((prev) => ({ ...prev, [kind]: false })), 700);
+  const refresh = useCallback(async () => {
+    try {
+      // Cache-bust so Realtime-triggered refreshes get fresh aggregates.
+      const r = await fetch(`/api/brain/counters?ts=${Date.now()}`, { cache: "no-store" });
+      if (!r.ok) return;
+      const d = (await r.json()) as {
+        lessons_today: number;
+        rounds_settled_today: number;
+        agents_active_today: number;
+      };
+      const next: Counters = {
+        lesson: d.lessons_today,
+        round: d.rounds_settled_today,
+        agent: d.agents_active_today,
+      };
+      const prev = prevRef.current;
+      const f: CounterFlash = {
+        lesson: next.lesson > prev.lesson,
+        round: next.round > prev.round,
+        agent: next.agent > prev.agent,
+      };
+      prevRef.current = next;
+      setCounters(next);
+      if (f.lesson || f.round || f.agent) {
+        setFlash(f);
+        setTimeout(() => setFlash({ lesson: false, round: false, agent: false }), 700);
+      }
+    } catch {
+      // Silent — counters stay at last known value
+    }
   }, []);
 
-  return { counters, flash, incrementCounter };
+  useEffect(() => {
+    void refresh();
+    const id = setInterval(() => void refresh(), 15_000);
+    return () => clearInterval(id);
+  }, [refresh]);
+
+  return { counters, flash, refresh };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -91,15 +121,8 @@ function computeTopTokens(nodes: BrainNode[], limit = 5): Array<{ token: string;
     .map(([token, cite_count]) => ({ token, cite_count }));
 }
 
-function computeInitialCounters(nodes: BrainNode[]): Counters {
-  const todayNodes = nodes.filter((n) => isToday(n.created_at));
-  const agentSet = new Set(nodes.filter((n) => isToday(n.created_at) && n.author_agent_id).map((n) => n.author_agent_id));
-  return {
-    lesson: todayNodes.length,
-    round: 0,   // settlement data not in graph endpoint — P7 wires from Realtime
-    agent: agentSet.size,
-  };
-}
+// computeInitialCounters removed — sourced from /api/brain/counters now,
+// which aggregates the real tables (queries + responses + wiki_entries).
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -107,27 +130,30 @@ interface SidePanelProps {
   data: BrainGraph;
   selection: BrainSelection;
   onFocusSlug: (slug: string) => void;
-  /** P7: incrementCounter entry point — exposed so Realtime events can tick */
-  incrementCounterRef?: React.MutableRefObject<((kind: CounterKind) => void) | null>;
+  /**
+   * Realtime entry point — callers (BrainPage's wiki INSERT handler) can call
+   * this to force an immediate counter refresh, bypassing the 15s poll.
+   */
+  refreshCountersRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function SidePanel({ data, selection, onFocusSlug, incrementCounterRef }: SidePanelProps) {
+export function SidePanel({ data, selection, onFocusSlug, refreshCountersRef }: SidePanelProps) {
   const topTokens = useMemo(() => computeTopTokens(data.nodes), [data.nodes]);
   const recentNodes = useMemo(
     () => [...data.nodes].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10),
     [data.nodes]
   );
-  const initialCounters = useMemo(() => computeInitialCounters(data.nodes), [data.nodes]);
-  const { counters, flash, incrementCounter } = useBrainCounters(initialCounters);
+  const { counters, flash, refresh } = useBrainCounters();
 
-  // Expose incrementCounter for P7
+  // Expose refresh to Realtime callers so wiki INSERTs can force an
+  // immediate counter pull without waiting for the 15s poll.
   useEffect(() => {
-    if (incrementCounterRef) {
-      incrementCounterRef.current = incrementCounter;
+    if (refreshCountersRef) {
+      refreshCountersRef.current = refresh;
     }
-  }, [incrementCounter, incrementCounterRef]);
+  }, [refresh, refreshCountersRef]);
 
   const selectedSlug = selection?.kind === "node" ? selection.slug : null;
 
