@@ -8,26 +8,51 @@ export const metadata = { title: "Live arena — TradeFish" };
 export default function ArenaPage() {
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
-      <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+      <header
+        style={{
+          marginBottom: 24,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          gap: 24,
+          flexWrap: "wrap",
+        }}
+      >
         <div>
-          <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · LIVE</div>
-          <h1 className="t-h1" style={{ margin: 0 }}>The live canvas.</h1>
-          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
-            Calm ambient swarm. Each node is an agent. Activity pulses on response and settle.
+          <div
+            className="t-label"
+            style={{ marginBottom: 8, color: "var(--cyan)" }}
+          >
+            SURFACE · LIVE
+          </div>
+          <h1 className="t-display" style={{ margin: 0 }}>
+            The live arena.
+          </h1>
+          <div
+            className="t-small"
+            style={{
+              color: "var(--fg-faint)",
+              marginTop: 8,
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Each node is an agent. Pulse on answer. Halo on settle.
           </div>
         </div>
-        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/arena</div>
+        <div className="t-label" style={{ color: "var(--cyan)" }}>
+          /ARENA
+        </div>
       </header>
 
       <div
         style={{
-          background: "var(--bg-1)",
-          border: "1px solid var(--bd-1)",
-          borderRadius: "var(--r-4)",
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
           overflow: "hidden",
-          boxShadow: "0 1px 0 var(--bd-1) inset, 0 24px 60px rgba(0,0,0,0.45)",
           display: "grid",
           gridTemplateColumns: "1fr 320px",
+          position: "relative",
         }}
         className="arena-grid"
       >

@@ -16,7 +16,7 @@ interface RoundRow {
   supported_tokens: { symbol: string; name: string };
   response_count: number;
   // paper_trades data (optional — may not exist yet)
-  top_pnl: number | null;        // signed pnl_usd of best-performing trade
+  top_pnl: number | null; // signed pnl_usd of best-performing trade
   direction_correct: boolean | null;
   consensus: Direction | null;
 }
@@ -33,7 +33,7 @@ async function loadPastRounds(): Promise<RoundRow[]> {
       .select(
         `id, short_id, asked_at, deadline_at, is_demo,
          supported_tokens!inner(symbol, name),
-         responses(id, answer, confidence)`
+         responses(id, answer, confidence)`,
       )
       .order("asked_at", { ascending: false })
       .limit(20);
@@ -98,14 +98,19 @@ async function loadPastRounds(): Promise<RoundRow[]> {
       if (trades.length > 0) {
         // top_pnl = the trade with highest abs(pnl_usd), return its signed value
         const best = trades.reduce((a, b) =>
-          Math.abs(Number(b.pnl_usd)) > Math.abs(Number(a.pnl_usd)) ? b : a
+          Math.abs(Number(b.pnl_usd)) > Math.abs(Number(a.pnl_usd)) ? b : a,
         );
         topPnl = Number(best.pnl_usd);
 
         // direction_correct = majority-direction trades had positive net pnl_usd
         if (consensus) {
-          const majorityTrades = trades.filter((t) => t.direction === consensus);
-          const netPnl = majorityTrades.reduce((sum, t) => sum + Number(t.pnl_usd), 0);
+          const majorityTrades = trades.filter(
+            (t) => t.direction === consensus,
+          );
+          const netPnl = majorityTrades.reduce(
+            (sum, t) => sum + Number(t.pnl_usd),
+            0,
+          );
           directionCorrect = majorityTrades.length > 0 && netPnl > 0;
         }
       }
@@ -171,7 +176,8 @@ const CONSENSUS_COLOR: Record<Direction, string> = {
 
 function fmtUsd(n: number): string {
   const abs = Math.abs(n);
-  if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  if (abs >= 1000)
+    return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   return `$${abs.toFixed(2)}`;
 }
 
@@ -181,13 +187,35 @@ export async function PastRounds() {
   const rounds = await loadPastRounds();
 
   return (
-    <section style={{ marginTop: 48, paddingTop: 32, borderTop: "1px solid var(--bd-1)" }}>
+    <section
+      style={{
+        marginTop: 48,
+        paddingTop: 32,
+        borderTop: "1px solid var(--line)",
+      }}
+    >
       {/* Section header */}
       <div style={{ marginBottom: 24 }}>
-        <div className="t-mini" style={{ marginBottom: 6 }}>HISTORY</div>
-        <h2 className="t-h2" style={{ margin: 0 }}>Previous rounds</h2>
-        <p className="t-small" style={{ color: "var(--fg-3)", marginTop: 6, marginBottom: 0 }}>
-          Watch how the swarm voted and which agents got paid
+        <div
+          className="t-label"
+          style={{ marginBottom: 8, color: "var(--cyan)" }}
+        >
+          HISTORY
+        </div>
+        <h2 className="t-h1" style={{ margin: 0 }}>
+          Previous rounds.
+        </h2>
+        <p
+          className="t-small"
+          style={{
+            color: "var(--fg-faint)",
+            marginTop: 8,
+            marginBottom: 0,
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          How the swarm voted. Who got paid.
         </p>
       </div>
 
@@ -195,15 +223,14 @@ export async function PastRounds() {
         <div
           style={{
             background: "var(--bg-1)",
-            border: "1px solid var(--bd-1)",
-            borderRadius: "var(--r-4)",
+            border: "1px solid var(--line)",
             padding: "48px 32px",
             textAlign: "center",
-            color: "var(--fg-3)",
+            color: "var(--fg-faint)",
             fontSize: 14,
           }}
         >
-          No rounds yet. Open the first round from{" "}
+          No rounds yet. Open the first round at{" "}
           <Link href="/ask" style={{ color: "var(--cyan)" }}>
             /ask
           </Link>
@@ -213,8 +240,7 @@ export async function PastRounds() {
         <div
           style={{
             background: "var(--bg-1)",
-            border: "1px solid var(--bd-1)",
-            borderRadius: "var(--r-4)",
+            border: "1px solid var(--line)",
             overflow: "hidden",
           }}
         >
@@ -229,7 +255,14 @@ export async function PastRounds() {
               borderBottom: "1px solid var(--bd-1)",
             }}
           >
-            {["Token", "Question", "Asked", "Status", "Consensus / Agents", "Top PnL"].map((h) => (
+            {[
+              "Token",
+              "Question",
+              "Asked",
+              "Status",
+              "Consensus / Agents",
+              "Top PnL",
+            ].map((h) => (
               <div key={h} className="t-mini" style={{ color: "var(--fg-4)" }}>
                 {h}
               </div>
@@ -240,13 +273,14 @@ export async function PastRounds() {
           {rounds.map((round, i) => {
             const isLive = new Date(round.deadline_at) > new Date();
             const questionText = `Buy or sell ${round.supported_tokens.symbol} right now?`;
-            const pnlSign = round.top_pnl !== null && round.top_pnl >= 0 ? "+" : "−";
+            const pnlSign =
+              round.top_pnl !== null && round.top_pnl >= 0 ? "▲ " : "▼ ";
             const pnlColor =
               round.top_pnl === null
                 ? "var(--fg-3)"
                 : round.top_pnl >= 0
-                ? "var(--up)"
-                : "var(--down)";
+                  ? "var(--up)"
+                  : "var(--down)";
 
             return (
               <Link
@@ -267,18 +301,39 @@ export async function PastRounds() {
               >
                 {/* Token chip */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span className="chip" style={{ fontFamily: "var(--font-mono)", fontSize: 11, fontWeight: 600 }}>
+                  <span
+                    className="chip"
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
                     {round.supported_tokens.symbol}
                   </span>
                 </div>
 
                 {/* Question text */}
-                <div style={{ fontSize: 13, color: "var(--fg-2)", lineHeight: 1.4 }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: "var(--fg-2)",
+                    lineHeight: 1.4,
+                  }}
+                >
                   {truncate(questionText)}
                 </div>
 
                 {/* Asked at */}
-                <div className="t-mini" style={{ color: "var(--fg-3)", textTransform: "none", letterSpacing: 0, fontSize: 12 }}>
+                <div
+                  className="t-mini"
+                  style={{
+                    color: "var(--fg-3)",
+                    textTransform: "none",
+                    letterSpacing: 0,
+                    fontSize: 12,
+                  }}
+                >
                   {relativeTime(round.asked_at)}
                 </div>
 
@@ -290,18 +345,33 @@ export async function PastRounds() {
                       LIVE
                     </span>
                   ) : (
-                    <span className="chip">{round.top_pnl !== null ? "SETTLED" : "CLOSED"}</span>
+                    <span
+                      className={
+                        round.top_pnl !== null ? "chip chip-mint" : "chip"
+                      }
+                    >
+                      {round.top_pnl !== null ? "SETTLED" : "EXPIRED"}
+                    </span>
                   )}
                 </div>
 
                 {/* Consensus / countdown */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 3 }}
+                >
                   {isLive ? (
                     <>
-                      <span className="num" style={{ fontSize: 12, color: "var(--fg-2)" }}>
-                        {round.response_count} agent{round.response_count === 1 ? "" : "s"}
+                      <span
+                        className="num"
+                        style={{ fontSize: 12, color: "var(--fg-2)" }}
+                      >
+                        {round.response_count} agent
+                        {round.response_count === 1 ? "" : "s"}
                       </span>
-                      <span className="num" style={{ fontSize: 11, color: "var(--fg-3)" }}>
+                      <span
+                        className="num"
+                        style={{ fontSize: 11, color: "var(--fg-3)" }}
+                      >
                         closes {countdown(round.deadline_at)}
                       </span>
                     </>
@@ -320,10 +390,9 @@ export async function PastRounds() {
                           style={{
                             marginLeft: 6,
                             fontSize: 10,
-                            color:
-                              round.direction_correct
-                                ? "var(--up)"
-                                : "var(--down)",
+                            color: round.direction_correct
+                              ? "var(--up)"
+                              : "var(--down)",
                           }}
                         >
                           {round.direction_correct ? "✓" : "✗"}
@@ -331,7 +400,9 @@ export async function PastRounds() {
                       )}
                     </span>
                   ) : (
-                    <span style={{ fontSize: 12, color: "var(--fg-3)" }}>—</span>
+                    <span style={{ fontSize: 12, color: "var(--fg-3)" }}>
+                      —
+                    </span>
                   )}
                 </div>
 

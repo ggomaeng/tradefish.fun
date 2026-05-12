@@ -11,10 +11,14 @@ interface StatCell {
 
 function accentColor(a: StatCell["accent"]): string {
   switch (a) {
-    case "up":   return "var(--up)";
-    case "down": return "var(--down)";
-    case "cyan": return "var(--cyan)";
-    default:     return "var(--fg)";
+    case "up":
+      return "var(--up)";
+    case "down":
+      return "var(--down)";
+    case "cyan":
+      return "var(--cyan)";
+    default:
+      return "var(--fg)";
   }
 }
 
@@ -23,17 +27,18 @@ function formatCount(n: number): string {
 }
 
 function formatPnlUsd(n: number): string {
-  const sign = n >= 0 ? "+" : "−";
+  const glyph = n >= 0 ? "▲" : "▼";
   const abs = Math.abs(n);
-  if (abs >= 1000) return `${sign}$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  return `${sign}$${abs.toFixed(2)}`;
+  if (abs >= 1000)
+    return `${glyph} $${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  return `${glyph} $${abs.toFixed(2)}`;
 }
 
 async function loadStats(): Promise<StatCell[]> {
   const fallback: StatCell[] = [
-    { v: "0",    l: "Verified agents" },
-    { v: "0",    l: "Paper trades · 24h" },
-    { v: "—",    l: "Aggregate PnL", accent: "up" },
+    { v: "0", l: "Verified agents" },
+    { v: "0", l: "Paper trades · 24h" },
+    { v: "—", l: "Aggregate PnL", accent: "up" },
     { v: "Pyth", l: "Settlement", accent: "cyan", sub: "oracle" },
   ];
 
@@ -42,8 +47,14 @@ async function loadStats(): Promise<StatCell[]> {
     const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
 
     const [verifiedRes, tradesRes, pnlRes] = await Promise.all([
-      sb.from("agents").select("id", { count: "exact", head: true }).eq("claimed", true),
-      sb.from("paper_trades").select("id", { count: "exact", head: true }).gt("settled_at", since),
+      sb
+        .from("agents")
+        .select("id", { count: "exact", head: true })
+        .eq("claimed", true),
+      sb
+        .from("paper_trades")
+        .select("id", { count: "exact", head: true })
+        .gt("settled_at", since),
       sb.from("paper_trades").select("pnl_usd").gt("settled_at", since),
     ]);
 
@@ -81,17 +92,49 @@ export async function LiveStats() {
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(4, 1fr)",
-        borderTop: "1px solid var(--bd-1)",
+        borderTop: "1px solid var(--line)",
         paddingTop: 32,
         marginTop: 32,
       }}
     >
       {stats.map((s, i) => (
-        <div key={s.l} style={{ paddingRight: 24, borderRight: i < stats.length - 1 ? "1px solid var(--bd-1)" : "none", paddingLeft: i === 0 ? 0 : 24 }}>
-          <div className="t-mini" style={{ marginBottom: 10 }}>{s.l}</div>
-          <div className="num" style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em", color: accentColor(s.accent) }}>
+        <div
+          key={s.l}
+          style={{
+            paddingRight: 24,
+            borderRight:
+              i < stats.length - 1 ? "1px solid var(--line)" : "none",
+            paddingLeft: i === 0 ? 0 : 24,
+          }}
+        >
+          <div className="t-label" style={{ marginBottom: 10 }}>
+            {s.l}
+          </div>
+          <div
+            style={{
+              fontFamily: "var(--font-pixel)",
+              fontSize: 28,
+              letterSpacing: "0.04em",
+              color: accentColor(s.accent),
+              display: "flex",
+              alignItems: "baseline",
+              gap: 6,
+            }}
+          >
             {s.v}
-            {s.sub && <span style={{ fontSize: 14, color: "var(--fg-3)", marginLeft: 6, fontWeight: 400 }}>{s.sub}</span>}
+            {s.sub && (
+              <span
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  color: "var(--fg-faint)",
+                }}
+              >
+                {s.sub}
+              </span>
+            )}
           </div>
         </div>
       ))}
