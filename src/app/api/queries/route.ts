@@ -20,17 +20,25 @@ import bs58 from "bs58";
 import { dbAdmin } from "@/lib/db";
 import { getPythPrice } from "@/lib/clients/pyth";
 import { shortId } from "@/lib/utils";
-import { enforce, rateLimitedResponse, subjectFromRequest } from "@/lib/rate-limit";
+import {
+  enforce,
+  rateLimitedResponse,
+  subjectFromRequest,
+} from "@/lib/rate-limit";
 import { apiError, logError, requestId } from "@/lib/api-error";
 
 const ROUTE = "/api/queries";
 
-const QUERY_DEADLINE_MS = 60 * 1000;     // agents have 60s to respond
+const QUERY_DEADLINE_MS = 60 * 1000; // agents have 60s to respond
 const CREDITS_PER_QUERY = 10;
 
-// Hackathon demo: when FREE_DEMO=1 the wallet+credit paywall is bypassed.
-// Anonymous askers are allowed; rate-limit falls back to IP.
-const FREE_DEMO = process.env.FREE_DEMO === "1";
+// Hackathon demo: hard-coded ON for the launch (no Vercel dashboard access
+// to set FREE_DEMO=1). When true, the wallet+credit paywall is bypassed —
+// anonymous askers are allowed; rate-limit falls back to IP. Flip back to
+// `process.env.FREE_DEMO === "1"` when the paywall should go live. See also:
+// (platform)/layout.tsx, WalletWidget.tsx, QueryComposer.tsx for paired
+// client-side gates that must flip in lockstep.
+const FREE_DEMO = true;
 
 const Schema = z.object({
   token_mint: z.string().min(32),
@@ -143,7 +151,12 @@ export async function POST(request: NextRequest) {
     if (debitErr || !updated) {
       // Another query beat us to the credits.
       if (debitErr) {
-        logError({ route: ROUTE, code: "insufficient_credits_race", request_id: rid, err: debitErr });
+        logError({
+          route: ROUTE,
+          code: "insufficient_credits_race",
+          request_id: rid,
+          err: debitErr,
+        });
       }
       return apiError({
         error: "insufficient_credits_race",
@@ -187,7 +200,12 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error || !query) {
-    logError({ route: ROUTE, code: "create_failed", request_id: rid, err: error });
+    logError({
+      route: ROUTE,
+      code: "create_failed",
+      request_id: rid,
+      err: error,
+    });
     if (!FREE_DEMO) await refundWalletCredits(walletPubkey);
     return apiError({
       error: "create_failed",
@@ -208,15 +226,23 @@ export async function POST(request: NextRequest) {
   }
 
   // 6. Fan out to webhook agents (fire-and-forget). Polling agents will pick up via /pending.
-  void dispatchToWebhookAgents(query.short_id, token.mint, token.symbol, deadline.toISOString());
+  void dispatchToWebhookAgents(
+    query.short_id,
+    token.mint,
+    token.symbol,
+    deadline.toISOString(),
+  );
 
-  return Response.json({
-    query_id: query.short_id,
-    token: { mint: token.mint, symbol: token.symbol },
-    asked_at: query.asked_at,
-    deadline_at: query.deadline_at,
-    pyth_price_at_ask: pythPrice,
-  }, { status: 201 });
+  return Response.json(
+    {
+      query_id: query.short_id,
+      token: { mint: token.mint, symbol: token.symbol },
+      asked_at: query.asked_at,
+      deadline_at: query.deadline_at,
+      pyth_price_at_ask: pythPrice,
+    },
+    { status: 201 },
+  );
 }
 
 /**
@@ -258,9 +284,14 @@ async function dispatchToWebhookAgents(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.INTERNAL_WEBHOOK_HMAC_SECRET ?? ""}`,
+        Authorization: `Bearer ${process.env.INTERNAL_WEBHOOK_HMAC_SECRET ?? ""}`,
       },
-      body: JSON.stringify({ query_id: queryShortId, mint, symbol, deadline_at: deadlineIso }),
+      body: JSON.stringify({
+        query_id: queryShortId,
+        mint,
+        symbol,
+        deadline_at: deadlineIso,
+      }),
     });
   } catch (err) {
     console.error("[queries] dispatch trigger failed:", err);
