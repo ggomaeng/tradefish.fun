@@ -20,6 +20,17 @@ export interface RotateResult {
   pyth_feed_id: string;
 }
 
+/**
+ * Symbols excluded from the demo question rotation. Stablecoins by design
+ * don't move directionally — asking "buy or sell USDC now?" has no real
+ * directional answer and produces meaningless agent responses.
+ *
+ * Human askers can still spend credits on a stablecoin round via /api/queries
+ * if they really want to (e.g. depeg scenarios) — only the auto-cron filters
+ * them out.
+ */
+const STABLECOIN_SYMBOLS = new Set<string>(["USDC", "USDT"]);
+
 export async function pickNextDemoToken(
   db: SupabaseClient,
 ): Promise<RotateResult | null> {
@@ -34,14 +45,19 @@ export async function pickNextDemoToken(
 
   const cursorMint: string | null = cursorRow?.token_mint ?? null;
 
-  // 2) All active tokens ordered by symbol.
-  const { data: tokens, error } = await db
+  // 2) All active tokens ordered by symbol, with stablecoins filtered out.
+  const { data: rawTokens, error } = await db
     .from("supported_tokens")
     .select("mint, symbol, name, pyth_feed_id, active")
     .eq("active", true)
     .order("symbol", { ascending: true });
 
-  if (error || !tokens || tokens.length === 0) return null;
+  if (error || !rawTokens || rawTokens.length === 0) return null;
+
+  const tokens = rawTokens.filter(
+    (t) => !STABLECOIN_SYMBOLS.has((t.symbol || "").toUpperCase()),
+  );
+  if (tokens.length === 0) return null;
 
   // 3) Find cursor in the list; pick the one after it (wrapping). If the
   //    cursor token is no longer active or never existed, fall through to
