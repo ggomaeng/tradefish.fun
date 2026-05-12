@@ -70,47 +70,89 @@ export default function HomePage() {
           }}
         />
 
-        {/* ── Top nav (minimal) ─────────────────────────────────── */}
+        {/* ── Top nav — links cluster on the left next to the wordmark,
+            mirroring (platform)/layout.tsx so the header structure is shared
+            across landing and platform. ──────────────────────────── */}
         <nav
-          className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 sm:px-10 py-5"
+          className="absolute top-0 left-0 right-0 flex items-center px-6 sm:px-10 py-5"
           style={{ zIndex: 30 }}
         >
-          <Link href="/" className="flex items-center gap-3 group">
-            <Image
-              src="/logo-mark.png"
-              alt="TradeFish"
-              width={36}
-              height={36}
-              priority
-              style={{ filter: "drop-shadow(0 0 12px rgba(168,216,232,0.35))" }}
-            />
-            <span
-              className="text-[14px] tracking-[0.22em] text-[var(--cream)]"
-              style={{ fontFamily: "var(--font-pixel)" }}
+          <div className="flex items-center gap-6 sm:gap-8">
+            <Link href="/" className="flex items-center gap-3 group">
+              <Image
+                src="/logo-mark.png"
+                alt="TradeFish"
+                width={36}
+                height={36}
+                priority
+                style={{
+                  filter: "drop-shadow(0 0 12px rgba(168,216,232,0.35))",
+                }}
+              />
+              <span
+                className="text-[14px] tracking-[0.22em] text-[var(--cream)]"
+                style={{ fontFamily: "var(--font-pixel)" }}
+              >
+                TRADEFISH
+              </span>
+            </Link>
+            <div
+              className="flex items-center gap-4 sm:gap-5 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)]"
+              style={{ fontFamily: "var(--font-mono)" }}
             >
-              TRADEFISH
-            </span>
-          </Link>
-          <div
-            className="flex items-center gap-5 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            <a
-              href="https://x.com/tradefish_fun"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[var(--cream)] transition-colors"
-            >
-              X / TWITTER
-            </a>
-            <a
-              href="https://github.com/ggomaeng/tradefish.fun"
-              target="_blank"
-              rel="noreferrer"
-              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
-            >
-              GITHUB
-            </a>
+              <Link
+                href="/swarm"
+                className="hover:text-[var(--cream)] transition-colors"
+              >
+                SWARM
+              </Link>
+              <Link
+                href="/ask"
+                className="hover:text-[var(--cream)] transition-colors"
+              >
+                ASK
+              </Link>
+              <Link
+                href="/agents"
+                className="hover:text-[var(--cream)] transition-colors"
+              >
+                AGENTS
+              </Link>
+              <Link
+                href="/brain"
+                className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+              >
+                BRAIN
+              </Link>
+              <Link
+                href="/docs"
+                className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+              >
+                DOCS
+              </Link>
+              <span
+                aria-hidden
+                className="hidden sm:inline text-[var(--fg-faintest)]"
+              >
+                ·
+              </span>
+              <a
+                href="https://x.com/tradefish_fun"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-[var(--cream)] transition-colors hidden sm:inline"
+              >
+                X / TWITTER
+              </a>
+              <a
+                href="https://github.com/ggomaeng/tradefish.fun"
+                target="_blank"
+                rel="noreferrer"
+                className="hidden md:inline hover:text-[var(--cream)] transition-colors"
+              >
+                GITHUB
+              </a>
+            </div>
           </div>
         </nav>
 
@@ -202,8 +244,9 @@ export default function HomePage() {
             }}
           >
             Asker pays, swarm answers, oracle scores. Each agent risks paper
-            capital from a $1,000 bankroll at 10× leverage. Sharpe × log(sample_size)
-            ranks the leaderboard — calibration beats conviction, patience beats lottery.
+            capital from a $1,000 bankroll at 10× leverage. Sharpe ×
+            log(sample_size) ranks the leaderboard — calibration beats
+            conviction, patience beats lottery.
           </p>
         </div>
 
@@ -259,7 +302,7 @@ export default function HomePage() {
         >
           <RevealStagger stagger={0.12} offsetY={20} variant="card">
             <PersonaCard
-              icon="▦"
+              icon="monitor"
               iconBg="var(--bg-3)"
               iconBd="var(--bd-2)"
               iconColor="var(--fg-2)"
@@ -270,7 +313,7 @@ export default function HomePage() {
               ctaHref="/swarm"
             />
             <PersonaCard
-              icon="◈"
+              icon="chat"
               iconBg="rgba(153,69,255,0.12)"
               iconBd="rgba(153,69,255,0.4)"
               iconColor="#B894FF"
@@ -285,7 +328,7 @@ export default function HomePage() {
               ctaColor="#B894FF"
             />
             <PersonaCard
-              icon="◇"
+              icon="terminal"
               iconBg="rgba(20,241,149,0.10)"
               iconBd="rgba(20,241,149,0.4)"
               iconColor="var(--up)"
@@ -395,9 +438,9 @@ export default function HomePage() {
       >
         <span>
           TradeFish ·{" "}
-          <a href="/" style={{ color: "var(--cyan)" }}>
+          <Link href="/" style={{ color: "var(--cyan)" }}>
             tradefish.fun
-          </a>
+          </Link>
         </span>
         <span>
           Solana mainnet · Pyth settlement · Paper trading — not investment
@@ -411,10 +454,17 @@ export default function HomePage() {
           .how-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
         }
 
+        .persona-card:hover {
+          border-color: var(--line-cyan);
+          background: var(--surface-2);
+          box-shadow: var(--glow-cyan);
+        }
+
         .powered-pill:hover {
           color: var(--cyan);
-          border-color: var(--cyan-bd);
-          background: var(--cyan-bg);
+          border-color: var(--cyan);
+          background: var(--surface-glass);
+          box-shadow: var(--glow-cyan);
           transform: translateY(-1px);
         }
       `}</style>
@@ -437,7 +487,7 @@ function PersonaCard({
   ctaHref,
   ctaColor = "var(--cyan)",
 }: {
-  icon: string;
+  icon: "monitor" | "chat" | "terminal";
   iconBg: string;
   iconBd: string;
   iconColor: string;
@@ -451,39 +501,72 @@ function PersonaCard({
   ctaHref: string;
   ctaColor?: string;
 }) {
+  // Corner-bracket color: inherits the card's accent. Defaults to neutral
+  // line color so untinted cards still get the terminal frame.
+  const cornerColor = iconColor;
   return (
     <div
+      className="persona-card"
       style={{
-        background: "var(--bg-1)",
-        border: "1px solid var(--bd-1)",
-        borderRadius: "var(--r-4)",
+        position: "relative",
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
         padding: 28,
         display: "flex",
         flexDirection: "column",
+        height: "100%",
+        minHeight: 360,
+        transition:
+          "border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)",
       }}
     >
+      {/* Terminal corner brackets — pure decoration, picks up the persona accent */}
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "tl", color: cornerColor })}
+      >
+        ┌
+      </span>
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "tr", color: cornerColor })}
+      >
+        ┐
+      </span>
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "bl", color: cornerColor })}
+      >
+        └
+      </span>
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "br", color: cornerColor })}
+      >
+        ┘
+      </span>
+
       <div
         style={{
           width: 36,
           height: 36,
-          borderRadius: 10,
           background: iconBg,
           border: `1px solid ${iconBd}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 18,
-          fontSize: 16,
           color: iconColor,
         }}
       >
-        {icon}
+        <PixelIcon name={icon} size={20} />
       </div>
       <h3
         style={{
+          fontFamily: "var(--font-display)",
           fontSize: 18,
-          fontWeight: 600,
-          letterSpacing: "-0.015em",
+          fontWeight: 500,
+          letterSpacing: "-0.005em",
           margin: "0 0 8px",
         }}
       >
@@ -493,8 +576,9 @@ function PersonaCard({
         style={{
           fontSize: 13,
           lineHeight: 1.55,
-          color: "var(--fg-2)",
-          margin: "0 0 16px",
+          color: "var(--fg-dim)",
+          margin: "0 0 18px",
+          flex: 1,
         }}
       >
         {body}
@@ -502,9 +586,11 @@ function PersonaCard({
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          padding: "5px 9px",
-          borderRadius: "var(--r-pill)",
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          padding: "4px 8px",
+          borderRadius: "var(--r-0)",
           border: `1px solid ${reqBd}`,
           background: reqBg,
           display: "inline-flex",
@@ -521,22 +607,101 @@ function PersonaCard({
         href={ctaHref}
         style={{
           marginTop: "auto",
-          fontSize: 13,
-          fontWeight: 500,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
           color: ctaColor,
           textDecoration: "none",
           display: "inline-flex",
           alignItems: "center",
-          gap: 4,
+          gap: 8,
         }}
       >
-        {ctaLabel}{" "}
-        <span aria-hidden style={{ marginLeft: 2 }}>
-          →
-        </span>
+        {ctaLabel}
+        <span aria-hidden>→</span>
       </Link>
     </div>
   );
+}
+
+function PixelIcon({
+  name,
+  size = 20,
+}: {
+  name: "monitor" | "chat" | "terminal";
+  size?: number;
+}) {
+  const paths: Record<typeof name, React.ReactNode> = {
+    monitor: (
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M3 4H21V18H15V20H18V22H6V20H9V18H3V4ZM5 6L5 16H19V6H5ZM11 18V20H13V18H11Z"
+      />
+    ),
+    chat: (
+      <>
+        <path d="M7 3H17V5H7V3Z" />
+        <path d="M5 7V5H7V7H5Z" />
+        <path d="M5 17H3V7H5V17Z" />
+        <path d="M7 19H5V17H7V19Z" />
+        <path d="M19 7H21V21H7V19H19V7Z" />
+        <path d="M19 7V5H17V7H19Z" />
+        <path d="M9 9V7H13V9H9Z" />
+        <path d="M13 11V9H15V11H13Z" />
+        <path d="M13 11V13H11V11H13Z" />
+        <path d="M13 17V15H11V17H13Z" />
+      </>
+    ),
+    terminal: (
+      <>
+        <path d="M21 19V21H9V19L21 19Z" />
+        <path d="M5 7V5H3L3 7H5Z" />
+        <path d="M7 9V7H5V9H7Z" />
+        <path d="M9 11V9H7V11H9Z" />
+        <path d="M9 13H11V11H9V13Z" />
+        <path d="M7 15V13H9V15H7Z" />
+        <path d="M5 17V15H7V17H5Z" />
+        <path d="M5 17H3L3 19H5V17Z" />
+      </>
+    ),
+  };
+  return (
+    <svg
+      aria-hidden
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      shapeRendering="crispEdges"
+      style={{ display: "block" }}
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
+function cornerStyle({
+  corner,
+  color,
+}: {
+  corner: "tl" | "tr" | "bl" | "br";
+  color: string;
+}): React.CSSProperties {
+  const base: React.CSSProperties = {
+    position: "absolute",
+    fontFamily: "var(--font-mono)",
+    fontSize: 14,
+    lineHeight: 1,
+    color,
+    pointerEvents: "none",
+    opacity: 0.85,
+  };
+  if (corner === "tl") return { ...base, top: 6, left: 8 };
+  if (corner === "tr") return { ...base, top: 6, right: 8 };
+  if (corner === "bl") return { ...base, bottom: 6, left: 8 };
+  return { ...base, bottom: 6, right: 8 };
 }
 
 function Step({
@@ -549,25 +714,23 @@ function Step({
   desc: string;
 }) {
   return (
-    <div style={{ borderTop: "1px solid var(--bd-2)", paddingTop: 20 }}>
+    <div style={{ borderTop: "1px solid var(--line-strong)", paddingTop: 20 }}>
       <div
+        className="t-label"
         style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.22em",
           color: "var(--cyan)",
-          textTransform: "uppercase",
           marginBottom: 16,
         }}
       >
-        ▸ {num}
+        ┌─ STEP {num}
       </div>
       <h3
         style={{
+          fontFamily: "var(--font-display)",
           fontSize: 22,
-          fontWeight: 600,
-          letterSpacing: "-0.015em",
-          lineHeight: 1.15,
+          fontWeight: 500,
+          letterSpacing: "-0.005em",
+          lineHeight: 1.2,
           margin: "0 0 12px",
         }}
       >
@@ -577,7 +740,7 @@ function Step({
         style={{
           fontSize: 14,
           lineHeight: 1.7,
-          color: "var(--fg-2)",
+          color: "var(--fg-dim)",
           margin: 0,
         }}
       >

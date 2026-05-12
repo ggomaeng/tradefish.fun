@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>TradeFish — Pixel-icons preview</title>
+  <link rel="stylesheet" href="colors_and_type.css">
+  <link rel="stylesheet" href="system.css">
+  <style>
+    body { padding: 48px 32px 96px; max-width: 1100px; margin: 0 auto; }
+    .hdr { margin-bottom: 40px; }
+    .hdr h1 { font: 400 32px/1.1 var(--font-mono); letter-spacing: -0.01em; margin: 0 0 8px; }
+    .hdr p { color: var(--fg-dim); max-width: 60ch; margin: 0; font-size: 14px; }
+    .kicker { font: 500 11px/1 var(--font-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); margin-bottom: 8px; }
+
+    section { margin: 56px 0; }
+    section h2 { font: 400 22px/1.2 var(--font-mono); letter-spacing: -0.005em; margin: 0 0 8px; }
+    section p.desc { color: var(--fg-dim); font-size: 13px; max-width: 70ch; margin: 0 0 24px; }
+
+    .icon-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 8px;
+      border: 1px solid var(--border);
+    }
+    .icon-cell {
+      display: flex; flex-direction: column; align-items: center; gap: 10px;
+      padding: 18px 8px 14px;
+      background: var(--bg-1);
+      border: 1px solid transparent;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .icon-cell:hover { border-color: var(--cyan); background: var(--bg-2); }
+    .icon-cell svg { width: 24px; height: 24px; display: block; color: var(--fg); }
+    .icon-cell .lbl {
+      font: 500 9px/1 var(--font-mono);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--fg-dim);
+      text-align: center;
+    }
+
+    /* tinting demonstrations */
+    .tint-cyan svg { color: var(--cyan); }
+    .tint-mint svg { color: var(--mint); }
+    .tint-magenta svg { color: var(--magenta); }
+    .tint-violet svg { color: var(--violet); }
+    .tint-dim svg { color: var(--fg-dim); }
+
+    .compare {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0;
+      border: 1px solid var(--border);
+    }
+    .compare > div { padding: 24px 16px; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+    .compare > div + div { border-left: 1px solid var(--border); }
+    .compare .row { display: flex; gap: 16px; align-items: center; }
+    .compare .uni { font: 400 24px/1 var(--font-pixel); color: var(--mint); }
+    .compare .pix svg { width: 24px; height: 24px; color: var(--mint); }
+    .compare h3 { font: 500 10px/1 var(--font-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); margin: 0; }
+    .compare p { font: 400 11px/1.5 var(--font-mono); color: var(--fg-dim); text-align: center; margin: 0; max-width: 28ch; }
+
+    /* realistic usage block */
+    .tx-row {
+      display: grid;
+      grid-template-columns: max-content 1fr max-content max-content;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      background: var(--bg-1);
+      border: 1px solid var(--border);
+      font: 400 14px/1 var(--font-mono);
+    }
+    .tx-row + .tx-row { border-top: 0; }
+    .tx-row .ico { display: flex; align-items: center; gap: 10px; }
+    .tx-row .ico svg { width: 16px; height: 16px; color: var(--fg-dim); }
+    .tx-row .ico .name { font-weight: 500; color: var(--fg); }
+    .tx-row .ico .addr { color: var(--fg-dim); font-size: 11px; letter-spacing: 0.04em; }
+    .tx-row .pnl { font-variant-numeric: tabular-nums; font-weight: 500; }
+    .tx-row .pnl.up { color: var(--mint); }
+    .tx-row .pnl.dn { color: var(--magenta); }
+    .tx-row .actions { display: flex; gap: 4px; }
+    .tx-row .actions button {
+      background: transparent; border: 1px solid var(--border); color: var(--fg-dim);
+      width: 28px; height: 28px; display: grid; place-items: center;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .tx-row .actions button:hover { border-color: var(--cyan); color: var(--cyan); }
+    .tx-row .actions svg { width: 14px; height: 14px; color: inherit; }
+  </style>
+</head>
+<body>
+
+  <header class="hdr">
+    <div class="kicker">PREVIEW · NOT YET IN SYSTEM</div>
+    <h1>Pixel-icons — candidate starter pack</h1>
+    <p>
+      15 candidate icons recolored to <code>currentColor</code> against the v2 dark spectrum. Same orthogonal-grid DNA as Departure Mono numerals and box-drawing chars — but expressing product-domain objects (chart, coin, wallet, share) that Unicode can't.
+      Inherits color from <code>--fg</code>, <code>--cyan</code>, <code>--mint</code>, etc. — no per-variant SVG files.
+    </p>
+  </header>
+
+  <!-- DEFAULT (--fg) -->
+  <section>
+    <h2>Default — inherits <code>color: var(--fg)</code></h2>
+    <p class="desc">Drop into a list, button, or nav. Pixel-grid matches Departure Mono numerics in the same row without visual clash.</p>
+    <div class="icon-grid">
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H19V5H5V3Z"/><path d="M5 19H3V5H5V19Z"/><path d="M19 19V21H5V19H19Z"/><path d="M19 19H21V5H19V19Z"/><path d="M17 7V17H15L15 7H17Z"/><path d="M13 17V11H11V17H13Z"/><path d="M9 17V13H7V17H9Z"/></svg><span class="lbl">chart up</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7L7 17H9L9 7H7Z"/><path d="M11 17V11H13V17H11Z"/><path d="M15 17V13H17V17H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 3H5V5H3V19H5V21H19V19H21V5H19V3ZM19 5H5V19H19V5Z"/></svg><span class="lbl">chart dn</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 7H15V9H13V11H15V13H13V15H15V17H13V19H11V17H9V15H11V13H9V11H11V9H9V7H11V5H13V7Z"/><path d="M9 9V11H7V9H9Z"/><path d="M15 15V13H17V15H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M7 1V3H5V5H3V7H1V17H3V19H5V21H7V23H17V21H19V19H21V17H23V7H21V5H19V3H17V1H7ZM17 3V5H19V7H21V17H19V19H17V21H7V19H5V17H3V7H5V5H7V3H17Z"/></svg><span class="lbl">coin</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 1H17V3H7V1Z"/><path d="M5 5V3H7V5H5Z"/><path d="M3 7V5H5V7H3Z"/><path d="M3 17H1V7H3V17Z"/><path d="M5 19H3V17H5V19Z"/><path d="M7 21H5V19H7V21Z"/><path d="M17 21V23H7V21H17Z"/><path d="M19 19V21H17V19H19Z"/><path d="M21 17V19H19V17H21Z"/><path d="M21 7H23V17H21V7Z"/><path d="M19 5H21V7H19V5Z"/><path d="M19 5V3H17V5H19Z"/><path d="M9 5H11V7H12V5H14V7H15V9H11V11H15V13H11V15H15V17H14V19H12V17H11V19H9V17H7V15H9V9H7V7H9V5Z"/><path d="M15 15V13H17V15H15Z"/><path d="M15 11V9H17V11H15Z"/></svg><span class="lbl">btc</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 5L7 5V3L9 3V5Z"/><path d="M5 7L7 7V5L5 5V7Z"/><path d="M5 17V7H3L3 17H5Z"/><path d="M7 19V17H5V19H7Z"/><path d="M7 19H9V21H7V19Z"/><path d="M17 7L19 7V17H17V19H15V21H17V19H19V17H21V7H19V5H17V3L15 3V5L17 5V7Z"/><path d="M13 9H15V15H13V17H15V15H17V9H15V7H13V9Z"/><path d="M7 15H9V17H11V15H9V9H11V7H9V9H7V15Z"/><path d="M11 13H13V11H11V13Z"/></svg><span class="lbl">signal</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M16 4V2H8V4L6 4V6L4 6V16L2 16V18H8V20H10V22H14V20H16V18H22V16H20V6L18 6V4H16ZM16 4V6L18 6V16H6V6H8V4L16 4ZM14 20V18H10V20H14Z"/></svg><span class="lbl">bell</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M10 8V10H8V14H10V16H14V14H16V10H14V8H10ZM14 10V14H10V10H14Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M6 2H4V4H2V6H4V10H2V14H4V18H2L2 20H4V22H6V20H10V22H14V20H18V22H20V20H22V18H20V14H22V10H20V6H22V4H20V2H18V4H14V2H10V4H6V2ZM6 6H10V4H14V6H18V10H20V14H18V18H14V20H10V18H6V14H4V10H6V6ZM6 6V4H4V6H6ZM18 6H20V4H18V6ZM18 18V20H20V18H18ZM6 18H4V20H6V18Z"/></svg><span class="lbl">settings</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M1 13L1 7L3 7L3 13H1Z"/><path d="M7 3L7 5L5 5V7L3 7V3L7 3Z"/><path d="M13 3L7 3L7 1L13 1L13 3Z"/><path d="M17 7L15 7L15 5L13 5V3L17 3L17 7Z"/><path d="M17 7H19V13L17 13V7Z"/><path d="M3 13L3 17H7L7 19H13V17H17L17 13H15L15 15L13 15L13 17H7V15H5L5 13L3 13Z"/><path d="M19 17V19H17L17 17H19Z"/><path d="M21 21H19L19 19H21L21 21Z"/><path d="M21 21H23V23H21V21Z"/></svg><span class="lbl">search</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M11 2V4H9V6H7V8H5V10H3V20H5V22H19V20H21V10H19V8H17V6H15V4H13V2L11 2ZM13 4V6H15V8H17V10H19V20H5V10H7V8H9V6H11V4H13Z"/></svg><span class="lbl">home</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2V4L10 4V2L20 2Z"/><path d="M10 4V6H8V4H10Z"/><path d="M20 14H22V4L20 4V14Z"/><path d="M20 14H18V16H20V14Z"/><path d="M14 8V10H4V8L14 8Z"/><path d="M4 20H2V10H4V20Z"/><path d="M14 20V22H4V20H14Z"/><path d="M14 20H16V10H14V20Z"/></svg><span class="lbl">copy</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9L10 9V7L4 7V9Z"/><path d="M4 15V9L2 9L2 15L4 15Z"/><path d="M4 15L10 15V17H4V15Z"/><path d="M14 7H20V9H14V7Z"/><path d="M20 15V9H22V15H20Z"/><path d="M20 15V17H14V15H20Z"/><path d="M7 11H17V13H7V11Z"/></svg><span class="lbl">link</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M11 8H15V10H19V8H21V4H19V2L15 2V4H13V6H11V8ZM15 4H19V8H15V4Z"/><path d="M9 10H11V8H9V10Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9 14V10H7V8H3V10H1L1 14H3V16H7V14H9ZM3 14H7V10H3V14Z"/><path d="M11 16V14H9V16H11Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 16H11V18H13V20H15V22H19V20H21V16H19V14H15V16ZM15 16H19V20H15V16Z"/></svg><span class="lbl">share</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 13V11H8V13H10Z"/><path d="M12 13L10 13L10 15H12V13Z"/><path d="M14 11V13H12V11H14Z"/><path d="M14 11H16V9.00005H14L14 11Z"/><path d="M15 3L9 3V5L15 5L15 7L17 7L17 9L19 9L19 5L15 5V3Z"/><path d="M5 5L9 5L9 7L7 7V9H5L5 5Z"/><path d="M5 9L5 15H3L3 9L5 9Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 19V21L9 21L9 19H15ZM15 19L15 17L17 17L17 15L19 15V19H15Z"/><path d="M19 15V9L21 9L21 15H19Z"/><path d="M5 15L5 19L9 19L9 17L7 17V15L5 15Z"/></svg><span class="lbl">check</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 15H13L13 13H15L15 15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M11 13V15H9L9 13H11ZM11 13H13V11H15V9L13 9V11H11V9H9V11H11V13Z"/><path d="M15 3L9 3V5L15 5L15 7L17 7L17 9L19 9L19 5L15 5V3Z"/><path d="M5 5L9 5L9 7L7 7V9H5L5 5Z"/><path d="M5 9L5 15H3L3 9L5 9Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 19V21L9 21L9 19H15ZM15 19L15 17L17 17L17 15L19 15V19H15Z"/><path d="M19 15V9L21 9L21 15H19Z"/><path d="M5 15L5 19L9 19L9 17L7 17V15L5 15Z"/></svg><span class="lbl">close</span></div>
+
+      <div class="icon-cell"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 7L11 9L13 9V7H11Z"/><path d="M11 11V17H13V11H11Z"/><path d="M15 3L9 3V5L15 5L15 7L17 7L17 9L19 9L19 5L15 5V3Z"/><path d="M5 5L9 5L9 7L7 7V9H5L5 5Z"/><path d="M5 9L5 15H3L3 9L5 9Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 19V21L9 21L9 19H15ZM15 19L15 17L17 17L17 15L19 15V19H15Z"/><path d="M19 15V9L21 9L21 15H19Z"/><path d="M5 15L5 19L9 19L9 17L7 17V15L5 15Z"/></svg><span class="lbl">info</span></div>
+
+    </div>
+  </section>
+
+  <!-- SPECTRUM TINTING -->
+  <section>
+    <h2>Spectrum tinting — semantic, not decorative</h2>
+    <p class="desc">The same SVG, recolored through <code>color: var(--cyan|mint|magenta|violet|fg-dim)</code>. Reserve color for meaning — chart-up never red, chart-down never green. Default state is <code>--fg-dim</code>.</p>
+    <div class="icon-grid">
+      <div class="icon-cell tint-mint"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H19V5H5V3Z"/><path d="M5 19H3V5H5V19Z"/><path d="M19 19V21H5V19H19Z"/><path d="M19 19H21V5H19V19Z"/><path d="M17 7V17H15L15 7H17Z"/><path d="M13 17V11H11V17H13Z"/><path d="M9 17V13H7V17H9Z"/></svg><span class="lbl">long · mint</span></div>
+      <div class="icon-cell tint-magenta"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7L7 17H9L9 7H7Z"/><path d="M11 17V11H13V17H11Z"/><path d="M15 17V13H17V17H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M19 3H5V5H3V19H5V21H19V19H21V5H19V3ZM19 5H5V19H19V5Z"/></svg><span class="lbl">short · magenta</span></div>
+      <div class="icon-cell tint-cyan"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 5L7 5V3L9 3V5Z"/><path d="M5 7L7 7V5L5 5V7Z"/><path d="M5 17V7H3L3 17H5Z"/><path d="M7 19V17H5V19H7Z"/><path d="M7 19H9V21H7V19Z"/><path d="M17 7L19 7V17H17V19H15V21H17V19H19V17H21V7H19V5H17V3L15 3V5L17 5V7Z"/><path d="M13 9H15V15H13V17H15V15H17V9H15V7H13V9Z"/><path d="M7 15H9V17H11V15H9V9H11V7H9V9H7V15Z"/><path d="M11 13H13V11H11V13Z"/></svg><span class="lbl">live · cyan</span></div>
+      <div class="icon-cell tint-violet"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M11 7L11 9L13 9V7H11Z"/><path d="M11 11V17H13V11H11Z"/><path d="M15 3L9 3V5L15 5L15 7L17 7L17 9L19 9L19 5L15 5V3Z"/><path d="M5 5L9 5L9 7L7 7V9H5L5 5Z"/><path d="M5 9L5 15H3L3 9L5 9Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 19V21L9 21L9 19H15ZM15 19L15 17L17 17L17 15L19 15V19H15Z"/><path d="M19 15V9L21 9L21 15H19Z"/><path d="M5 15L5 19L9 19L9 17L7 17V15L5 15Z"/></svg><span class="lbl">hold · violet</span></div>
+      <div class="icon-cell tint-dim"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2V4L10 4V2L20 2Z"/><path d="M10 4V6H8V4H10Z"/><path d="M20 14H22V4L20 4V14Z"/><path d="M20 14H18V16H20V14Z"/><path d="M14 8V10H4V8L14 8Z"/><path d="M4 20H2V10H4V20Z"/><path d="M14 20V22H4V20H14Z"/><path d="M14 20H16V10H14V20Z"/></svg><span class="lbl">meta · dim</span></div>
+    </div>
+  </section>
+
+  <!-- UNICODE VS PIXEL -->
+  <section>
+    <h2>Unicode glyph vs pixel-SVG — when each wins</h2>
+    <p class="desc">Both share the orthogonal-grid philosophy. The choice is per-role, not per-aesthetic.</p>
+    <div class="compare">
+      <div>
+        <h3>Direction marker</h3>
+        <div class="row">
+          <span class="uni">▴</span>
+          <span class="pix"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 3H19V5H5V3Z"/><path d="M5 19H3V5H5V19Z"/><path d="M19 19V21H5V19H19Z"/><path d="M19 19H21V5H19V19Z"/><path d="M17 7V17H15L15 7H17Z"/><path d="M13 17V11H11V17H13Z"/><path d="M9 17V13H7V17H9Z"/></svg></span>
+        </div>
+        <p>Inline with text → use the glyph. Same baseline, no SVG payload, no layout cost.</p>
+      </div>
+      <div>
+        <h3>Status pip</h3>
+        <div class="row">
+          <span class="uni">◉</span>
+          <span class="pix"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 13V11H8V13H10Z"/><path d="M12 13L10 13L10 15H12V13Z"/><path d="M14 11V13H12V11H14Z"/><path d="M14 11H16V9.00005H14L14 11Z"/><path d="M15 3L9 3V5L15 5L15 7L17 7L17 9L19 9L19 5L15 5V3Z"/><path d="M5 5L9 5L9 7L7 7V9H5L5 5Z"/><path d="M5 9L5 15H3L3 9L5 9Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 19V21L9 21L9 19H15ZM15 19L15 17L17 17L17 15L19 15V19H15Z"/><path d="M19 15V9L21 9L21 15H19Z"/><path d="M5 15L5 19L9 19L9 17L7 17V15L5 15Z"/></svg></span>
+        </div>
+        <p>Inside a chip → glyph. Standalone "verified ✓" treatment → SVG with breathing room.</p>
+      </div>
+      <div>
+        <h3>Product object</h3>
+        <div class="row">
+          <span class="uni" style="opacity: 0.3">¤</span>
+          <span class="pix"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 7H15V9H13V11H15V13H13V15H15V17H13V19H11V17H9V15H11V13H9V11H11V9H9V7H11V5H13V7Z"/><path d="M9 9V11H7V9H9Z"/><path d="M15 15V13H17V15H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M7 1V3H5V5H3V7H1V17H3V19H5V21H7V23H17V21H19V19H21V17H23V7H21V5H19V3H17V1H7ZM17 3V5H19V7H21V17H19V19H17V21H7V19H5V17H3V7H5V5H7V3H17Z"/></svg></span>
+        </div>
+        <p>Unicode has nothing this specific. SVG wins on identity.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- REALISTIC USAGE -->
+  <section>
+    <h2>In context — settled round row</h2>
+    <p class="desc">All three icon families coexist: pixel-SVG for the asset + actions (coin / copy / link), Unicode for direction (<code>▴ ▾</code>), tabular numerics for PnL.</p>
+
+    <div class="tx-row">
+      <div class="ico">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 7H15V9H13V11H15V13H13V15H15V17H13V19H11V17H9V15H11V13H9V11H11V9H9V7H11V5H13V7Z"/><path d="M9 9V11H7V9H9Z"/><path d="M15 15V13H17V15H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M7 1V3H5V5H3V7H1V17H3V19H5V21H7V23H17V21H19V19H21V17H23V7H21V5H19V3H17V1H7ZM17 3V5H19V7H21V17H19V19H17V21H7V19H5V17H3V7H5V5H7V3H17Z"/></svg>
+        <div>
+          <div class="name">SOL · long</div>
+          <div class="addr">6f4a…8c91</div>
+        </div>
+      </div>
+      <span class="addr" style="color: var(--fg-dim); font-size: 11px;">round · 0429 · settled 2m ago</span>
+      <span class="pnl up">▴ +$1,284.30</span>
+      <div class="actions">
+        <button title="Copy tx"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2V4L10 4V2L20 2Z"/><path d="M10 4V6H8V4H10Z"/><path d="M20 14H22V4L20 4V14Z"/><path d="M20 14H18V16H20V14Z"/><path d="M14 8V10H4V8L14 8Z"/><path d="M4 20H2V10H4V20Z"/><path d="M14 20V22H4V20H14Z"/><path d="M14 20H16V10H14V20Z"/></svg></button>
+        <button title="Open on solscan"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9L10 9V7L4 7V9Z"/><path d="M4 15V9L2 9L2 15L4 15Z"/><path d="M4 15L10 15V17H4V15Z"/><path d="M14 7H20V9H14V7Z"/><path d="M20 15V9H22V15H20Z"/><path d="M20 15V17H14V15H20Z"/><path d="M7 11H17V13H7V11Z"/></svg></button>
+        <button title="Share round"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M11 8H15V10H19V8H21V4H19V2L15 2V4H13V6H11V8ZM15 4H19V8H15V4Z"/><path d="M9 10H11V8H9V10Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9 14V10H7V8H3V10H1L1 14H3V16H7V14H9ZM3 14H7V10H3V14Z"/><path d="M11 16V14H9V16H11Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 16H11V18H13V20H15V22H19V20H21V16H19V14H15V16ZM15 16H19V20H15V16Z"/></svg></button>
+      </div>
+    </div>
+
+    <div class="tx-row">
+      <div class="ico">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 7H15V9H13V11H15V13H13V15H15V17H13V19H11V17H9V15H11V13H9V11H11V9H9V7H11V5H13V7Z"/><path d="M9 9V11H7V9H9Z"/><path d="M15 15V13H17V15H15Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M7 1V3H5V5H3V7H1V17H3V19H5V21H7V23H17V21H19V19H21V17H23V7H21V5H19V3H17V1H7ZM17 3V5H19V7H21V17H19V19H17V21H7V19H5V17H3V7H5V5H7V3H17Z"/></svg>
+        <div>
+          <div class="name">JUP · short</div>
+          <div class="addr">2a91…d4f0</div>
+        </div>
+      </div>
+      <span class="addr" style="color: var(--fg-dim); font-size: 11px;">round · 0428 · settled 14m ago</span>
+      <span class="pnl dn">▾ −$412.05</span>
+      <div class="actions">
+        <button title="Copy tx"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 2V4L10 4V2L20 2Z"/><path d="M10 4V6H8V4H10Z"/><path d="M20 14H22V4L20 4V14Z"/><path d="M20 14H18V16H20V14Z"/><path d="M14 8V10H4V8L14 8Z"/><path d="M4 20H2V10H4V20Z"/><path d="M14 20V22H4V20H14Z"/><path d="M14 20H16V10H14V20Z"/></svg></button>
+        <button title="Open on solscan"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 9L10 9V7L4 7V9Z"/><path d="M4 15V9L2 9L2 15L4 15Z"/><path d="M4 15L10 15V17H4V15Z"/><path d="M14 7H20V9H14V7Z"/><path d="M20 15V9H22V15H20Z"/><path d="M20 15V17H14V15H20Z"/><path d="M7 11H17V13H7V11Z"/></svg></button>
+        <button title="Share round"><svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" clip-rule="evenodd" d="M11 8H15V10H19V8H21V4H19V2L15 2V4H13V6H11V8ZM15 4H19V8H15V4Z"/><path d="M9 10H11V8H9V10Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M9 14V10H7V8H3V10H1L1 14H3V16H7V14H9ZM3 14H7V10H3V14Z"/><path d="M11 16V14H9V16H11Z"/><path fill-rule="evenodd" clip-rule="evenodd" d="M15 16H11V18H13V20H15V22H19V20H21V16H19V14H15V16ZM15 16H19V20H15V16Z"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+</body>
+</html>

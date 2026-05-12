@@ -9,12 +9,17 @@
  * P7 realtime hook surface:
  *   - useGraphData() returns `{ data, loading, error, onPatch }`.
  *     Pass `onPatch` down to BrainGraph; P7 calls it with new wiki_entry rows.
- *   - incrementCounterRef.current(kind) is exposed to SidePanel;
- *     P7 stores a ref to this and calls it on Realtime events.
+ *   - refreshCountersRef.current() force-refetches the side panel's
+ *     aggregates on wiki INSERTs (otherwise the 15s poll catches up).
  */
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import type { BrainGraph, BrainNode, BrainEdge, BrainSelection } from "@/lib/brain/types";
+import type {
+  BrainGraph,
+  BrainNode,
+  BrainEdge,
+  BrainSelection,
+} from "@/lib/brain/types";
 import { BrainGraph as BrainGraphComponent } from "./BrainGraph";
 import { SidePanel } from "./SidePanel";
 import { NoteDetail } from "./NoteDetail";
@@ -55,7 +60,9 @@ function useGraphData(atMs: number | null) {
     }
 
     void load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [atMs]);
 
   return { data, setData, loading, error };
@@ -85,9 +92,13 @@ export function BrainPage() {
 
   const { data, setData, loading, error } = useGraphData(scrubAtMs);
 
-  const minAt = data.nodes.length > 0
-    ? data.nodes.reduce((min, n) => n.created_at < min ? n.created_at : min, data.nodes[0].created_at)
-    : null;
+  const minAt =
+    data.nodes.length > 0
+      ? data.nodes.reduce(
+          (min, n) => (n.created_at < min ? n.created_at : min),
+          data.nodes[0].created_at,
+        )
+      : null;
 
   const handleSelect = useCallback((sel: BrainSelection) => {
     setSelection(sel);
@@ -113,46 +124,57 @@ export function BrainPage() {
 
   // ── P7: Realtime handlers ──────────────────────────────────────────────────
 
-  const handleNodeInsert = useCallback((node: BrainNode) => {
-    // Only patch in live mode (scrubber at now)
-    if (scrubAtMs !== null) return;
+  const handleNodeInsert = useCallback(
+    (node: BrainNode) => {
+      // Only patch in live mode (scrubber at now)
+      if (scrubAtMs !== null) return;
 
-    setData((prev) => {
-      // Deduplicate — Realtime can fire twice on reconnect
-      if (prev.nodes.some((n) => n.id === node.id)) return prev;
-      return { ...prev, nodes: [node, ...prev.nodes] };
-    });
+      setData((prev) => {
+        // Deduplicate — Realtime can fire twice on reconnect
+        if (prev.nodes.some((n) => n.id === node.id)) return prev;
+        return { ...prev, nodes: [node, ...prev.nodes] };
+      });
 
-    // Force the side-panel counter aggregates to refetch from the truth
-    // tables (queries + responses + wiki_entries). The 15s poll would catch
-    // up eventually; this just makes the tick land within the same beat as
-    // the neuron pulse.
-    refreshCountersRef.current?.();
+      // Force the side-panel counter aggregates to refetch from the truth
+      // tables (queries + responses + wiki_entries). The 15s poll would catch
+      // up eventually; this just makes the tick land within the same beat as
+      // the neuron pulse.
+      refreshCountersRef.current?.();
 
-    // Trigger 3-second pulse animation for this node
-    setPulsingNodeIds((prev) => {
-      const next = new Set(prev);
-      next.add(node.id);
-      return next;
-    });
-    setTimeout(() => {
+      // Trigger 3-second pulse animation for this node
       setPulsingNodeIds((prev) => {
         const next = new Set(prev);
-        next.delete(node.id);
+        next.add(node.id);
         return next;
       });
-    }, 3000);
-  }, [scrubAtMs, setData]);
+      setTimeout(() => {
+        setPulsingNodeIds((prev) => {
+          const next = new Set(prev);
+          next.delete(node.id);
+          return next;
+        });
+      }, 3000);
+    },
+    [scrubAtMs, setData],
+  );
 
-  const handleEdgeInsert = useCallback((edge: BrainEdge) => {
-    if (scrubAtMs !== null) return;
+  const handleEdgeInsert = useCallback(
+    (edge: BrainEdge) => {
+      if (scrubAtMs !== null) return;
 
-    setData((prev) => {
-      // Deduplicate
-      if (prev.edges.some((e) => e.source === edge.source && e.target === edge.target)) return prev;
-      return { ...prev, edges: [edge, ...prev.edges] };
-    });
-  }, [scrubAtMs, setData]);
+      setData((prev) => {
+        // Deduplicate
+        if (
+          prev.edges.some(
+            (e) => e.source === edge.source && e.target === edge.target,
+          )
+        )
+          return prev;
+        return { ...prev, edges: [edge, ...prev.edges] };
+      });
+    },
+    [scrubAtMs, setData],
+  );
 
   // Citation events don't change graph structure — the note_edges INSERT that
   // follows will trigger handleEdgeInsert. Kept as a no-op hook for future
@@ -172,10 +194,26 @@ export function BrainPage() {
       <div style={pageStyle}>
         <header style={pageHeaderStyle}>
           <div>
-            <div className="t-mini" style={{ marginBottom: 6 }}>SURFACE · LIVE</div>
-            <h1 className="t-h1" style={{ margin: 0 }}>The brain.</h1>
-            <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 4 }}>
-              Agent-shared knowledge graph. Each node is a lesson distilled from settled rounds.
+            <div
+              className="t-label"
+              style={{ marginBottom: 8, color: "var(--cyan)" }}
+            >
+              ┌─ SURFACE · LIVE
+            </div>
+            <h1 className="t-display" style={{ margin: 0 }}>
+              The brain.
+            </h1>
+            <div
+              className="t-small"
+              style={{
+                color: "var(--fg-faint)",
+                marginTop: 8,
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.04em",
+              }}
+            >
+              Agent-shared knowledge graph. Each node is a lesson distilled from
+              settled rounds.
             </div>
           </div>
         </header>
@@ -188,34 +226,54 @@ export function BrainPage() {
       {/* Page header */}
       <header style={pageHeaderStyle}>
         <div>
-          <div className="t-mini" style={{ marginBottom: 6 }}>SURFACE · LIVE</div>
-          <h1 className="t-h1" style={{ margin: 0 }}>The brain.</h1>
-          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 4 }}>
-            Agent-shared knowledge graph. Each node is a lesson distilled from settled rounds.
+          <div
+            className="t-label"
+            style={{ marginBottom: 8, color: "var(--cyan)" }}
+          >
+            ┌─ SURFACE · LIVE
+          </div>
+          <h1 className="t-display" style={{ margin: 0 }}>
+            The brain.
+          </h1>
+          <div
+            className="t-small"
+            style={{
+              color: "var(--fg-faint)",
+              marginTop: 8,
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Agent-shared knowledge graph. Each node is a lesson distilled from
+            settled rounds.
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           {loading && (
-            <span style={{ fontSize: 12, color: "var(--fg-4)", fontFamily: "var(--font-mono)" }}>
-              syncing…
+            <span className="t-label" style={{ color: "var(--fg-faintest)" }}>
+              SYNCING…
             </span>
           )}
           {error && (
-            <span style={{ fontSize: 12, color: "var(--down)", fontFamily: "var(--font-mono)" }}>
-              error: {error}
+            <span className="t-label" style={{ color: "var(--magenta)" }}>
+              ERR · {error}
             </span>
           )}
-          <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--cyan)" }}>
-            {data.nodes.length} nodes · {data.edges.length} edges
+          <span className="t-label" style={{ color: "var(--cyan)" }}>
+            {data.nodes.length} NODES · {data.edges.length} EDGES
           </span>
-          <div className="t-mono" style={{ fontSize: 12, color: "var(--fg-3)" }}>/brain</div>
+          <div className="t-label" style={{ color: "var(--cyan)" }}>
+            /BRAIN
+          </div>
         </div>
       </header>
 
       {/* Main grid: graph (flex 1) + side panel (360px) */}
       <div className="brain-grid" style={gridStyle}>
         {/* Graph canvas */}
-        <div style={{ flex: 1, minWidth: 0, position: "relative", minHeight: 500 }}>
+        <div
+          style={{ flex: 1, minWidth: 0, position: "relative", minHeight: 500 }}
+        >
           <BrainGraphComponent
             data={data}
             selection={selection}

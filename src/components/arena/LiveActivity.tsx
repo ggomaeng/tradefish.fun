@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useArenaActivity, relativeTime, type ActivityEvent } from "@/lib/realtime/activity";
+import Link from "next/link";
+import {
+  useArenaActivity,
+  relativeTime,
+  type ActivityEvent,
+} from "@/lib/realtime/activity";
 import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 type Tone = "up" | "down" | "hold" | "neutral";
@@ -76,7 +81,7 @@ export function LiveActivity() {
     <aside
       style={{
         background: "var(--bg-1)",
-        borderLeft: "1px solid var(--bd-1)",
+        borderLeft: "1px solid var(--line)",
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
@@ -85,79 +90,143 @@ export function LiveActivity() {
       }}
     >
       <div
+        className="card-head"
         style={{
-          padding: 16,
-          borderBottom: "1px solid var(--bd-1)",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          margin: 0,
+          padding: "10px 16px",
         }}
       >
-        <h4 style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>Activity feed</h4>
+        <span>┌─ LIVE ACTIVITY</span>
         <span className="chip chip-live">
           <span className="dot" />
           {loading ? "SYNC" : "LIVE"}
         </span>
       </div>
-      <div style={{ flex: 1, overflowY: "auto" }} aria-live="polite" aria-atomic="false" className="no-scrollbar">
+      <div
+        style={{ flex: 1, overflowY: "auto" }}
+        aria-live="polite"
+        aria-atomic="false"
+        className="no-scrollbar"
+      >
         {empty ? (
-          <div style={{ padding: "40px 16px", textAlign: "center", fontSize: 13, color: "var(--fg-3)" }}>
-            No activity yet.<br />
-            Open a round at <span style={{ color: "var(--cyan)" }}>/ask</span>.
-          </div>
-        ) : (
-          rows.map((row) => (
-            <div
-              key={row.key}
+          <div
+            style={{
+              padding: "40px 16px",
+              textAlign: "center",
+              fontSize: 13,
+              color: "var(--fg-faint)",
+            }}
+          >
+            No activity yet. Standing by.
+            <br />
+            <span
               style={{
-                padding: "12px 16px",
-                borderBottom: "1px solid var(--bd-1)",
-                display: "grid",
-                gridTemplateColumns: "28px 1fr",
-                gap: 10,
+                fontSize: 11,
+                fontFamily: "var(--font-mono)",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "var(--fg-faintest)",
               }}
             >
-              <FishAvatar shortId={null} nameFallback={row.who} size={28} />
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>
-                  {row.who}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2, display: "flex", gap: 6, alignItems: "center" }}>
-                  <span className="num">{row.ts}</span>
-                  {row.conf !== undefined && (
-                    <>
-                      <span>·</span>
-                      <span>{row.conf.toFixed(2)} conf</span>
-                    </>
-                  )}
-                </div>
-                <div style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6, fontSize: 12, flexWrap: "wrap" }}>
-                  <span
-                    className={
-                      row.tone === "up"
-                        ? "chip chip-up"
-                        : row.tone === "down"
-                          ? "chip chip-down"
-                          : row.tone === "hold"
-                            ? "chip chip-hold"
-                            : "chip"
-                    }
+              Open a round at{" "}
+              <Link href="/ask" style={{ color: "var(--cyan)" }}>
+                /ask
+              </Link>
+            </span>
+          </div>
+        ) : (
+          rows.map((row) => {
+            // Map row tone → event-type accent for the 4px left bar.
+            const evColor =
+              row.tone === "up"
+                ? "var(--ev-settle)"
+                : row.tone === "down"
+                  ? "var(--ev-change)"
+                  : row.tone === "hold"
+                    ? "var(--hold)"
+                    : "var(--ev-fire)";
+            return (
+              <div
+                key={row.key}
+                style={{
+                  padding: "12px 16px 12px 13px",
+                  borderBottom: "1px solid var(--line)",
+                  borderLeft: `4px solid ${evColor}`,
+                  display: "grid",
+                  gridTemplateColumns: "28px 1fr",
+                  gap: 10,
+                }}
+              >
+                <FishAvatar shortId={null} nameFallback={row.who} size={28} />
+                <div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: "var(--fg)",
+                    }}
                   >
-                    {row.pos}
-                  </span>
-                  <span style={{ color: "var(--fg-3)" }}>{row.msg}</span>
-                  {row.pnl && (
+                    {row.who}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--fg-3)",
+                      marginTop: 2,
+                      display: "flex",
+                      gap: 6,
+                      alignItems: "center",
+                    }}
+                  >
+                    <span className="num">{row.ts}</span>
+                    {row.conf !== undefined && (
+                      <>
+                        <span>·</span>
+                        <span>{row.conf.toFixed(2)} conf</span>
+                      </>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <span
-                      className="num"
-                      style={{ color: row.pnlTone === "up" ? "var(--up)" : "var(--down)", marginLeft: "auto" }}
+                      className={
+                        row.tone === "up"
+                          ? "chip chip-up"
+                          : row.tone === "down"
+                            ? "chip chip-down"
+                            : row.tone === "hold"
+                              ? "chip chip-hold"
+                              : "chip"
+                      }
                     >
-                      {row.pnl}
+                      {row.pos}
                     </span>
-                  )}
+                    <span style={{ color: "var(--fg-3)" }}>{row.msg}</span>
+                    {row.pnl && (
+                      <span
+                        className="num"
+                        style={{
+                          color:
+                            row.pnlTone === "up" ? "var(--up)" : "var(--down)",
+                          marginLeft: "auto",
+                        }}
+                      >
+                        {row.pnl}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </aside>

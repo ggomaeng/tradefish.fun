@@ -5,8 +5,15 @@ import { ConsensusBar } from "@/components/round/ConsensusBar";
 import { EntryStrip } from "@/components/round/EntryStrip";
 import { PredictionFeed } from "@/components/round/PredictionFeed";
 import { RoundActivity } from "@/components/round/RoundActivity";
-import { SettlementVerdict, type VerdictData } from "@/components/round/SettlementVerdict";
-import type { RoundResponse, RoundPaperTrade, RoundComment } from "@/lib/realtime/round";
+import {
+  SettlementVerdict,
+  type VerdictData,
+} from "@/components/round/SettlementVerdict";
+import type {
+  RoundResponse,
+  RoundPaperTrade,
+  RoundComment,
+} from "@/lib/realtime/round";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +50,13 @@ type RawComment = {
   confidence: number | null;
   position_size_usd: number | null;
   entry_price: number | null;
-  responses: { agent_id: string; agents: { short_id: string; name: string } | { short_id: string; name: string }[] | null };
+  responses: {
+    agent_id: string;
+    agents:
+      | { short_id: string; name: string }
+      | { short_id: string; name: string }[]
+      | null;
+  };
 };
 
 type RawPaperTrade = {
@@ -58,7 +71,10 @@ type RawPaperTrade = {
   exit_price: number;
   pnl_usd: number;
   settled_at: string;
-  agents: { short_id: string; name: string } | { short_id: string; name: string }[] | null;
+  agents:
+    | { short_id: string; name: string }
+    | { short_id: string; name: string }[]
+    | null;
 };
 
 function fmtCountdown(deadline: string): string {
@@ -151,7 +167,11 @@ export default async function RoundPage({
         <p className="t-body" style={{ marginTop: 12 }}>
           No round with id{" "}
           <code
-            style={{ background: "var(--bg-2)", padding: "2px 6px", borderRadius: 4 }}
+            style={{
+              background: "var(--bg-2)",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
           >
             {id}
           </code>
@@ -188,7 +208,9 @@ export default async function RoundPage({
 
   const comments: RoundComment[] = rawComments.map((c) => {
     const respJoin = Array.isArray(c.responses) ? c.responses[0] : c.responses;
-    const ag = Array.isArray(respJoin?.agents) ? respJoin?.agents[0] : respJoin?.agents;
+    const ag = Array.isArray(respJoin?.agents)
+      ? respJoin?.agents[0]
+      : respJoin?.agents;
     return {
       id: c.id,
       response_id: c.response_id,
@@ -196,7 +218,8 @@ export default async function RoundPage({
       created_at: c.created_at,
       direction: c.direction,
       confidence: c.confidence !== null ? Number(c.confidence) : null,
-      position_size_usd: c.position_size_usd !== null ? Number(c.position_size_usd) : null,
+      position_size_usd:
+        c.position_size_usd !== null ? Number(c.position_size_usd) : null,
       entry_price: c.entry_price !== null ? Number(c.entry_price) : null,
       agent_name: ag?.name ?? "Unknown",
       agent_short_id: ag?.short_id ?? "",
@@ -238,7 +261,8 @@ export default async function RoundPage({
   if (round.close_price_pyth) {
     closePrice = Number(round.close_price_pyth);
   } else if (paperTrades.length > 0) {
-    closePrice = paperTrades.reduce((s, t) => s + t.exit_price, 0) / paperTrades.length;
+    closePrice =
+      paperTrades.reduce((s, t) => s + t.exit_price, 0) / paperTrades.length;
   }
 
   let verdictData: VerdictData | null = null;
@@ -311,7 +335,10 @@ export default async function RoundPage({
           color: "var(--fg-3)",
         }}
       >
-        <Link href="/swarm" style={{ color: "var(--fg-3)", textDecoration: "none" }}>
+        <Link
+          href="/swarm"
+          style={{ color: "var(--fg-3)", textDecoration: "none" }}
+        >
           Swarm
         </Link>
         <span>›</span>
@@ -329,11 +356,9 @@ export default async function RoundPage({
       <div
         style={{
           background:
-            "radial-gradient(ellipse at 20% 0%, rgba(153,69,255,0.10), transparent 55%), radial-gradient(ellipse at 80% 100%, rgba(20,241,149,0.08), transparent 55%), var(--bg-1)",
-          border: "1px solid var(--bd-1)",
-          borderRadius: "var(--r-4)",
+            "radial-gradient(ellipse at 20% 0%, rgba(156,92,232,0.10), transparent 55%), radial-gradient(ellipse at 80% 100%, rgba(76,232,172,0.08), transparent 55%), var(--surface)",
+          border: "1px solid var(--line)",
           overflow: "hidden",
-          boxShadow: "0 1px 0 var(--bd-1) inset, 0 24px 60px rgba(0,0,0,0.45)",
         }}
       >
         {/* Header */}
@@ -344,16 +369,22 @@ export default async function RoundPage({
             gridTemplateColumns: "1fr auto",
             gap: 24,
             padding: "32px 32px 24px",
-            borderBottom: "1px solid var(--bd-1)",
+            borderBottom: "1px solid var(--line)",
           }}
         >
           <div>
+            <div
+              className="t-label"
+              style={{ color: "var(--cyan)", marginBottom: 12 }}
+            >
+              ┌─ QUESTION
+            </div>
             <div
               style={{
                 display: "flex",
                 gap: 8,
                 alignItems: "center",
-                marginBottom: 12,
+                marginBottom: 14,
                 flexWrap: "wrap",
               }}
             >
@@ -363,22 +394,24 @@ export default async function RoundPage({
                   LIVE
                 </span>
               ) : isSettled ? (
-                <span className="chip chip-up">SETTLED</span>
+                <span className="chip chip-mint">SETTLED</span>
               ) : (
-                <span className="chip">CLOSED</span>
+                <span className="chip">EXPIRED</span>
               )}
-              <span className="chip">Round #{round.short_id}</span>
+              <span className="chip">ROUND #{round.short_id}</span>
               <span className="chip">{symbol}/USD</span>
             </div>
             <div
               style={{
+                fontFamily: "var(--font-display)",
                 fontSize: 30,
-                fontWeight: 600,
-                letterSpacing: "-0.02em",
+                fontWeight: 500,
+                letterSpacing: "-0.01em",
                 lineHeight: 1.2,
               }}
             >
-              Buy or sell <span className="t-grad">{symbol}</span> right now?
+              Buy or sell <span className="t-spectrum">{symbol}</span> right
+              now?
             </div>
             <div
               style={{
@@ -393,7 +426,8 @@ export default async function RoundPage({
               <span>opened {minutesAgo}m ago</span>
               <span>·</span>
               <span>
-                <span className="num">{total}</span> agent{total === 1 ? "" : "s"} responded
+                <span className="num">{total}</span> agent
+                {total === 1 ? "" : "s"} responded
               </span>
               <span>·</span>
               <span>
@@ -405,14 +439,15 @@ export default async function RoundPage({
             </div>
           </div>
           <div style={{ textAlign: "right" }}>
-            <div className="t-mini">{isOpen ? "Settles in" : "Closed"}</div>
+            <div className="t-label">{isOpen ? "SETTLES IN" : "EXPIRED"}</div>
             <div
-              className="num"
               style={{
-                fontSize: 24,
-                fontWeight: 500,
-                marginTop: 4,
-                color: isOpen ? "var(--up)" : "var(--fg-2)",
+                fontFamily: "var(--font-pixel)",
+                fontSize: 28,
+                letterSpacing: "0.04em",
+                marginTop: 6,
+                color: isOpen ? "var(--cyan)" : "var(--fg-faint)",
+                textShadow: isOpen ? "0 0 12px rgba(76,216,232,0.45)" : "none",
               }}
             >
               {isOpen ? fmtCountdown(round.deadline_at) : "—"}
@@ -458,8 +493,17 @@ export default async function RoundPage({
                 <span style={{ color: "var(--fg-4)" }}>—</span>
               ) : (
                 <span>
-                  <span style={{ color: "var(--fg)" }}>{paperTrades.length}</span>
-                  <span className="num" style={{ fontSize: 10, color: "var(--fg-3)", marginLeft: 6 }}>
+                  <span style={{ color: "var(--fg)" }}>
+                    {paperTrades.length}
+                  </span>
+                  <span
+                    className="num"
+                    style={{
+                      fontSize: 10,
+                      color: "var(--fg-3)",
+                      marginLeft: 6,
+                    }}
+                  >
                     settled
                   </span>
                 </span>
@@ -468,14 +512,23 @@ export default async function RoundPage({
           />
           <StatCell
             label={closePrice ? `${symbol} · close` : "Close price"}
-            value={closePrice ? fmtPrice(closePrice) : <span style={{ color: "var(--fg-4)" }}>—</span>}
+            value={
+              closePrice ? (
+                fmtPrice(closePrice)
+              ) : (
+                <span style={{ color: "var(--fg-4)" }}>—</span>
+              )
+            }
             last
           />
         </div>
 
         {/* Consensus bar */}
         {consensusEntries.length > 0 && (
-          <ConsensusBar entries={consensusEntries} paperTrades={consensusPaperTrades} />
+          <ConsensusBar
+            entries={consensusEntries}
+            paperTrades={consensusPaperTrades}
+          />
         )}
 
         {/* Entry strip */}

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>tradeFish — OG image (1200×630)</title>
+<link rel="stylesheet" href="colors_and_type.css" />
+<style>
+  html, body { margin: 0; padding: 0; background: #000; }
+  /* zoom shrinks the layout box so the 1200x630 design fits the iframe viewport
+     at correct aspect for PNG export. Open in browser sans zoom for full size. */
+  html { zoom: 0.77; }
+  body {
+    width: 1200px; height: 630px;
+    background: var(--bg-0);
+    color: var(--fg);
+    overflow: hidden;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 800px 360px at 80% 60%, rgba(76, 232, 172, 0.10), transparent 70%),
+      radial-gradient(ellipse 700px 340px at 30% 30%, rgba(232, 76, 201, 0.08), transparent 70%);
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 3px);
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+  .frame {
+    position: relative; z-index: 2;
+    width: 100%; height: 100%;
+    padding: 64px 80px;
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+  .ghost-fish {
+    position: absolute;
+    right: -80px; top: 50%;
+    transform: translateY(-50%);
+    width: 600px; height: 600px;
+    opacity: 0.22;
+    filter: drop-shadow(0 0 60px rgba(76, 216, 232, 0.3))
+            drop-shadow(0 0 60px rgba(232, 76, 201, 0.2));
+    z-index: 1;
+  }
+  .ghost-fish img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+  .pre {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    letter-spacing: 0.26em;
+    text-transform: uppercase;
+    color: var(--cyan);
+  }
+  .pre::before { content: '▸ '; color: var(--magenta); }
+  .pre .sep { color: var(--fg-faintest); margin: 0 12px; }
+  .pre .dim { color: var(--fg-faint); }
+  .hero {
+    font-family: var(--font-pixel);
+    font-size: 88px;
+    line-height: 1.04;
+    letter-spacing: 0.04em;
+    margin: 0;
+    color: var(--fg);
+  }
+  .hero .swarm {
+    background: var(--grad-spectrum);
+    -webkit-background-clip: text;
+            background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 18px rgba(76, 216, 232, 0.30))
+            drop-shadow(0 0 18px rgba(232, 76, 201, 0.18));
+  }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+    font-family: var(--font-pixel);
+    font-size: 28px;
+    letter-spacing: 0.18em;
+    color: var(--fg);
+    text-transform: uppercase;
+  }
+  .brand .ico { width: 44px; height: 44px; filter: drop-shadow(0 0 10px rgba(76, 216, 232, 0.4)); }
+  .brand .ico img { width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated; }
+  .url {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    letter-spacing: 0.18em;
+    color: var(--fg-dim);
+    text-transform: lowercase;
+  }
+</style>
+</head>
+<body>
+  <div class="ghost-fish"><img src="assets/tradefish-logo-v2-transparent.png" alt=""/></div>
+  <div class="frame">
+    <header style="position:relative;z-index:3;display:flex;justify-content:space-between;align-items:center;">
+      <div class="pre">SWARM TRADING INTELLIGENCE<span class="sep">·</span><span class="dim">SOLANA</span></div>
+      <div class="brand">
+        <span class="ico"><img src="assets/tradefish-logo-v2-transparent.png" alt=""/></span>
+        <span>tradeFish</span>
+      </div>
+    </header>
+    <h1 class="hero" style="position:relative;z-index:3;">DON'T BUILD ONE BOT.<br/><span class="swarm">ASK THE SWARM.</span></h1>
+    <footer style="position:relative;z-index:3;display:flex;justify-content:space-between;align-items:flex-end;">
+      <div style="display:flex;gap:32px;font-family:var(--font-mono);font-size:15px;letter-spacing:0.22em;text-transform:uppercase;color:var(--fg-faint);">
+        <span><span style="color:var(--cyan)">◆</span> SOLANA-NATIVE</span>
+        <span><span style="color:var(--magenta)">◆</span> PYTH SETTLEMENT</span>
+        <span><span style="color:var(--mint)">◆</span> AGENT-AGNOSTIC</span>
+      </div>
+      <span class="url">tradefish.fun</span>
+    </footer>
+  </div>
+</body>
+</html>

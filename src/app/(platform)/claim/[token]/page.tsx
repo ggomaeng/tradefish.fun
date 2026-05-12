@@ -14,24 +14,48 @@ export default async function ClaimPage({
 
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
-      <header style={{ marginBottom: 24, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 24, flexWrap: "wrap" }}>
+      <header
+        style={{
+          marginBottom: 24,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          gap: 24,
+          flexWrap: "wrap",
+        }}
+      >
         <div>
-          <div className="t-mini" style={{ marginBottom: 8 }}>SURFACE · CLAIM</div>
-          <h1 className="t-h1" style={{ margin: 0 }}>Claim agent.</h1>
-          <div className="t-small" style={{ color: "var(--fg-3)", marginTop: 6 }}>
-            Wallet-signature flow: connect → review → sign → confirmed.
+          <div
+            className="t-label"
+            style={{ marginBottom: 8, color: "var(--cyan)" }}
+          >
+            ┌─ SURFACE · CLAIM
+          </div>
+          <h1 className="t-display" style={{ margin: 0 }}>
+            Claim agent.
+          </h1>
+          <div
+            className="t-small"
+            style={{
+              color: "var(--fg-faint)",
+              marginTop: 8,
+              fontFamily: "var(--font-mono)",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Wallet signature flow: connect → review → sign → confirmed.
           </div>
         </div>
-        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/claim/{token.slice(0, 8)}…</div>
+        <div className="t-label" style={{ color: "var(--cyan)" }}>
+          /CLAIM/{token.slice(0, 8).toUpperCase()}…
+        </div>
       </header>
 
       <div
         style={{
-          background: "var(--bg-1)",
-          border: "1px solid var(--bd-1)",
-          borderRadius: "var(--r-4)",
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
           overflow: "hidden",
-          boxShadow: "0 1px 0 var(--bd-1) inset, 0 24px 60px rgba(0,0,0,0.45)",
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           minHeight: 640,
@@ -57,16 +81,42 @@ function ClaimStage() {
     <div
       className="claim-stage"
       style={{
-        background: "radial-gradient(ellipse at center, rgba(153,69,255,0.12), transparent 60%), var(--bg-0)",
+        background:
+          "radial-gradient(ellipse at center, rgba(156,92,232,0.14), transparent 55%), radial-gradient(ellipse at 70% 60%, rgba(76,232,172,0.08), transparent 60%), var(--bg-0)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         padding: 48,
+        position: "relative",
       }}
     >
-      <div style={{ width: 320, height: 320, position: "relative", borderRadius: "50%", border: "1px solid var(--bd-2)" }}>
-        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px dashed var(--bd-1)", transform: "rotate(30deg) scale(0.7)" }} />
-        <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "1px dashed var(--bd-1)", transform: "rotate(-20deg) scale(0.4)" }} />
+      <div
+        style={{
+          width: 320,
+          height: 320,
+          position: "relative",
+          borderRadius: "50%",
+          border: "1px solid var(--bd-2)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            border: "1px dashed var(--bd-1)",
+            transform: "rotate(30deg) scale(0.7)",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            border: "1px dashed var(--bd-1)",
+            transform: "rotate(-20deg) scale(0.4)",
+          }}
+        />
         <div
           style={{
             position: "absolute",
@@ -74,15 +124,16 @@ function ClaimStage() {
             margin: "auto",
             width: 80,
             height: 80,
-            background: "var(--sol-grad)",
-            borderRadius: 16,
+            background: "var(--grad-spectrum)",
+            borderRadius: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             color: "var(--bg-0)",
-            fontWeight: 700,
-            fontSize: 24,
-            boxShadow: "0 0 60px rgba(153,69,255,0.5)",
+            fontFamily: "var(--font-pixel)",
+            fontWeight: 400,
+            fontSize: 28,
+            boxShadow: "var(--bloom-cyan)",
           }}
         >
           ◆

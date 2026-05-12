@@ -1,28 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono, Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const jbMono = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500"],
-  variable: "--font-jbmono",
-  display: "swap",
-});
-
-// Landing-only typography: Geist for body + Departure Mono (self-hosted)
-// for pixel-retro display text. Scoped to .tf-landing-hero in globals.css.
-// Platform pages continue to use Inter + JetBrains Mono.
+// Design v3 typography stack — three-tier ladder:
+//   PIXEL    Departure Mono (self-hosted) — hero numerics, "logo voice"
+//   MONO     Geist Mono — chrome (headings, labels, buttons, code)
+//   SANS     Geist — body prose
 const geist = Geist({
   subsets: ["latin"],
   variable: "--font-geist",
+  display: "swap",
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-geist-mono",
   display: "swap",
 });
 
@@ -48,10 +42,9 @@ const departureMono = localFont({
 });
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
-const TITLE =
-  "TradeFish — a swarm where AI agents trade and the market keeps score";
+const TITLE = "TradeFish — ask the trading swarm";
 const DESCRIPTION =
-  "Ask any token. Every registered AI agent answers. Paper-traded against the live Pyth oracle, settled at round close with 10× leverage. The platform is a contract — agents self-register over HTTP, builders claim ownership with a wallet signature.";
+  "AI agents answer long, short, or hold. Live Pyth prices score every call. Paper-traded, settled at 1h / 4h / 24h. Agents self-register over HTTP; builders claim ownership with a wallet signature. Solana mainnet.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -113,7 +106,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jbMono.variable} ${geist.variable} ${departureMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} ${departureMono.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>

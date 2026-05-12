@@ -1,48 +1,31 @@
-# TradeFish — Design System v2 (post-zip)
+## TradeFish — Design System v2
 
-> **2026-05-09** — Replaced the prior cool-black ocean / Departure Mono / pixel-terminal lock with the v2 designer-handoff zip. This README is the new reference; `SKILL.md` is the agent-facing version.
+Solana-native swarm trading UI. Pixel-glitch candlestick fish on near-pure-black, with the brand's 5-stop spectrum (magenta → violet → indigo → cyan → mint) carrying every accent moment. Departure Mono everywhere; sharp pixel corners; no proportional fonts; no drop shadows — only glow.
 
-## Direction
-**claude.ai calm + codex precision + pump.fun cleanness.** Dark default. Cyan brand from the TradeFish logo. Solana gradient as a one-shot accent. Inter sans + JetBrains Mono numerics.
+### Positioning
+- Solana-native (paper trades for the hackathon MVP; design maps to a future Solana USDC reward pool)
+- Cooperative swarm intelligence, not winner-take-all
+- TradeWiki = shared market memory layer (the differentiator)
 
-## What's in here
-- `index.html` — full surface mockup (10 surfaces + design system reference) from the v2 zip
-- `colors_and_type.css`, `styles.css` — historical snapshots of the v1 system, retained for reference only
-- `assets/`, `fonts/` — logo + Departure Mono (now unused at runtime; Inter + JetBrains Mono via `next/font/google`)
-- The **canonical** runtime tokens + component classes live in `src/app/globals.css`.
+### What's in here
+- `colors_and_type.css` — tokens (single source of truth)
+- `styles.css` — component classes built on those tokens
+- `assets/tradefish-logo-v2.png` — primary mark
+- `fonts/DepartureMono-Regular.woff2` — typeface
+- `preview/*` — specimen cards (registered as design-review assets)
 
-## Palette
-- **Backgrounds**: `#0A0A0B → #25252C` (dark scale `--bg-0..bg-4`). Light parity via `[data-theme="light"]`.
-- **Brand cyan** `#5EEAF0` — primary brand color. Active links, LIVE chip, verified marks, focus rings, primary-CTA hover.
-- **Solana gradient** `#9945FF → #14F195` — used at most once per page (live badge or one headline word).
-- **Trading semantic** — LONG `#14F195`, SHORT `#FF4D6D`, HOLD `#FFB347` (each with a soft `*-bg` + `*-bd` for chip use).
+### Palette rules
+- **`--spec-4` (cyan)** is the primary brand accent. Use for live, active, primary CTA, verified.
+- **`--spec-5` (mint) = LONG / settled / PnL up.** **`--spec-1` (magenta) = SHORT / risk / alert.** **`--hold` (bright grey `#C8CCDC`) = HOLD / neutral.** Violet (`--spec-2`) is reserved for reasoning / Solana chain accents.
+- The full **`--grad-spectrum`** appears at most once per surface (wordmark or one hero element). Never on body copy.
+- Backgrounds are near-pure-black (`#07070C`); cards live on `--bg-2` (`#14142A`).
+- No drop shadows. Three brand glows only: `--glow-cyan`, `--glow-magenta`, `--glow-mint` (+ halo / bloom variants for cards / hero CTAs).
 
-## Type
-Inter (sans) + JetBrains Mono (numerics) via `next/font/google`. Scale: display 56 / h1 32 / h2 22 / h3 16 / body 14 / small 13 / mini 11. Tabular numerics on `.num`.
+### Type
+Departure Mono is the only face. Hero 64 / display 36 / h1 26 / h2 20 / body 14 / small 12 / mini 10 (caps + 0.18em tracking) / micro 9. Tabular numerics on by default.
 
-## Component primitives
-`.btn` `.btn-primary` `.btn-ghost` `.btn-sol` `.btn-sm` `.btn-lg` ·
-`.chip` `.chip-up` `.chip-down` `.chip-hold` `.chip-cyan` `.chip-live` ·
-`.card` `.card-hover` ·
-`.wallet` `.token-{bonk,sol,jup,wif,pyth,jto}` ·
-`.av` `.av-{2..8}` ·
-`.appnav` `.codeblock`
+### Iconography
+Unicode + box-drawing only. No icon font, no emoji. ◆ ◇ ▸ ● ◉ ↺ ┌─ ━ ═.
 
-## Surfaces (mapped to platform routes)
-1. Waitlist landing (`/` in `tradefish/`)
-2. `/arena`
-3. `/ask`
-4. `/round/[id]`
-5. `/agents`
-6. `/agents/[id]`
-7. `/agents/register`
-8. `/claim/[token]`
-9. `/docs` (light-mode parity)
-10. `TopupModal`
-
-## Rules at a glance
-- Round corners. Sharp radii are out.
-- No glow halos, no scanlines, no box-drawing chrome, no Departure Mono.
-- One Solana-gradient moment per surface. Cyan brand for everything else.
-- All-caps body copy is out. `.t-mini` (11px caps + 0.06em tracking) is the only place caps are appropriate.
-- Numbers always tabular (`.num` class).
+### Solana ecosystem
+Tools (Jupiter, Helius, DexScreener, RugCheck, Phantom, Solana Agent Kit, solana.new) get spectrum-mapped chip colors — never their real vendor brand color. Stays on-palette while remaining identifiable via label + 1-letter glyph.

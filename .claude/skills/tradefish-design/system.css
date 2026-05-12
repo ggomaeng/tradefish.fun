@@ -1,306 +1,11 @@
-@import "tailwindcss";
-
 /* ═══════════════════════════════════════════════════════════════════════
-   TRADEFISH v3 — Foundation tokens + component layer.
-   Pixel-glitch + 5-stop spectrum on near-pure-black. Sharp pixel corners,
-   glow (no drop shadows), three-tier type ladder
-   (Departure Mono / Geist Mono / Geist).
-   Source of truth: .claude/skills/tradefish-design/
-   (colors_and_type.css + system.css + index.html + question.html).
-
-   This file is composed in three layers:
-     1. v3 tokens + base reset    (from colors_and_type.css)
-     2. v3 component layer        (from system.css)
-     3. legacy bridges            (so un-touched callsites keep working)
+   TRADEFISH — System · component classes
+   Departure Mono titles, Geist body, sharp corners, glow (no drop
+   shadows), box-drawing chrome, 5-stop spectrum accents.
+   Consumes tokens from colors_and_type.css.
    ═══════════════════════════════════════════════════════════════════════ */
 
-:root {
-  /* ── Backgrounds — near-pure-black, faint blue cast ────────────────── */
-  --bg-0: #07070c; /* page */
-  --bg-1: #0c0c16; /* recessed */
-  --bg-2: #14142a; /* card */
-  --bg-3: #1e1e3a; /* raised */
-
-  /* ── Surfaces (translucent, layered over bg-0) ─────────────────────── */
-  --surface: rgba(20, 20, 42, 0.78);
-  --surface-2: rgba(30, 30, 58, 0.85);
-  --surface-glass: rgba(76, 216, 232, 0.04);
-  --surface-glass-magenta: rgba(232, 76, 201, 0.05);
-  --surface-glass-mint: rgba(76, 232, 172, 0.04);
-  --surface-deep: rgba(0, 0, 4, 0.92);
-
-  /* ── Hairlines ─────────────────────────────────────────────────────── */
-  --line: rgba(255, 255, 255, 0.1);
-  --line-strong: rgba(255, 255, 255, 0.22);
-  --line-bright: rgba(255, 255, 255, 0.45);
-  --line-cyan: rgba(76, 216, 232, 0.32);
-  --line-magenta: rgba(232, 76, 201, 0.32);
-  --line-mint: rgba(76, 232, 172, 0.32);
-
-  /* ── Foreground ────────────────────────────────────────────────────── */
-  --fg: #f4f2f8;
-  --fg-dim: #b0b4c8;
-  --fg-faint: #6e7390;
-  --fg-faintest: #3d4160;
-
-  /* ── Brand spectrum (the 5 stops, sampled from the logo) ───────────── */
-  --spec-1: #e84cc9; /* magenta */
-  --spec-2: #9c5ce8; /* violet */
-  --spec-3: #5c7fe8; /* indigo */
-  --spec-4: #4cd8e8; /* cyan */
-  --spec-5: #4ce8ac; /* mint */
-
-  --spec-1-soft: #f490dc;
-  --spec-2-soft: #bf95f0;
-  --spec-3-soft: #94b0f0;
-  --spec-4-soft: #8de8f0;
-  --spec-5-soft: #8deec2;
-
-  --spec-1-dim: #6e2865;
-  --spec-2-dim: #4d2c70;
-  --spec-3-dim: #2d3f70;
-  --spec-4-dim: #246870;
-  --spec-5-dim: #247052;
-
-  --grad-spectrum: linear-gradient(
-    90deg,
-    var(--spec-1) 0%,
-    var(--spec-2) 28%,
-    var(--spec-3) 50%,
-    var(--spec-4) 75%,
-    var(--spec-5) 100%
-  );
-  --grad-fish: linear-gradient(
-    90deg,
-    rgba(232, 76, 201, 0) 0%,
-    var(--spec-1) 8%,
-    var(--spec-2) 30%,
-    var(--spec-3) 52%,
-    var(--spec-4) 76%,
-    var(--spec-5) 100%
-  );
-  --grad-spectrum-wash: linear-gradient(
-    90deg,
-    rgba(232, 76, 201, 0.18) 0%,
-    rgba(156, 92, 232, 0.14) 30%,
-    rgba(92, 127, 232, 0.12) 50%,
-    rgba(76, 216, 232, 0.16) 75%,
-    rgba(76, 232, 172, 0.2) 100%
-  );
-
-  /* ── Brand single accents (semantic primary aliases) ───────────────── */
-  --cyan: var(--spec-4);
-  --cyan-bright: var(--spec-4-soft);
-  --cyan-dim: var(--spec-4-dim);
-
-  --magenta: var(--spec-1);
-  --magenta-bright: var(--spec-1-soft);
-  --magenta-dim: var(--spec-1-dim);
-
-  --mint: var(--spec-5);
-  --mint-bright: var(--spec-5-soft);
-  --mint-dim: var(--spec-5-dim);
-
-  --violet: var(--spec-2);
-  --violet-bright: var(--spec-2-soft);
-  --violet-dim: var(--spec-2-dim);
-
-  /* ── Trading semantic ──────────────────────────────────────────────── */
-  --long: var(--spec-5);
-  --long-bg: rgba(76, 232, 172, 0.1);
-  --long-glow: rgba(76, 232, 172, 0.45);
-  --short: var(--spec-1);
-  --short-bg: rgba(232, 76, 201, 0.1);
-  --short-glow: rgba(232, 76, 201, 0.45);
-  --hold: #c8ccdc; /* bright grey — replaces v2 amber */
-  --hold-bg: rgba(200, 204, 220, 0.08);
-  --hold-glow: rgba(200, 204, 220, 0.3);
-
-  /* ── Reputation / status accents ───────────────────────────────────── */
-  --verified: var(--spec-4); /* X-verified agents (◉) */
-  --revive: var(--spec-1); /* bankroll revival (↺) */
-  --reput: var(--spec-5); /* reputation score */
-
-  --phosphor: var(--spec-5); /* legacy alias */
-  --amber: var(--spec-1); /* legacy alias */
-
-  /* ── Solana ecosystem chip accents ─────────────────────────────────── */
-  --c-solana: var(--spec-2);
-  --c-jupiter: var(--spec-1);
-  --c-helius: var(--spec-3);
-  --c-dexscreener: var(--spec-4);
-  --c-rugcheck: var(--spec-1-soft);
-  --c-phantom: var(--spec-2-soft);
-  --c-agentkit: var(--spec-5);
-  --c-base: var(--spec-2); /* legacy alias (was Base chain) */
-
-  /* ── Event-type tokens (timeline rails) ────────────────────────────── */
-  --ev-fire: var(--spec-4);
-  --ev-settle: var(--spec-5);
-  --ev-change: var(--spec-1);
-  --ev-comment: var(--fg-faint);
-  --ev-revive: var(--spec-1);
-
-  /* ── Type stack — three tiers, wired to next/font ──────────────────── */
-  --font-pixel: var(--font-departure), "VT323", ui-monospace, monospace;
-  --font-mono:
-    var(--font-geist-mono), "JetBrains Mono", "IBM Plex Mono", ui-monospace,
-    "SF Mono", "Menlo", monospace;
-  --font-display:
-    var(--font-geist-mono), "JetBrains Mono", ui-monospace, "SF Mono", monospace;
-  --font-sans:
-    var(--font-geist), -apple-system, "system-ui", "Segoe UI", Roboto,
-    "Helvetica Neue", sans-serif;
-
-  /* ── Type scale ────────────────────────────────────────────────────── */
-  --t-hero: 64px;
-  --t-display: 36px;
-  --t-h1: 26px;
-  --t-h2: 20px;
-  --t-h3: 16px; /* legacy v2 callsites */
-  --t-body: 14px;
-  --t-small: 12px;
-  --t-mini: 10px;
-  --t-micro: 9px;
-
-  /* ── Spacing — 8px grid (v3) + extensions for v2 callsites ─────────── */
-  --s-1: 4px;
-  --s-2: 8px;
-  --s-3: 12px;
-  --s-4: 16px;
-  --s-5: 24px;
-  --s-6: 32px;
-  --s-7: 48px;
-  --s-8: 64px;
-  --s-9: 96px;
-
-  /* ── Radii — sharp by default ──────────────────────────────────────── */
-  --r-0: 0;
-  --r-pill: 999px;
-  --r-icon: 22%;
-  /* Legacy aliases — all point to sharp now. */
-  --r-1: 0;
-  --r-2: 0;
-  --r-3: 0;
-  --r-4: 0;
-
-  /* ── Glow system (no drop shadows) ─────────────────────────────────── */
-  --glow-cyan: 0 0 20px rgba(76, 216, 232, 0.45);
-  --glow-magenta: 0 0 20px rgba(232, 76, 201, 0.45);
-  --glow-mint: 0 0 20px rgba(76, 232, 172, 0.45);
-  --glow-violet: 0 0 20px rgba(156, 92, 232, 0.4);
-
-  --halo-cyan: 0 0 32px rgba(76, 216, 232, 0.3);
-  --halo-magenta: 0 0 32px rgba(232, 76, 201, 0.3);
-  --halo-mint: 0 0 32px rgba(76, 232, 172, 0.3);
-
-  --bloom-cyan:
-    0 0 8px rgba(76, 216, 232, 0.6), 0 0 32px rgba(76, 216, 232, 0.4),
-    0 0 80px rgba(76, 216, 232, 0.25);
-  --bloom-magenta:
-    0 0 8px rgba(232, 76, 201, 0.6), 0 0 32px rgba(232, 76, 201, 0.4),
-    0 0 80px rgba(232, 76, 201, 0.25);
-  --bloom-mint:
-    0 0 8px rgba(76, 232, 172, 0.6), 0 0 32px rgba(76, 232, 172, 0.4),
-    0 0 80px rgba(76, 232, 172, 0.25);
-
-  /* ── Motion ────────────────────────────────────────────────────────── */
-  --ease-step: steps(1);
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --ease: var(--ease-out); /* legacy alias */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* legacy */
-  --t-fast: 150ms;
-  --t-med: 280ms;
-  --t-slow: 360ms; /* legacy */
-
-  /* ── Letter-spacing ladder ─────────────────────────────────────────── */
-  --track-tight: 0.04em;
-  --track-label: 0.14em;
-  --track-caps: 0.18em;
-
-  /* ── Layout ────────────────────────────────────────────────────────── */
-  --max-w: 1320px;
-  --bp-md: 900px;
-  --bp-sm: 640px;
-
-  /* ── Legacy alias bridge (so un-touched callsites keep working) ────── */
-  --bg-4: var(--bg-3);
-  --fg-2: var(--fg-dim);
-  --fg-3: var(--fg-faint);
-  --fg-4: var(--fg-faintest);
-  --bd-1: var(--line);
-  --bd-2: var(--line-strong);
-  --bd-3: var(--line-bright);
-  --cyan-bg: rgba(76, 216, 232, 0.08);
-  --cyan-bd: var(--line-cyan);
-  --up: var(--long);
-  --up-bg: var(--long-bg);
-  --up-bd: var(--line-mint);
-  --down: var(--short);
-  --down-bg: var(--short-bg);
-  --down-bd: var(--line-magenta);
-  --hold-bd: rgba(200, 204, 220, 0.32);
-  --sol-purple: var(--spec-2);
-  --sol-green: var(--spec-5);
-  --sol-grad: var(--grad-spectrum);
-  --sol-grad-soft: var(--grad-spectrum-wash);
-  --cream: var(--fg);
-
-  /* Legacy sponsor aliases — kept so pitch-deck / older references compile.
-     Deprecated; new code should use --spec-1..5 directly. */
-  --s-flock: var(--spec-4);
-  --s-nansen: var(--spec-5);
-  --s-virtuals: var(--fg);
-  --s-pancake: var(--spec-1);
-  --s-bananagun: var(--spec-1-soft);
-  --s-base: var(--spec-2);
-  --s-risk: var(--spec-1);
-  --orange: var(--spec-4);
-  --orange-bright: var(--spec-4-soft);
-  --orange-dim: var(--spec-4-dim);
-  --coral: var(--spec-1);
-  --rust: var(--spec-1-dim);
-  --deep-blue: var(--spec-3);
-}
-
-@theme inline {
-  --color-background: var(--bg-0);
-  --color-foreground: var(--fg);
-  --color-cyan: var(--cyan);
-  --color-magenta: var(--magenta);
-  --color-mint: var(--mint);
-  --color-violet: var(--violet);
-  --color-up: var(--long);
-  --color-down: var(--short);
-  --color-hold: var(--hold);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-mono);
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   BASE RESET
-   ───────────────────────────────────────────────────────────────────── */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-html,
-body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg-0);
-  color: var(--fg);
-  font-family: var(--font-sans);
-  font-size: var(--t-body);
-  line-height: 1.55;
-  font-feature-settings: "tnum", "zero";
-  font-variant-numeric: tabular-nums;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  overflow-x: hidden;
-  max-width: 100vw;
-}
+/* Base reset and ::selection live in colors_and_type.css (foundation). */
 a {
   color: inherit;
   text-decoration: none;
@@ -313,106 +18,6 @@ button {
 code,
 pre {
   font-family: var(--font-mono);
-}
-::selection {
-  background: rgba(76, 216, 232, 0.35);
-  color: var(--bg-0);
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   TYPE ROLES — v3 three-tier ladder + legacy bridges
-   ───────────────────────────────────────────────────────────────────── */
-.t-hero {
-  font-family: var(--font-pixel);
-  font-size: var(--t-hero);
-  letter-spacing: 0.04em;
-  color: var(--fg);
-}
-.t-pixel {
-  font-family: var(--font-pixel);
-  letter-spacing: 0.04em;
-  color: var(--fg);
-}
-.t-display {
-  font-family: var(--font-display);
-  font-size: var(--t-display);
-  font-weight: 500;
-  letter-spacing: -0.01em;
-  color: var(--fg);
-}
-.t-h1 {
-  font-family: var(--font-display);
-  font-size: var(--t-h1);
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  color: var(--fg);
-}
-.t-h2 {
-  font-family: var(--font-display);
-  font-size: var(--t-h2);
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--fg);
-}
-/* Legacy v2 .t-h3 — bridged to mono small heading. */
-.t-h3 {
-  font-family: var(--font-mono);
-  font-size: var(--t-h3);
-  font-weight: 500;
-  letter-spacing: 0;
-  color: var(--fg);
-}
-.t-body {
-  font-family: var(--font-sans);
-  font-size: var(--t-body);
-  color: var(--fg-dim);
-  line-height: 1.6;
-}
-.t-small {
-  font-family: var(--font-sans);
-  font-size: var(--t-small);
-  color: var(--fg-dim);
-  line-height: 1.55;
-}
-/* .t-label is the v3 mono caps label. .t-mini is the legacy alias. */
-.t-label,
-.t-mini {
-  font-family: var(--font-mono);
-  font-size: var(--t-mini);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg-faint);
-}
-.t-tier {
-  font-family: var(--font-mono);
-  font-size: var(--t-micro);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--cyan);
-}
-.t-step {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--fg-dim);
-}
-/* Legacy v2 .t-mono — bridge to the mono font. */
-.t-mono {
-  font-family: var(--font-mono);
-}
-
-/* Brand gradient text — wordmark + one hero moment per surface. */
-.t-spectrum,
-.t-grad {
-  background: var(--grad-spectrum);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
 }
 
 /* ─────────────────────────────────────────────────────────────────────
@@ -439,12 +44,10 @@ pre {
 .fg-faint {
   color: var(--fg-faint);
 }
-.long,
-.up {
+.long {
   color: var(--long);
 }
-.short,
-.down {
+.short {
   color: var(--short);
 }
 .hold {
@@ -470,32 +73,7 @@ pre {
   -webkit-text-fill-color: transparent;
 }
 
-/* Page shell — used by every (platform) route */
-.page {
-  max-width: var(--max-w);
-  margin: 0 auto;
-  padding: 0 var(--s-6);
-}
-.surface-inner {
-  position: relative;
-  background: var(--bg-0);
-}
-.focus-ring:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--bg-0),
-    0 0 0 4px var(--cyan);
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   AMBIENT EFFECTS — scanlines, dot-grid, caret, dividers
-   ───────────────────────────────────────────────────────────────────── */
+/* ── CRT scanlines (overlay any container) ─────────────────────── */
 .tf-scanlines {
   position: absolute;
   inset: 0;
@@ -510,6 +88,8 @@ pre {
   z-index: 50;
   mix-blend-mode: overlay;
 }
+
+/* Dot-grid background — pixel lattice */
 .tf-grid-bg {
   position: absolute;
   inset: 0;
@@ -522,6 +102,8 @@ pre {
   background-size: 24px 24px;
   mask-image: radial-gradient(ellipse at center, black 30%, transparent 90%);
 }
+
+/* Caret blink */
 @keyframes tf-blink {
   0%,
   49% {
@@ -541,12 +123,15 @@ pre {
   vertical-align: -2px;
   animation: tf-blink 1s steps(1) infinite;
 }
+
+/* Pixel divider */
 .tf-hr {
   border: 0;
   border-top: 1px dashed var(--line);
   margin: var(--s-2) 0;
 }
 
+/* Spin / pulse */
 @keyframes tf-spin {
   to {
     transform: rotate(360deg);
@@ -578,30 +163,9 @@ pre {
     background-position: -200% 0;
   }
 }
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes shine {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-.fade-up {
-  animation: fade-up 600ms var(--ease-out) both;
-}
 
 /* ─────────────────────────────────────────────────────────────────────
-   BUTTONS — v3 terminal skin (overrides v2 buttons)
+   BUTTONS — partner's hierarchy, terminal skin
    ───────────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex;
@@ -635,16 +199,21 @@ pre {
     var(--glow-cyan);
   border-color: var(--cyan);
 }
+
 .btn-primary {
   background: transparent;
   border-color: var(--cyan);
   color: var(--cyan);
+  box-shadow:
+    inset 0 0 0 0 transparent,
+    0 0 0 0 transparent;
 }
 .btn-primary:hover {
   background: var(--cyan);
   color: var(--bg-0);
   box-shadow: var(--glow-cyan);
 }
+
 .btn-ghost {
   border-color: transparent;
   color: var(--fg-dim);
@@ -654,6 +223,7 @@ pre {
   color: var(--fg);
   border-color: transparent;
 }
+
 .btn-danger {
   border-color: var(--line-magenta);
   color: var(--magenta);
@@ -663,6 +233,7 @@ pre {
   color: var(--bg-0);
   box-shadow: var(--glow-magenta);
 }
+
 .btn-success {
   border-color: var(--line-mint);
   color: var(--mint);
@@ -672,6 +243,7 @@ pre {
   color: var(--bg-0);
   box-shadow: var(--glow-mint);
 }
+
 .btn-sol {
   border-color: transparent;
   color: var(--bg-0);
@@ -682,6 +254,7 @@ pre {
   filter: brightness(1.12);
   box-shadow: var(--halo-cyan), var(--halo-mint);
 }
+
 .btn-sm {
   padding: 5px 10px;
   font-size: 10px;
@@ -696,7 +269,6 @@ pre {
   aspect-ratio: 1;
 }
 .btn[disabled],
-.btn:disabled,
 .btn.is-disabled {
   opacity: 0.32;
   pointer-events: none;
@@ -718,6 +290,10 @@ pre {
   color: var(--cyan);
   animation: tf-spin 0.8s linear infinite;
 }
+.btn-primary.is-loading::after {
+  color: var(--cyan);
+}
+
 .icon {
   width: 14px;
   height: 14px;
@@ -814,6 +390,8 @@ pre {
 .input-help.is-error {
   color: var(--magenta);
 }
+
+/* Switch — pixel toggle */
 .switch {
   width: 32px;
   height: 16px;
@@ -845,6 +423,8 @@ pre {
   background: var(--cyan);
   box-shadow: var(--glow-cyan);
 }
+
+/* Checkbox — pixel x */
 .check {
   width: 16px;
   height: 16px;
@@ -869,6 +449,8 @@ pre {
   font-weight: 700;
   line-height: 1;
 }
+
+/* Radio — pixel dot (still 0 radius, just a square indicator) */
 .radio {
   width: 16px;
   height: 16px;
@@ -967,6 +549,7 @@ pre {
   font-size: var(--t-small);
 }
 
+/* Status pill — same as chip but with leading dot */
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -1005,7 +588,7 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   CARDS · TERMINAL PANELS
+   CARDS — terminal panels with optional head/foot
    ───────────────────────────────────────────────────────────────────── */
 .card {
   background: var(--surface);
@@ -1048,6 +631,8 @@ pre {
   justify-content: flex-end;
   gap: var(--s-2);
 }
+
+/* Terminal window chrome (when a card needs traffic-light dots) */
 .tf-term {
   background: var(--surface-deep);
   border: 1px solid var(--line-strong);
@@ -1161,6 +746,7 @@ pre {
     inset 0 0 0 1px var(--cyan),
     var(--glow-cyan);
 }
+
 .tabs {
   display: inline-flex;
   padding: 2px;
@@ -1190,7 +776,7 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   TOASTS · BANNERS · TOOLTIPS
+   TOAST · BANNER · TOOLTIP
    ───────────────────────────────────────────────────────────────────── */
 .toast {
   display: flex;
@@ -1242,6 +828,7 @@ pre {
 .toast.t-hold .ico {
   color: var(--hold);
 }
+
 .banner {
   display: flex;
   gap: 12px;
@@ -1278,6 +865,7 @@ pre {
 .banner.success .ico {
   color: var(--mint);
 }
+
 .tt-host {
   position: relative;
   display: inline-flex;
@@ -1317,31 +905,10 @@ pre {
   background-size: 200% 100%;
   animation: tf-shimmer 1.6s steps(8) infinite;
 }
-/* Legacy v2 skeleton classes — kept for route-level loading.tsx fallbacks. */
-.skeleton {
-  display: block;
-  background: linear-gradient(
-    90deg,
-    var(--bg-2) 0%,
-    var(--bg-3) 40%,
-    var(--bg-2) 80%
-  );
-  background-size: 200% 100%;
-  animation: shine 1.6s linear infinite;
-  border-radius: var(--r-0);
-  border: 1px solid var(--line);
-  color: transparent;
-  user-select: none;
-  pointer-events: none;
-}
-.skeleton-line {
-  height: 12px;
-  border: none;
-}
-.skeleton-block {
-  min-height: 60px;
-}
-
+/* Dotmatrix loader — 12 dots stepping around a 24×24 square perimeter.
+   Pattern borrowed from dotmatrix.dev's dotm-square-12. Pixel-honest, no
+   smooth rotation — reads as "querying" not "buffering". Markup:
+       <span class="tf-spinner"><i></i>×12</span>                          */
 .tf-spinner {
   position: relative;
   display: inline-block;
@@ -1419,6 +986,65 @@ pre {
   left: 0;
   top: 7px;
 }
+
+/* size variants — override --tf-spinner-size, dots scale via the same grid */
+.tf-spinner.is-lg {
+  width: 36px;
+  height: 36px;
+}
+.tf-spinner.is-lg i {
+  width: 3px;
+  height: 3px;
+}
+.tf-spinner.is-lg i:nth-child(1) {
+  left: 0;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(2) {
+  left: 11px;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(3) {
+  left: 22px;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(4) {
+  left: 33px;
+  top: 0;
+}
+.tf-spinner.is-lg i:nth-child(5) {
+  left: 33px;
+  top: 11px;
+}
+.tf-spinner.is-lg i:nth-child(6) {
+  left: 33px;
+  top: 22px;
+}
+.tf-spinner.is-lg i:nth-child(7) {
+  left: 33px;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(8) {
+  left: 22px;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(9) {
+  left: 11px;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(10) {
+  left: 0;
+  top: 33px;
+}
+.tf-spinner.is-lg i:nth-child(11) {
+  left: 0;
+  top: 22px;
+}
+.tf-spinner.is-lg i:nth-child(12) {
+  left: 0;
+  top: 11px;
+}
+
 @keyframes tf-dotm {
   0%,
   15% {
@@ -1446,10 +1072,9 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   CODE BLOCKS — v3 .code + legacy v2 .codeblock bridge
+   CODE BLOCK
    ───────────────────────────────────────────────────────────────────── */
-.code,
-.codeblock {
+.code {
   background: var(--bg-1);
   border: 1px solid var(--line);
   border-left: 2px solid var(--cyan);
@@ -1460,44 +1085,22 @@ pre {
   color: var(--fg-dim);
   white-space: pre;
   overflow-x: auto;
-  border-radius: var(--r-0);
-  position: relative;
 }
-.code .k,
-.codeblock .k {
+.code .k {
   color: var(--cyan);
 }
-.code .s,
-.codeblock .s {
+.code .s {
   color: var(--mint);
 }
-.code .c,
-.codeblock .c {
+.code .c {
   color: var(--fg-faint);
-  font-style: italic;
 }
-.code .v,
-.codeblock .v {
+.code .v {
   color: var(--violet);
-}
-.codeblock .copy {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  font-size: 10px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--fg-faint);
-  padding: 4px 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-0);
-  background: var(--surface);
-  cursor: pointer;
-  font-family: var(--font-mono);
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   PATTERNS — wallet, avatars, response card, agent card, price tile, tool chip
+   PATTERNS — wallet, agent avatar, response card, price tile
    ───────────────────────────────────────────────────────────────────── */
 .wallet {
   display: inline-flex;
@@ -1508,21 +1111,11 @@ pre {
   background: var(--surface);
   font-family: var(--font-mono);
   font-size: var(--t-small);
-  border-radius: var(--r-0);
-  cursor: pointer;
-  transition:
-    border-color var(--t-fast),
-    background var(--t-fast);
-}
-.wallet:hover {
-  border-color: var(--line-bright);
-  background: var(--surface-2);
 }
 .wallet .av {
   width: 18px;
   height: 18px;
   background: var(--grad-spectrum);
-  border-radius: var(--r-0);
 }
 .wallet .pk {
   color: var(--fg);
@@ -1535,8 +1128,7 @@ pre {
   margin-left: 4px;
 }
 
-/* Avatar — pixel block. v3 numbered variants .av-1..6; legacy keeps .av-2..8 +
-   .green/.red color-name aliases for un-touched callsites. */
+/* Agent avatar — pixel block */
 .av {
   display: inline-flex;
   align-items: center;
@@ -1568,18 +1160,6 @@ pre {
 .av-6 {
   background: linear-gradient(135deg, var(--spec-5), var(--spec-2));
 }
-.av-7 {
-  background: linear-gradient(135deg, var(--spec-5), var(--spec-3));
-}
-.av-8 {
-  background: linear-gradient(135deg, var(--spec-1), var(--spec-4));
-}
-.av.green {
-  background: linear-gradient(135deg, var(--spec-5), var(--spec-4));
-}
-.av.red {
-  background: linear-gradient(135deg, var(--spec-1), var(--spec-2));
-}
 .av.sm {
   width: 22px;
   height: 22px;
@@ -1596,6 +1176,7 @@ pre {
   font-size: 22px;
 }
 
+/* Response / agent card */
 .resp {
   background: var(--surface);
   border: 1px solid var(--line);
@@ -1683,10 +1264,10 @@ pre {
   border: 1px solid var(--line);
 }
 
+/* Agent card row (leaderboard-style) */
 .agent-card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-0);
   padding: 14px 16px;
   display: grid;
   grid-template-columns: 40px 1fr auto;
@@ -1723,10 +1304,10 @@ pre {
   font-size: var(--t-body);
 }
 
+/* Price tile */
 .price-tile {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--r-0);
   padding: 12px 14px;
   display: grid;
   grid-template-columns: 32px 1fr auto;
@@ -1768,6 +1349,7 @@ pre {
   letter-spacing: 0.06em;
 }
 
+/* Solana ecosystem chip — each tool gets a spectrum stop */
 .tool-chip {
   display: inline-flex;
   align-items: center;
@@ -1778,7 +1360,6 @@ pre {
   font-family: var(--font-mono);
   font-size: var(--t-small);
   letter-spacing: 0.04em;
-  border-radius: var(--r-0);
 }
 .tool-chip .glyph {
   width: 20px;
@@ -1841,50 +1422,7 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   TOKEN MARKERS — round logo dots used in QueryComposer + leaderboard.
-   These keep border-radius 50% because they read as token icons, not
-   pixel-tile glyphs. Color sources updated to spectrum-mapped per the
-   project SKILL.md override.
-   ───────────────────────────────────────────────────────────────────── */
-.token {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--bg-0);
-  flex: none;
-}
-.token-bonk {
-  background: linear-gradient(135deg, #ffd93d, #ff6b35);
-}
-.token-sol {
-  background: linear-gradient(135deg, var(--c-solana), var(--spec-5));
-}
-.token-jup {
-  background: linear-gradient(135deg, var(--c-jupiter), var(--spec-4));
-}
-.token-wif {
-  background: linear-gradient(135deg, var(--c-rugcheck), var(--c-phantom));
-}
-.token-pyth {
-  background: linear-gradient(135deg, var(--c-solana), var(--spec-3));
-  color: #fff;
-}
-.token-jto {
-  background: linear-gradient(135deg, var(--c-helius), var(--spec-5));
-  color: #fff;
-}
-.token-jto-light {
-  background: linear-gradient(135deg, var(--c-helius), var(--spec-5));
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   DATA VIZ — PnL bars, tally, conf meter, round timeline
+   DATA VIZ
    ───────────────────────────────────────────────────────────────────── */
 .pnl-row {
   display: grid;
@@ -1929,6 +1467,7 @@ pre {
   background: var(--magenta);
   box-shadow: 0 0 6px var(--magenta);
 }
+
 .tally {
   display: flex;
   height: 8px;
@@ -1947,6 +1486,7 @@ pre {
 .tally .b-hold {
   background: var(--hold);
 }
+
 .conf-meter {
   height: 4px;
   background: var(--bg-3);
@@ -1957,6 +1497,7 @@ pre {
   background: var(--cyan);
   box-shadow: 0 0 6px var(--cyan);
 }
+
 .round-tl {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -2017,7 +1558,9 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   TAGS — visibility / scope markers (distinct from .chip).
+   TAGS · field-scope markers (borrowed from arena.colosseum.org)
+   Distinct from .chip — chips carry direction/status (long/short/hold);
+   tags carry visibility/scope (public/private/required/draft).
    ───────────────────────────────────────────────────────────────────── */
 .tf-tag {
   display: inline-flex;
@@ -2069,7 +1612,9 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   INFO PANEL — blueprint-style corner-tick callout
+   INFO PANEL · blueprint-style corner-tick callout
+   Four L-shaped ticks make it read as a technical drawing.
+   .tf-info-warn = magenta border, .tf-info-ok = mint border.
    ───────────────────────────────────────────────────────────────────── */
 .tf-info {
   position: relative;
@@ -2165,302 +1710,12 @@ pre {
   color: var(--mint-bright);
 }
 
-/* ═══ App top nav — match main verbatim (do not v3-restyle without ask) ══ */
-.appnav {
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--bd-1);
-  background: rgba(15, 15, 17, 0.8);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  position: sticky;
-  top: 0;
-  z-index: 60;
-}
-.appnav .left {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-}
-.appnav .logo {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--fg);
-}
-.appnav .logo img {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-}
-.appnav nav {
-  display: flex;
-  gap: 4px;
-}
-.appnav nav a {
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: var(--r-2);
-  color: var(--fg-2);
-  transition:
-    background var(--t-fast),
-    color var(--t-fast);
-}
-.appnav nav a:hover {
-  color: var(--fg);
-  background: var(--bg-2);
-}
-.appnav nav a.active {
-  color: var(--fg);
-  background: var(--bg-2);
-}
-.appnav .right {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   STAT ROW — used in agent dashboard, hero stats
-   ───────────────────────────────────────────────────────────────────── */
-.stat-l {
-  font-family: var(--font-mono);
-  font-size: var(--t-mini);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--fg-faint);
-  margin-bottom: 8px;
-}
-.stat-v {
-  font-family: var(--font-pixel);
-  font-size: 28px;
-  font-weight: 400;
-  letter-spacing: 0.04em;
-  color: var(--fg);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   LANDING HERO SCOPE — ocean palette, Departure Mono, water-light layers.
-   The brand identity of the marketing landing (/). Scoped under
-   .tf-landing-hero so platform pages (/swarm, /agents, /round, /docs)
-   keep the v3 spectrum tokens defined in :root above. The ocean palette
-   locally overrides --cyan / --cream / --font-pixel / --font-mono inside
-   this subtree; the WebGL fish swarm + light-rays render on this layer.
-   ═══════════════════════════════════════════════════════════════════════ */
-.tf-landing-hero {
-  --cream: #f0e9e1;
-  --fg-dim: #a8b8c8;
-  --fg-faint: #6a7a8a;
-  --fg-faintest: #3a4858;
-  --cyan: #a8d8e8;
-  --cyan-bright: #c4ecf5;
-  --cyan-dim: #6a9bb5;
-  --magenta: #d96baa;
-  --short: #e07560;
-  --line-strong: rgba(168, 216, 232, 0.32);
-  --t-fast: 150ms;
-  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --font-pixel: var(--font-departure), "VT323", ui-monospace, monospace;
-  --font-mono:
-    var(--font-departure), "JetBrains Mono", "IBM Plex Mono", ui-monospace,
-    "SF Mono", "Menlo", monospace;
-}
-.tf-landing-hero .tf-ocean-light {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 55% 40% at 30% 0%,
-      rgba(76, 216, 232, 0.42),
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 40% 32% at 70% 0%,
-      rgba(127, 224, 168, 0.28),
-      transparent 65%
-    ),
-    radial-gradient(
-      ellipse 50% 35% at 50% 0%,
-      rgba(168, 216, 232, 0.36),
-      transparent 70%
-    );
-  background-size:
-    220% 100%,
-    200% 100%,
-    240% 100%;
-  background-repeat: no-repeat;
-  animation: tf-ocean-light 60s linear infinite;
-  mix-blend-mode: screen;
-}
-@keyframes tf-ocean-light {
-  from {
-    background-position:
-      30% 0%,
-      70% 0%,
-      50% 0%;
-  }
-  to {
-    background-position:
-      130% 0%,
-      -30% 0%,
-      150% 0%;
-  }
-}
-.tf-landing-hero .tf-dust-motes,
-.tf-landing-hero .tf-debris {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  mix-blend-mode: screen;
-}
-.tf-landing-hero .tf-attention-bloom {
-  position: absolute;
-  pointer-events: none;
-  left: 50%;
-  top: 50%;
-  width: 820px;
-  height: 820px;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    circle,
-    rgba(168, 216, 232, 0.24) 0%,
-    rgba(168, 216, 232, 0.1) 30%,
-    rgba(168, 216, 232, 0.02) 55%,
-    rgba(168, 216, 232, 0) 70%
-  );
-  opacity: 0;
-  transition: opacity 520ms var(--ease-out);
-  mix-blend-mode: screen;
-}
-.tf-landing-hero .tf-attention-bloom[data-attention="true"] {
-  opacity: 1;
-}
-@keyframes tf-caret-blink {
-  0%,
-  49% {
-    opacity: 0.85;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
-.tf-landing-hero .tf-caret-blink {
-  animation: tf-caret-blink 1s steps(1, end) infinite;
-}
-@keyframes tf-fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.tf-landing-hero .tf-fade-up {
-  animation: tf-fade-up 600ms var(--ease-out) both;
-}
-@keyframes tf-shine {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-.tf-landing-hero .tf-shine-text {
-  background: linear-gradient(
-    90deg,
-    var(--cream) 0%,
-    var(--cream) 40%,
-    var(--cyan-bright) 50%,
-    var(--cream) 60%,
-    var(--cream) 100%
-  );
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation: tf-shine 5s linear infinite;
-}
-
-/* ─────────────────────────────────────────────────────────────────────
-   MOBILE RESPONSIVE LAYER
-   ───────────────────────────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .page {
-    padding: 0 var(--s-4);
-  }
-  .appnav {
-    height: auto;
-    min-height: 56px;
-    padding: 8px 14px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .appnav .left {
-    gap: 14px;
-    flex-wrap: wrap;
-  }
-  .appnav nav {
-    gap: 0;
-  }
-  .appnav nav a {
-    padding: 6px 8px;
-    font-size: 12px;
-  }
-  .appnav .right {
-    gap: 6px;
-  }
-  .wallet {
-    padding: 6px 8px;
-    font-size: 11px;
-  }
-}
-@media (max-width: 640px) {
-  .appnav nav {
-    display: none;
-  }
-  .appnav .left {
-    gap: 10px;
-  }
-  .appnav .logo span {
-    font-size: 14px;
-  }
-  .card {
-    padding: 14px;
-  }
-  .card table,
-  table {
-    display: block;
-    overflow-x: auto;
-    max-width: 100%;
-  }
-}
-@media (max-width: 640px) and (pointer: coarse) {
-  .btn,
-  .wallet,
-  .chip {
-    min-height: 40px;
-  }
-  .btn-sm {
-    min-height: 36px;
-  }
-}
-
 /* ─────────────────────────────────────────────────────────────────────
    ACCESSIBILITY — reduced motion
-   Honors the OS-level "reduce motion" preference. Static contrast and
-   layout untouched; keyframe pulses / shimmers / spinners hold to near-zero.
+   Respects the user's OS-level "reduce motion" preference. Holds
+   keyframe-based pulses, shimmers, the dot-chase loader, flicker,
+   and view-transitions to a near-zero duration. Static contrast and
+   layout are untouched.
    ───────────────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,

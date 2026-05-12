@@ -369,10 +369,17 @@ export function HeroSwarm() {
     const brightnesses = new Float32Array(count);
     const headings = new Float32Array(count);
     const swimPhases = new Float32Array(count);
+    // Per-fish focus-stagger phase ∈ [0, 1]. The shader treats this as
+    // each fish's "activation threshold" along the global uFocusDrive
+    // ramp — fish with low phase light up to Solana neon first when the
+    // input focuses, high-phase fish trail behind. Deterministic from
+    // particle index so the cascade pattern is stable across reloads.
+    const focusPhases = new Float32Array(count);
     buildPaletteIndices(paletteIndices, count);
     // Per-fish swim wiggle phase desync — some bend left, some right.
     for (let i = 0; i < count; i++) {
       swimPhases[i] = hash01(i * 39769 + 7) * TAU;
+      focusPhases[i] = hash01(i * 24917 + 41);
     }
     sizes.fill(1.0); // Main school: uniform baseline size; pulse via aIntensity.
 
@@ -443,6 +450,10 @@ export function HeroSwarm() {
       "aSwimPhase",
       new THREE.BufferAttribute(swimPhases, 1),
     );
+    geometry.setAttribute(
+      "aFocusPhase",
+      new THREE.BufferAttribute(focusPhases, 1),
+    );
 
     // Custom shader for the pixel-CRT retrofit: each particle is a hard-edged
     // pixel rectangle drawn in one of 5 phosphor colors selected from a
@@ -469,6 +480,16 @@ export function HeroSwarm() {
     // so a fish keeps its "species" (its aPaletteIdx) across the mix.
     const paletteAltUniform = { value: buildPaletteUniform(SOLANA_HEX) };
     const paletteMixUniform = { value: 0 };
+    // Focus-stagger uniform. `uFocusDrive` is the global ramp value
+    // (0 → 0.65 over the focus lerp window). Each fish's cascade gate
+    // opens when the drive crosses its `aFocusPhase * 0.5` threshold —
+    // low-phase fish first, high-phase fish last (random scatter).
+    // Once gated open, the shader applies a per-fish sinusoidal flicker
+    // (uTime + aFocusPhase * 2π) so each fish oscillates between
+    // mostly-default and full-Solana with its own phase offset — the
+    // school is constantly alternating Solana on/off while focused.
+    // Submit-burst still drives `uPaletteMix` directly; shader max()s.
+    const focusDriveUniform = { value: 0 };
     // Global brightness multiplier. Pumped during the submit burst so the
     // entire school visibly flares as the page hands off to /round/[id].
     const burstBrightUniform = { value: 1.0 };
@@ -488,6 +509,7 @@ export function HeroSwarm() {
         uPalette: paletteUniform,
         uPaletteAlt: paletteAltUniform,
         uPaletteMix: paletteMixUniform,
+        uFocusDrive: focusDriveUniform,
         uBurstBright: burstBrightUniform,
         uSizeMult: sizeMultUniform,
         uAspect: aspectMain,
@@ -500,13 +522,16 @@ export function HeroSwarm() {
         attribute float aBrightness;
         attribute float aHeading;
         attribute float aSwimPhase;
+        attribute float aFocusPhase;
         uniform vec2 uSize;
         uniform float uScale;
         uniform vec3 uPalette[5];
         uniform vec3 uPaletteAlt[5];
         uniform float uPaletteMix;
+        uniform float uFocusDrive;
         uniform float uBurstBright;
         uniform float uSizeMult;
+        uniform float uTime;
         varying vec3 vColor;
         varying float vHeading;
         varying float vSwimPhase;
@@ -523,7 +548,35 @@ export function HeroSwarm() {
           else if (idx == 2) { baseA = uPalette[2]; baseB = uPaletteAlt[2]; }
           else if (idx == 3) { baseA = uPalette[3]; baseB = uPaletteAlt[3]; }
           else { baseA = uPalette[4]; baseB = uPaletteAlt[4]; }
-          vec3 base = mix(baseA, baseB, uPaletteMix);
+          // Per-fish focus contribution.
+          //   cascadeGate: smoothstep gates each fish at its own
+          //     threshold (aFocusPhase*0.5 .. +0.15). Drive ramps 0→0.65
+          //     so even latest fish (phase=1.0, threshold up to 0.65)
+          //     fully gates open at drive peak.
+          //   flicker: each fish oscillates 0..1 at ~2s period, phase-
+          //     offset by its own aFocusPhase * 2π so neighbours are at
+          //     different points in the cycle. Result is a constantly-
+          //     shimmering school — at any moment some fish are at peak
+          //     Solana, others at near-default cyan.
+          //   heldMix: linear remap to [0.5, 0.95]. Dip is STILL half-
+          //     Solana (not back to cyan default) so the school keeps
+          //     its Solana identity throughout the flicker — peak is
+          //     full neon. Earlier 0.15 dip washed the Solana feel out.
+          //   focusLocalMix = cascadeGate * heldMix: cascade ramps the
+          //     amplitude in/out; flicker rides on top.
+          // Submit burst still drives uPaletteMix to 1.0 directly; the
+          // max() below makes burst dominate when active.
+          float cascadeGate = smoothstep(
+            aFocusPhase * 0.5,
+            aFocusPhase * 0.5 + 0.15,
+            uFocusDrive
+          );
+          float flickerPhase = uTime * 3.1 + aFocusPhase * 6.28318;
+          float flicker = 0.5 - 0.5 * cos(flickerPhase);
+          float heldMix = mix(0.5, 0.95, flicker);
+          float focusLocalMix = cascadeGate * heldMix;
+          float mixAmount = max(focusLocalMix, uPaletteMix);
+          vec3 base = mix(baseA, baseB, mixAmount);
           vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
           // Depth fog in CAMERA space. With z spread ±110, mvPos.z ranges
           // ~-270 (closest, big + bright) to ~-490 (farthest, small + dim).
@@ -570,28 +623,36 @@ export function HeroSwarm() {
           float bend = wave * tailness * 0.18;
 
           // Apply bend, then test against a HEAD-BIASED TEARDROP body
-          // plus a small FORKED TAIL FIN behind the body tip. Body-local
-          // coords: u along axis (-1 = tail base, +1 = head tip);
-          // v perpendicular.
+          // plus a SLENDER TAIL SPIKE behind it. Body-local coords:
+          // u along axis (-1 = tail tip, +1 = forward of head); v
+          // perpendicular. Fits entirely in sprite u∈[-1, 0.95].
+          //
+          // Top-down constraint: this is a viewport-down view of the
+          // school, so the caudal fin is edge-on — it should read as a
+          // thin streak, NOT a wide forked fan (which would be the
+          // side-on view). Tail steepness kept low (0.5) so the spike
+          // tapers to ~0.15 max half-width, like the tail end of a
+          // torpedo seen from above.
           float yBent = r.y - bend * uAspect.y;
           float u = r.x / uAspect.x;
           float v = yBent / uAspect.y;
 
-          // Body silhouette: head-biased teardrop. We cap body length at
-          // u=-0.9 (not -1.0) to give the tail fin more visual real estate
-          // — body is the front 1.9 units, tail is the back 0.7 units, so
-          // tail reads as ~27% of total fish length instead of ~16%.
-          float profile = pow(max(0.0, 1.0 + u), 0.6)
-                        * pow(max(0.0, 1.0 - u), 0.3) * 0.85;
-          bool inBody = abs(v) < profile && u > -0.9 && u < 1.0;
+          // Body silhouette: head-biased teardrop, head at u=0.95,
+          // tail-joint at u=-0.7. Body length 1.65 (close to original
+          // 1.9 — restored the "long sardine" silhouette).
+          float profile = pow(max(0.0, u + 0.7), 0.6)
+                        * pow(max(0.0, 0.95 - u), 0.3);
+          bool inBody = abs(v) < profile && u > -0.7 && u < 0.95;
 
-          // Caudal fin: triangular flare extending from u=-0.9 to -1.6.
-          // Wider tip (×1.45 vs ×1.25) so the tail clearly reads as a
-          // tail at this rendered size.
-          float tailU = -0.9 - u;            // 0 at body/tail joint, +0.7 at fin tip
-          float halfWidth = tailU * 1.45;
+          // Tail spike: tapered extension from u=-0.7 to u=-1.0,
+          // half-width grows linearly from 0 at joint to ~0.33 at tip.
+          // Steepness 1.1 — leans closer to a visible flared fin while
+          // still reading as a top-down silhouette (vs original 1.45
+          // pure side-view fan, or 0.5 pure spike).
+          float tailU = -0.7 - u;            // 0 at body/tail joint, +0.3 at tip
+          float halfWidth = tailU * 1.1;
           float vAbs = abs(v);
-          bool inTail = u < -0.9 && u > -1.6 && vAbs < halfWidth;
+          bool inTail = u < -0.7 && u > -1.0 && vAbs < halfWidth;
 
           if (!inBody && !inTail) discard;
           // Body and tail share the fish's color — no dimming. The tail is
@@ -621,8 +682,10 @@ export function HeroSwarm() {
         uPalette: paletteUniform,
         uPaletteAlt: paletteAltUniform,
         uPaletteMix: paletteMixUniform,
+        uFocusDrive: focusDriveUniform,
         uBurstBright: burstBrightUniform,
         uSizeMult: sizeMultUniform,
+        uTime: timeUniform,
       },
       vertexShader: material.vertexShader,
       fragmentShader: `
@@ -662,8 +725,10 @@ export function HeroSwarm() {
     const ambientBrightnesses = new Float32Array(ambientCount);
     const ambientHeadings = new Float32Array(ambientCount); // all zeros — ambient = squares, rotation no-op
     const ambientSwimPhases = new Float32Array(ambientCount);
+    const ambientFocusPhases = new Float32Array(ambientCount);
     for (let i = 0; i < ambientCount; i++) {
       ambientSwimPhases[i] = hash01(i * 39769 + 113) * TAU;
+      ambientFocusPhases[i] = hash01(i * 24917 + 211);
     }
     const ambientVelocities = new Float32Array(ambientCount * 3);
 
@@ -696,6 +761,10 @@ export function HeroSwarm() {
       "aSwimPhase",
       new THREE.BufferAttribute(ambientSwimPhases, 1),
     );
+    ambientGeometry.setAttribute(
+      "aFocusPhase",
+      new THREE.BufferAttribute(ambientFocusPhases, 1),
+    );
 
     const ambientSizeUniform = {
       value: new THREE.Vector2(isMobile ? 2.4 : 3.2, 0),
@@ -710,6 +779,7 @@ export function HeroSwarm() {
         uPalette: paletteUniform,
         uPaletteAlt: paletteAltUniform,
         uPaletteMix: paletteMixUniform,
+        uFocusDrive: focusDriveUniform,
         uBurstBright: burstBrightUniform,
         uSizeMult: sizeMultUniform,
         uAspect: aspectAmbient,
@@ -970,11 +1040,12 @@ export function HeroSwarm() {
     // ── Scroll-follow plumbing ─────────────────────────────────────
     // The orbit center is the WORLD-SPACE projection of the current
     // viewport center. As the user scrolls, the canvas (absolute inset:0
-    // of a min-h-screen <main>) scrolls with the page; we recompute the
-    // viewport center in canvas-local coords each frame so the school
-    // always sits in view. While the user is actively scrolling we relax
-    // the orbit weight so the fish read as "swimming freely between
-    // sections" rather than rigidly tracking the scroll position.
+    // of the hero section, clipped by hero's overflow-hidden) scrolls
+    // with the page; we recompute the viewport center in canvas-local
+    // coords each frame so the school always sits in view while any
+    // part of the hero is visible. While the user is actively scrolling
+    // we relax the orbit weight so the fish read as "swimming freely"
+    // rather than rigidly tracking the scroll position.
     let lastScrollY = typeof window !== "undefined" ? window.scrollY : 0;
     let scrollVel = 0;
     let lastScrollAt = -1e9;
@@ -1031,9 +1102,22 @@ export function HeroSwarm() {
       // through the submit collapse even if the input already blurred.
       const fEff = Math.max(focusStrength, burstStrength);
 
+      // ── Focus-stagger palette drive ──────────────────────────────
+      // uFocusDrive ramps with focusStrength: 0 → 0.65 so every fish's
+      // cascade gate (smoothstep at aFocusPhase*0.5 .. +0.15) opens by
+      // drive peak. Once open, the shader's per-fish sinusoidal flicker
+      // (uTime + aFocusPhase*2π) handles the "Solana colors alternating
+      // on/off" effect — no JS sinusoid needed.
+      focusDriveUniform.value = focusStrength * 0.65;
+
       // Drive shader uniforms from the focus + burst envelopes.
       paletteMixUniform.value = burstStrength;
-      burstBrightUniform.value = 1.0 + 0.8 * burstStrength;
+      // Brightness: focus adds a 0.45 lift so the Solana palette reads
+      // as NEON GLOW (not just a color swap at the same brightness).
+      // Burst still peaks higher (+0.8) for the climactic moment. Use
+      // max() so the two paths don't double up.
+      burstBrightUniform.value =
+        1.0 + Math.max(0.45 * focusStrength, 0.8 * burstStrength);
       // Size multiplier: 1.0 baseline → SIZE_MULT_FOCUS during steady
       // focus, lerping to SIZE_MULT_BURST at burst peak.
       const focusSizeMult = 1.0 + (SIZE_MULT_FOCUS - 1.0) * focusStrength;
@@ -1041,9 +1125,13 @@ export function HeroSwarm() {
         focusSizeMult + (SIZE_MULT_BURST - focusSizeMult) * burstStrength;
 
       // ── Orbit center = viewport center, projected into world ─────
-      // Recomputed every frame so the school follows scroll smoothly. We
-      // also decay the scroll velocity so `scrolling` returns to 0 a few
-      // hundred ms after the user stops scrolling.
+      // Canvas is `position: absolute; inset: 0` of the hero section
+      // (clipped by `overflow: hidden`), so it scrolls with the page.
+      // We reproject the live viewport center into canvas-local NDC
+      // each frame so fish track the visible region as the user scrolls
+      // through the hero. Smoothing is intentionally fast (~40ms time
+      // constant) — earlier tuning had a sluggish ~125ms lag that made
+      // scroll-down-then-back-up feel slow to recover.
       let orbitCenterValid = false;
       const cRect = container.getBoundingClientRect();
       if (cRect.width > 0 && cRect.height > 0) {
@@ -1051,11 +1139,27 @@ export function HeroSwarm() {
         const vpCenterY = window.innerHeight / 2;
         const localX = vpCenterX - cRect.left;
         const localY = vpCenterY - cRect.top;
-        viewportCenterTarget.x = (localX / cRect.width) * 2 - 1;
-        viewportCenterTarget.y = -((localY / cRect.height) * 2 - 1);
+        const rawNdcX = (localX / cRect.width) * 2 - 1;
+        const rawNdcY = -((localY / cRect.height) * 2 - 1);
+        // When the viewport center is OUTSIDE the canvas (user has
+        // scrolled past the hero), fall back to canvas center (0, 0)
+        // for the orbit target. Without this, the orbit center chases
+        // wildly out-of-range NDC values (e.g. y = -4.4 at scrollY=2000),
+        // pulling fish off into world coords far from the canvas. When
+        // the user scrolls back to the hero, fish are physically far
+        // away and have to swim back into view — looks like an empty
+        // tank for ~1s. Holding the orbit at canvas center while the
+        // hero is off-screen keeps fish in place, so scrolling back up
+        // shows the swarm exactly where it was.
+        const insideCanvas = Math.abs(rawNdcX) <= 1 && Math.abs(rawNdcY) <= 1;
+        viewportCenterTarget.x = insideCanvas ? rawNdcX : 0;
+        viewportCenterTarget.y = insideCanvas ? rawNdcY : 0;
 
         // Frame-rate-independent smoothing toward the new target.
-        const smooth = 1 - Math.exp(-dt * 8);
+        // dt*40 ≈ 25ms time constant — orbit center snaps to viewport
+        // almost instantly so scroll-back-up shows fish back in place
+        // immediately rather than catching up over a perceptible beat.
+        const smooth = 1 - Math.exp(-dt * 40);
         viewportCenterSmoothed.lerp(viewportCenterTarget, smooth);
 
         orbitNdc
@@ -1080,17 +1184,21 @@ export function HeroSwarm() {
         looseV * (1 - burstStrength) + V_ORBIT_BURST * burstStrength;
 
       // Scroll-induced relaxation. While the user is actively scrolling
-      // (within ~0.4s of the last scroll event), drop the orbit weight so
-      // boids forces dominate → the school visibly "swims free" between
-      // sections. Settles back to a cohesive orbit a moment after stop.
+      // we slightly soften the orbit grip so the school doesn't feel
+      // like it's nailed to the cursor, but we KEEP the orbit force
+      // dominant so the ring formation holds together throughout the
+      // scroll. Earlier tuning relaxed too aggressively (55% off) with
+      // a slow recovery (~400ms), which made the fish bunch up while
+      // off-screen and look like a clump when the user scrolled back
+      // into view. Now: 15% max relaxation, recovery in ~125ms.
       const sinceScroll = (performance.now() - lastScrollAt) / 1000;
       const scrolling =
-        Math.min(1, scrollVel / 12) * Math.exp(-sinceScroll * 2.5);
+        Math.min(1, scrollVel / 12) * Math.exp(-sinceScroll * 8);
       scrollVel *= Math.exp(-dt * 5);
 
       // Base orbit weight is always positive — fish are always orbiting
-      // the viewport. Scroll relaxes it; nothing turns it off.
-      const orbitWeight = 0.7 * (1 - 0.55 * scrolling);
+      // the viewport. Scroll relaxes it slightly; nothing turns it off.
+      const orbitWeight = 0.7 * (1 - 0.15 * scrolling);
       // Predator (cursor) flee is suppressed by focus — committed orbit
       // fish ignore the cursor — but loose-orbit fish still react.
       const predatorWeight = 1 - 0.6 * fEff;
