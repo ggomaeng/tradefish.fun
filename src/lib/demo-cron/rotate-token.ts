@@ -1,15 +1,24 @@
 /**
- * Stateless token rotation for the demo cron.
+ * Volatility-weighted token rotation for the demo cron.
  *
- * Cursor = the `token_mint` of the most recent `queries.is_demo = true` row.
- * The next token is the next active `supported_tokens` row ordered by
- * `symbol`, wrapping back to the first.
+ * The earlier version walked tokens alphabetically — fine for testing but
+ * over-represented low-vol majors (SOL, JUP) on the demo board. With 5-min
+ * rounds those tokens barely move; PnL stays near zero and agent rankings
+ * don't differentiate. This version picks the next token via WEIGHTED
+ * RANDOM SAMPLING biased toward volatile assets (BONK, WIF, JTO) so the
+ * leaderboard sees actual PnL swings.
  *
- * Why this shape:
- *   - No new state table. Survives DB resets (restarts from the first symbol).
- *   - Uses idx_queries_is_demo_asked_at, which the same migration adds.
- *   - If the previous demo token has been deactivated, falls back to the
- *     first active token rather than getting stuck.
+ * Cursor = the most recent demo token. We exclude it from the next pool to
+ * avoid immediate repeats, then sample by weight from the remainder. If
+ * exclusion would empty the pool (e.g. only one active token), the cursor
+ * is allowed back in.
+ *
+ * Properties:
+ *   - Stateless (no new tables; cursor derived from queries table).
+ *   - Volatile tokens average ~3× the airtime of majors.
+ *   - Stablecoins (USDC/USDT) always excluded — no directional answer.
+ *   - Unknown symbols fall back to weight 1 so adding a new token "just
+ *     works" without changing this file.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -20,21 +29,43 @@ export interface RotateResult {
   pyth_feed_id: string;
 }
 
-/**
- * Symbols excluded from the demo question rotation. Stablecoins by design
- * don't move directionally — asking "buy or sell USDC now?" has no real
- * directional answer and produces meaningless agent responses.
- *
- * Human askers can still spend credits on a stablecoin round via /api/queries
- * if they really want to (e.g. depeg scenarios) — only the auto-cron filters
- * them out.
- */
 const STABLECOIN_SYMBOLS = new Set<string>(["USDC", "USDT"]);
+
+/**
+ * Empirical 5-min volatility weights for the demo rotation. Higher number
+ * = more rotation airtime. Tuned for hackathon demo so meme tokens (which
+ * have real PnL swings over a 5-min window) get more reps than majors.
+ */
+const TOKEN_VOLATILITY_WEIGHT: Record<string, number> = {
+  BONK: 3,
+  WIF: 3,
+  JTO: 2,
+  PYTH: 2,
+  SOL: 1,
+  JUP: 1,
+};
+const DEFAULT_WEIGHT = 1;
+
+function weightFor(symbol: string | null | undefined): number {
+  if (!symbol) return DEFAULT_WEIGHT;
+  return TOKEN_VOLATILITY_WEIGHT[symbol.toUpperCase()] ?? DEFAULT_WEIGHT;
+}
+
+function pickWeighted<T>(items: T[], weight: (item: T) => number): T {
+  const total = items.reduce((acc, t) => acc + weight(t), 0);
+  if (total <= 0) return items[0];
+  let r = Math.random() * total;
+  for (const item of items) {
+    r -= weight(item);
+    if (r <= 0) return item;
+  }
+  return items[items.length - 1];
+}
 
 export async function pickNextDemoToken(
   db: SupabaseClient,
 ): Promise<RotateResult | null> {
-  // 1) Latest demo query → cursor mint.
+  // 1) Latest demo query → cursor mint (to exclude from next pick).
   const { data: cursorRow } = await db
     .from("queries")
     .select("token_mint")
@@ -45,7 +76,7 @@ export async function pickNextDemoToken(
 
   const cursorMint: string | null = cursorRow?.token_mint ?? null;
 
-  // 2) All active tokens ordered by symbol, with stablecoins filtered out.
+  // 2) All active non-stablecoin tokens.
   const { data: rawTokens, error } = await db
     .from("supported_tokens")
     .select("mint, symbol, name, pyth_feed_id, active")
@@ -59,26 +90,19 @@ export async function pickNextDemoToken(
   );
   if (tokens.length === 0) return null;
 
-  // 3) Find cursor in the list; pick the one after it (wrapping). If the
-  //    cursor token is no longer active or never existed, fall through to
-  //    the first.
-  if (cursorMint) {
-    const idx = tokens.findIndex((t) => t.mint === cursorMint);
-    if (idx >= 0) {
-      const next = tokens[(idx + 1) % tokens.length];
-      return {
-        mint: next.mint,
-        symbol: next.symbol,
-        name: next.name,
-        pyth_feed_id: next.pyth_feed_id,
-      };
-    }
-  }
-  const first = tokens[0];
+  // 3) Exclude the cursor token to avoid immediate repeats — unless that
+  //    would leave the pool empty (only one active token).
+  const pool =
+    cursorMint && tokens.length > 1
+      ? tokens.filter((t) => t.mint !== cursorMint)
+      : tokens;
+
+  // 4) Weighted-random pick from the pool.
+  const chosen = pickWeighted(pool, (t) => weightFor(t.symbol));
   return {
-    mint: first.mint,
-    symbol: first.symbol,
-    name: first.name,
-    pyth_feed_id: first.pyth_feed_id,
+    mint: chosen.mint,
+    symbol: chosen.symbol,
+    name: chosen.name,
+    pyth_feed_id: chosen.pyth_feed_id,
   };
 }
