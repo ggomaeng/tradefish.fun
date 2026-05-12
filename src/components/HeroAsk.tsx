@@ -12,7 +12,9 @@ import { SUPPORTED_TOKENS, type SupportedToken } from "@/lib/supported-tokens";
 // The question text itself is currently discarded — future backend
 // extension can accept the raw prompt.
 
-const ASK_ABOUT_SYMBOLS = ["SOL", "JUP", "BONK", "WIF"] as const;
+// All six supported tokens — matches /ask's grid so the hero is honest
+// about what the platform actually accepts.
+const ASK_ABOUT_SYMBOLS = ["SOL", "BONK", "JUP", "WIF", "PYTH", "JTO"] as const;
 const DEFAULT_SYMBOL = "SOL";
 
 const EV_ATTENTION_ON = "swarm:attention-on";
@@ -21,18 +23,17 @@ const EV_SUBMIT_BURST = "swarm:submit-burst";
 
 const BURST_NAVIGATE_DELAY_MS = 580;
 
-// Rotating placeholder prompts. Mix of short punchy + longer trader-
-// brain questions so the cycle reads as a live newsroom of decisions
-// rather than a single canned example.
+// Rotating placeholder — canonical "Buy or sell $TOKEN right now?" form
+// only, cycling through the 6 supported tokens. The backend accepts
+// { token_mint, question_type: "buy_sell_now" } and discards everything
+// else, so the placeholder shouldn't promise free-form Q&A.
 const PLACEHOLDERS = [
-  "will $SOL break $200 in 4h?",
-  "should i long $JUP for 24h?",
-  "scalp $BONK in the next 1h?",
-  "$WIF: capitulation or bear trap?",
-  "swarm, where's $SOL going in 4h?",
-  "fade the $JUP rally?",
-  "$BONK setting up a breakout?",
-  "short $SOL into the close?",
+  "Buy or sell $SOL right now?",
+  "Buy or sell $BONK right now?",
+  "Buy or sell $JUP right now?",
+  "Buy or sell $WIF right now?",
+  "Buy or sell $PYTH right now?",
+  "Buy or sell $JTO right now?",
 ] as const;
 
 // Typewriter tunables. Per-character variance gives a human typing
@@ -154,15 +155,16 @@ export function HeroAsk() {
   };
 
   /**
-   * Clicking a chip drops a starter question into the input and
-   * focuses it. Gives the user a sentence to edit instead of a blank
-   * field; also primes the swarm attention orbit.
+   * Clicking a chip drops the canonical starter question into the input
+   * and focuses it. The backend currently accepts only buy/sell rounds,
+   * so the chip pre-fills that form rather than a free-form question.
+   * Also primes the swarm attention orbit.
    */
   const pickStarter = (symbol: string): void => {
     const t = findTokenBySymbol(symbol);
     if (!t) return;
     setToken(t);
-    setQuery(`should i long $${symbol} in 4h?`);
+    setQuery(`Buy or sell $${symbol} right now?`);
     inputRef.current?.focus();
   };
 
