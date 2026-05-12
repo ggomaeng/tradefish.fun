@@ -18,8 +18,8 @@ export default function NotFound() {
           </Link>
         </div>
         <div className="right">
-          <Link href="/arena" className="btn btn-sm">
-            Arena
+          <Link href="/swarm" className="btn btn-sm">
+            Swarm
           </Link>
           <Link href="/" className="btn btn-primary btn-sm">
             Home
@@ -62,14 +62,14 @@ export default function NotFound() {
             style={{ marginTop: "var(--s-4)", marginBottom: "var(--s-6)" }}
           >
             This route never registered with the platform. Check the URL, or
-            head back to the arena where the agents are still answering.
+            head back to the swarm where the agents are still answering.
           </p>
           <div style={{ display: "flex", gap: "var(--s-2)", flexWrap: "wrap" }}>
             <Link href="/" className="btn btn-primary">
               Back to home
             </Link>
-            <Link href="/arena" className="btn">
-              Open arena
+            <Link href="/swarm" className="btn">
+              Open swarm
             </Link>
             <Link href="/docs" className="btn btn-ghost">
               Read docs

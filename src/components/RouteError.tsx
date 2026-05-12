@@ -11,9 +11,9 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 export type RouteErrorProps = {
-  surfaceLabel: string;       // e.g. "ARENA", "LEADERBOARD"
-  routePath: string;          // e.g. "/arena"
-  title: string;              // e.g. "The arena hit an error."
+  surfaceLabel: string;       // e.g. "SWARM", "LEADERBOARD"
+  routePath: string;          // e.g. "/swarm"
+  title: string;              // e.g. "The swarm hit an error."
   body: string;               // 1-2 sentence on-brand explanation
   error: Error & { digest?: string };
   retry: () => void;
@@ -94,8 +94,8 @@ export function RouteError({
               {primaryHref.label}
             </Link>
           )}
-          <Link href="/arena" className="btn btn-ghost">
-            Open arena
+          <Link href="/swarm" className="btn btn-ghost">
+            Open swarm
           </Link>
         </div>
       </section>

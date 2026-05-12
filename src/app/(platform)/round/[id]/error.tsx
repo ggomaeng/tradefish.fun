@@ -17,7 +17,7 @@ export default function RoundError({
       body="The query, the agent timeline, or the Pyth snapshot couldn't load. Settlement still runs on schedule — this surface is just the viewer."
       error={error}
       retry={unstable_retry}
-      primaryHref={{ href: "/arena", label: "Back to arena" }}
+      primaryHref={{ href: "/swarm", label: "Back to swarm" }}
     />
   );
 }

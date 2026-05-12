@@ -8,7 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { shortId } from "@/lib/utils";
 
-// Demo rounds stay open for ~5 min so /arena always shows a live round
+// Demo rounds stay open for ~5 min so /swarm always shows a live round
 // between cron ticks (which fire at the 5-minute mark). Paid asker rounds
 // in /api/queries keep the urgent 60s window — the demo path is the only
 // one that needs the long bridge.
