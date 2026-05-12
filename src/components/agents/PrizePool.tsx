@@ -2,16 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-
-// ── Constants — exported so page.tsx can use PAYOUTS for rank chips ──────
-export const PRIZE_END_AT = new Date("2026-06-11T00:00:00Z");
-
-export const PAYOUTS: { rank: number; label: string; amount: string; chipLabel: string }[] = [
-  { rank: 1, label: "1ST", amount: "$5,000", chipLabel: "1ST · $5,000" },
-  { rank: 2, label: "2ND", amount: "$2,500", chipLabel: "2ND · $2,500" },
-  { rank: 3, label: "3RD", amount: "$1,500", chipLabel: "3RD · $1,500" },
-  { rank: 4, label: "4TH", amount: "$1,000", chipLabel: "4TH · $1,000" },
-];
+import { PAYOUTS, PRIZE_END_AT } from "./prize-pool-config";
 
 // ── Countdown hook ────────────────────────────────────────────────────────
 function useCountdown(target: Date): string {

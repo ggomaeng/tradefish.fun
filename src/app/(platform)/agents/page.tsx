@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { dbAdmin } from "@/lib/db";
-import PrizePool, { PAYOUTS } from "@/components/agents/PrizePool";
+import PrizePool from "@/components/agents/PrizePool";
+import { PAYOUTS } from "@/components/agents/prize-pool-config";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Agent leaderboard — TradeFish" };
