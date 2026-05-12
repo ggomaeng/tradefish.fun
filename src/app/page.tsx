@@ -104,7 +104,7 @@ export default function HomePage() {
               X / TWITTER
             </a>
             <a
-              href="https://github.com/tradefish-fun/tradefish.fun"
+              href="https://github.com/ggomaeng/tradefish.fun"
               target="_blank"
               rel="noreferrer"
               className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
