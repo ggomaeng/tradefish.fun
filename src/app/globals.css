@@ -224,6 +224,7 @@
   --bp-sm: 640px;
 
   /* ── Legacy alias bridge (so un-touched callsites keep working) ────── */
+  --bg-4: var(--bg-3);
   --fg-2: var(--fg-dim);
   --fg-3: var(--fg-faint);
   --fg-4: var(--fg-faintest);

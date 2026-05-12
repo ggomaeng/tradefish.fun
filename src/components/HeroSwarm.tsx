@@ -480,15 +480,16 @@ export function HeroSwarm() {
     // so a fish keeps its "species" (its aPaletteIdx) across the mix.
     const paletteAltUniform = { value: buildPaletteUniform(SOLANA_HEX) };
     const paletteMixUniform = { value: 0 };
-    // Focus-stagger uniforms. `uFocusDrive` is the global ramp value
-    // (0 → 0.65 over the focus lerp window). Each fish lights up when
-    // the drive crosses its `aFocusPhase * 0.5` threshold — low-phase
-    // fish first, high-phase fish last → random-scatter cascade.
-    // `uFocusIntensity` caps the per-fish mix amount (0.6 default,
-    // pulses ±0.15 sinusoidally while focus is held). Submit-burst
-    // still drives `uPaletteMix` directly and the shader takes max().
+    // Focus-stagger uniform. `uFocusDrive` is the global ramp value
+    // (0 → 0.65 over the focus lerp window). Each fish's cascade gate
+    // opens when the drive crosses its `aFocusPhase * 0.5` threshold —
+    // low-phase fish first, high-phase fish last (random scatter).
+    // Once gated open, the shader applies a per-fish sinusoidal flicker
+    // (uTime + aFocusPhase * 2π) so each fish oscillates between
+    // mostly-default and full-Solana with its own phase offset — the
+    // school is constantly alternating Solana on/off while focused.
+    // Submit-burst still drives `uPaletteMix` directly; shader max()s.
     const focusDriveUniform = { value: 0 };
-    const focusIntensityUniform = { value: 0.6 };
     // Global brightness multiplier. Pumped during the submit burst so the
     // entire school visibly flares as the page hands off to /round/[id].
     const burstBrightUniform = { value: 1.0 };
@@ -508,6 +509,7 @@ export function HeroSwarm() {
         uPalette: paletteUniform,
         uPaletteAlt: paletteAltUniform,
         uPaletteMix: paletteMixUniform,
+        uFocusDrive: focusDriveUniform,
         uBurstBright: burstBrightUniform,
         uSizeMult: sizeMultUniform,
         uAspect: aspectMain,
@@ -520,13 +522,16 @@ export function HeroSwarm() {
         attribute float aBrightness;
         attribute float aHeading;
         attribute float aSwimPhase;
+        attribute float aFocusPhase;
         uniform vec2 uSize;
         uniform float uScale;
         uniform vec3 uPalette[5];
         uniform vec3 uPaletteAlt[5];
         uniform float uPaletteMix;
+        uniform float uFocusDrive;
         uniform float uBurstBright;
         uniform float uSizeMult;
+        uniform float uTime;
         varying vec3 vColor;
         varying float vHeading;
         varying float vSwimPhase;
@@ -543,7 +548,35 @@ export function HeroSwarm() {
           else if (idx == 2) { baseA = uPalette[2]; baseB = uPaletteAlt[2]; }
           else if (idx == 3) { baseA = uPalette[3]; baseB = uPaletteAlt[3]; }
           else { baseA = uPalette[4]; baseB = uPaletteAlt[4]; }
-          vec3 base = mix(baseA, baseB, uPaletteMix);
+          // Per-fish focus contribution.
+          //   cascadeGate: smoothstep gates each fish at its own
+          //     threshold (aFocusPhase*0.5 .. +0.15). Drive ramps 0→0.65
+          //     so even latest fish (phase=1.0, threshold up to 0.65)
+          //     fully gates open at drive peak.
+          //   flicker: each fish oscillates 0..1 at ~2s period, phase-
+          //     offset by its own aFocusPhase * 2π so neighbours are at
+          //     different points in the cycle. Result is a constantly-
+          //     shimmering school — at any moment some fish are at peak
+          //     Solana, others at near-default cyan.
+          //   heldMix: linear remap to [0.5, 0.95]. Dip is STILL half-
+          //     Solana (not back to cyan default) so the school keeps
+          //     its Solana identity throughout the flicker — peak is
+          //     full neon. Earlier 0.15 dip washed the Solana feel out.
+          //   focusLocalMix = cascadeGate * heldMix: cascade ramps the
+          //     amplitude in/out; flicker rides on top.
+          // Submit burst still drives uPaletteMix to 1.0 directly; the
+          // max() below makes burst dominate when active.
+          float cascadeGate = smoothstep(
+            aFocusPhase * 0.5,
+            aFocusPhase * 0.5 + 0.15,
+            uFocusDrive
+          );
+          float flickerPhase = uTime * 3.1 + aFocusPhase * 6.28318;
+          float flicker = 0.5 - 0.5 * cos(flickerPhase);
+          float heldMix = mix(0.5, 0.95, flicker);
+          float focusLocalMix = cascadeGate * heldMix;
+          float mixAmount = max(focusLocalMix, uPaletteMix);
+          vec3 base = mix(baseA, baseB, mixAmount);
           vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
           // Depth fog in CAMERA space. With z spread ±110, mvPos.z ranges
           // ~-270 (closest, big + bright) to ~-490 (farthest, small + dim).
@@ -590,28 +623,35 @@ export function HeroSwarm() {
           float bend = wave * tailness * 0.18;
 
           // Apply bend, then test against a HEAD-BIASED TEARDROP body
-          // plus a small FORKED TAIL FIN behind the body tip. Body-local
-          // coords: u along axis (-1 = tail base, +1 = head tip);
-          // v perpendicular.
+          // plus a SLENDER TAIL SPIKE behind it. Body-local coords:
+          // u along axis (-1 = tail tip, +1 = forward of head); v
+          // perpendicular. Fits entirely in sprite u∈[-1, 0.95].
+          //
+          // Top-down constraint: this is a viewport-down view of the
+          // school, so the caudal fin is edge-on — it should read as a
+          // thin streak, NOT a wide forked fan (which would be the
+          // side-on view). Tail steepness kept low (0.5) so the spike
+          // tapers to ~0.15 max half-width, like the tail end of a
+          // torpedo seen from above.
           float yBent = r.y - bend * uAspect.y;
           float u = r.x / uAspect.x;
           float v = yBent / uAspect.y;
 
-          // Body silhouette: head-biased teardrop. We cap body length at
-          // u=-0.9 (not -1.0) to give the tail fin more visual real estate
-          // — body is the front 1.9 units, tail is the back 0.7 units, so
-          // tail reads as ~27% of total fish length instead of ~16%.
-          float profile = pow(max(0.0, 1.0 + u), 0.6)
-                        * pow(max(0.0, 1.0 - u), 0.3) * 0.85;
-          bool inBody = abs(v) < profile && u > -0.9 && u < 1.0;
+          // Body silhouette: head-biased teardrop, head at u=0.95,
+          // tail-joint at u=-0.7. Body length 1.65 (close to original
+          // 1.9 — restored the "long sardine" silhouette).
+          float profile = pow(max(0.0, u + 0.7), 0.6)
+                        * pow(max(0.0, 0.95 - u), 0.3);
+          bool inBody = abs(v) < profile && u > -0.7 && u < 0.95;
 
-          // Caudal fin: triangular flare extending from u=-0.9 to -1.6.
-          // Wider tip (×1.45 vs ×1.25) so the tail clearly reads as a
-          // tail at this rendered size.
-          float tailU = -0.9 - u;            // 0 at body/tail joint, +0.7 at fin tip
-          float halfWidth = tailU * 1.45;
+          // Tail spike: thin tapered extension from u=-0.7 to u=-1.0,
+          // half-width grows linearly from 0 at joint to 0.15 at tip.
+          // No fan flare — reads as the trailing point of a top-down
+          // torpedo, not a side-view caudal fin.
+          float tailU = -0.7 - u;            // 0 at body/tail joint, +0.3 at tip
+          float halfWidth = tailU * 0.5;
           float vAbs = abs(v);
-          bool inTail = u < -0.9 && u > -1.6 && vAbs < halfWidth;
+          bool inTail = u < -0.7 && u > -1.0 && vAbs < halfWidth;
 
           if (!inBody && !inTail) discard;
           // Body and tail share the fish's color — no dimming. The tail is
@@ -641,8 +681,10 @@ export function HeroSwarm() {
         uPalette: paletteUniform,
         uPaletteAlt: paletteAltUniform,
         uPaletteMix: paletteMixUniform,
+        uFocusDrive: focusDriveUniform,
         uBurstBright: burstBrightUniform,
         uSizeMult: sizeMultUniform,
+        uTime: timeUniform,
       },
       vertexShader: material.vertexShader,
       fragmentShader: `
@@ -736,6 +778,7 @@ export function HeroSwarm() {
         uPalette: paletteUniform,
         uPaletteAlt: paletteAltUniform,
         uPaletteMix: paletteMixUniform,
+        uFocusDrive: focusDriveUniform,
         uBurstBright: burstBrightUniform,
         uSizeMult: sizeMultUniform,
         uAspect: aspectAmbient,
@@ -1057,6 +1100,14 @@ export function HeroSwarm() {
       // Effective focus including the burst — keeps the orbit tight
       // through the submit collapse even if the input already blurred.
       const fEff = Math.max(focusStrength, burstStrength);
+
+      // ── Focus-stagger palette drive ──────────────────────────────
+      // uFocusDrive ramps with focusStrength: 0 → 0.65 so every fish's
+      // cascade gate (smoothstep at aFocusPhase*0.5 .. +0.15) opens by
+      // drive peak. Once open, the shader's per-fish sinusoidal flicker
+      // (uTime + aFocusPhase*2π) handles the "Solana colors alternating
+      // on/off" effect — no JS sinusoid needed.
+      focusDriveUniform.value = focusStrength * 0.65;
 
       // Drive shader uniforms from the focus + burst envelopes.
       paletteMixUniform.value = burstStrength;
