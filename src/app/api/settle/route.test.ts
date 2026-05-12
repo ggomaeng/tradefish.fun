@@ -1,11 +1,12 @@
 /**
  * /api/settle auth gate tests.
  *
- * Verifies the SETTLEMENT_CRON_SECRET enforcement contract:
- *  - missing Authorization header  → 401 invalid_settlement_secret
- *  - wrong Bearer value            → 401 invalid_settlement_secret
- *  - SETTLEMENT_CRON_SECRET unset  → 500 missing_secret
- *  - correct Bearer value          → handler runs (200 with settled summary)
+ * Verifies the secret enforcement contract:
+ *  - missing Authorization header               → 401 invalid_settlement_secret
+ *  - wrong Bearer value                         → 401 invalid_settlement_secret
+ *  - neither CRON_SECRET nor SETTLEMENT_CRON_SECRET set → 500 missing_secret
+ *  - CRON_SECRET set (Vercel standard)          → handler runs (200)
+ *  - SETTLEMENT_CRON_SECRET set (legacy)        → handler runs (200)
  *
  * Downstream calls (Supabase, Pyth) are mocked to a "no work to do" path so
  * the test doesn't need a real DB or network.
@@ -42,19 +43,23 @@ vi.mock("@/lib/clients/pyth", () => ({
 }));
 
 const SECRET = "settle_test_" + randomBytes(16).toString("hex");
-let savedSecret: string | undefined;
+let savedCronSecret: string | undefined;
+let savedSettlementSecret: string | undefined;
 let savedTestMode: string | undefined;
 let savedVercelEnv: string | undefined;
 
 beforeAll(() => {
-  savedSecret = process.env.SETTLEMENT_CRON_SECRET;
+  savedCronSecret = process.env.CRON_SECRET;
+  savedSettlementSecret = process.env.SETTLEMENT_CRON_SECRET;
   savedTestMode = process.env.SETTLE_TEST_MODE;
   savedVercelEnv = process.env.VERCEL_ENV;
 });
 
 afterAll(() => {
-  if (savedSecret === undefined) delete process.env.SETTLEMENT_CRON_SECRET;
-  else process.env.SETTLEMENT_CRON_SECRET = savedSecret;
+  if (savedCronSecret === undefined) delete process.env.CRON_SECRET;
+  else process.env.CRON_SECRET = savedCronSecret;
+  if (savedSettlementSecret === undefined) delete process.env.SETTLEMENT_CRON_SECRET;
+  else process.env.SETTLEMENT_CRON_SECRET = savedSettlementSecret;
   if (savedTestMode === undefined) delete process.env.SETTLE_TEST_MODE;
   else process.env.SETTLE_TEST_MODE = savedTestMode;
   if (savedVercelEnv === undefined) delete process.env.VERCEL_ENV;
@@ -62,6 +67,8 @@ afterAll(() => {
 });
 
 beforeEach(() => {
+  // Use the legacy var by default so existing tests are unchanged.
+  delete process.env.CRON_SECRET;
   process.env.SETTLEMENT_CRON_SECRET = SECRET;
   // Clean slate on every test — each test opts into the test-mode env it needs.
   delete process.env.SETTLE_TEST_MODE;
@@ -123,7 +130,8 @@ describe("GET /api/settle — auth gate", () => {
     expect(body.code).toBe("invalid_settlement_secret");
   });
 
-  it("returns 500 when SETTLEMENT_CRON_SECRET is unset", async () => {
+  it("returns 500 when neither CRON_SECRET nor SETTLEMENT_CRON_SECRET is set", async () => {
+    delete process.env.CRON_SECRET;
     delete process.env.SETTLEMENT_CRON_SECRET;
     const { GET } = await import("./route");
     const res = await GET(
@@ -134,9 +142,12 @@ describe("GET /api/settle — auth gate", () => {
     expect(body.error).toBe("misconfigured");
     expect(body.code).toBe("missing_secret");
     expect(typeof body.request_id).toBe("string");
+    // Error message should mention both var names (extra is spread to top level).
+    expect(body.message).toContain("CRON_SECRET");
+    expect(body.message).toContain("SETTLEMENT_CRON_SECRET");
   });
 
-  it("runs the handler when the Bearer secret is correct", async () => {
+  it("runs the handler when the Bearer secret matches SETTLEMENT_CRON_SECRET (legacy)", async () => {
     const { GET } = await import("./route");
     const res = await GET(
       buildRequest({ authorization: `Bearer ${SECRET}` }) as never,
@@ -147,6 +158,35 @@ describe("GET /api/settle — auth gate", () => {
     // No rows in the mocked DB → every window settled zero responses.
     expect(body.settled).toEqual({ "1h": 0, "4h": 0, "24h": 0 });
     expect(typeof body.ran_at).toBe("string");
+  });
+
+  it("runs the handler when the Bearer secret matches CRON_SECRET (Vercel standard)", async () => {
+    // CRON_SECRET takes priority over SETTLEMENT_CRON_SECRET.
+    const cronSecret = "cron_test_" + randomBytes(16).toString("hex");
+    process.env.CRON_SECRET = cronSecret;
+    // Set a different legacy secret so we can confirm CRON_SECRET is what matched.
+    process.env.SETTLEMENT_CRON_SECRET = "should-not-match";
+    const { GET } = await import("./route");
+    const res = await GET(
+      buildRequest({ authorization: `Bearer ${cronSecret}` }) as never,
+    );
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.ok).toBe(true);
+    expect(body.settled).toEqual({ "1h": 0, "4h": 0, "24h": 0 });
+  });
+
+  it("returns 401 when CRON_SECRET is set but the Bearer value matches the legacy var instead", async () => {
+    // CRON_SECRET wins; if the caller sends the old secret it should be rejected.
+    process.env.CRON_SECRET = "new-cron-secret-value";
+    process.env.SETTLEMENT_CRON_SECRET = SECRET; // old secret
+    const { GET } = await import("./route");
+    const res = await GET(
+      buildRequest({ authorization: `Bearer ${SECRET}` }) as never,
+    );
+    expect(res.status).toBe(401);
+    const body = await res.json();
+    expect(body.code).toBe("invalid_settlement_secret");
   });
 });
 
