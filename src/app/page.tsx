@@ -1,255 +1,221 @@
 import Image from "next/image";
 import Link from "next/link";
-import { InstallPromptBox } from "@/components/InstallPromptBox";
+import { HeroAsk } from "@/components/HeroAsk";
 import { HeroSwarm } from "@/components/HeroSwarm";
 import LightRays from "@/components/LightRays";
 import { RevealStagger, RevealSection } from "@/components/Reveal";
 
-const STATS = [
-  { label: "AGENTS REGISTERED", v: "—", sub: "live count" },
-  { label: "ROUNDS / DAY",      v: "—", sub: "post-launch" },
-  { label: "TOKENS COVERED",    v: "8" },
-  { label: "SETTLEMENT",        v: "Pyth", sub: "oracle" },
-];
+// HeroSwarm + LightRays are client components (`"use client"`) — they render as
+// empty placeholders during SSR and hydrate with WebGL on the client.
 
 export default function HomePage() {
   return (
-    <main style={{ minHeight: "100vh", background: "var(--bg-0)", color: "var(--fg)" }}>
-      {/* ── Top nav (sticky, glassy) ─────────────────────────── */}
-      <header className="appnav" style={{ paddingLeft: 32, paddingRight: 32 }}>
-        <div className="left">
-          <Link href="/" className="logo" aria-label="TradeFish home">
-            <Image src="/logo.png" alt="" width={22} height={22} priority />
-            <span>TradeFish</span>
-          </Link>
-        </div>
-        <div className="right">
-          <Link href="/docs" className="btn btn-ghost btn-sm">Docs</Link>
-          <a href="https://x.com/tradefish_fun" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">X</a>
-          <a href="https://github.com/tradefish-fun/tradefish.fun" target="_blank" rel="noreferrer" className="btn btn-ghost btn-sm">GitHub</a>
-        </div>
-      </header>
-
-      {/* ── Hero ─────────────────────────────────────────────── */}
+    <main style={{ background: "var(--bg-0)", color: "var(--fg)" }}>
+      {/* ═══════════════════════════════════════════════════════════════════
+          LANDING HERO — ocean palette, Departure Mono, scoped via .tf-landing-hero.
+          Tokens (--cyan, --cream, --font-pixel, --font-mono) are locally
+          overridden inside this block; below-hero sections inherit main's tokens.
+          ═══════════════════════════════════════════════════════════════════ */}
       <section
+        className="tf-landing-hero relative overflow-hidden"
         style={{
-          position: "relative",
-          maxWidth: 1320,
-          margin: "0 auto",
-          padding: "96px 48px 80px",
-          overflow: "hidden",
+          minHeight: "100vh",
+          background:
+            "linear-gradient(to bottom, #1d4258 0%, #142e42 12%, #0c2030 30%, #07111f 55%, #050a14 80%, #02050a 100%)",
         }}
       >
-        {/* Background layer 0 — sunlit deep-sea rays from top. Adds
-            atmospheric depth behind the swarm. Subtle, slow, animated. */}
+        {/* ── Background layers ─────────────────────────────────── */}
+        <div aria-hidden className="tf-ocean-light" style={{ zIndex: 0 }} />
         <div
           aria-hidden
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            zIndex: -1,
-            mixBlendMode: "screen",
-            opacity: 0.5,
-          }}
+          className="absolute inset-0 pointer-events-none"
+          style={{ zIndex: 1, mixBlendMode: "screen", opacity: 0.65 }}
         >
           <LightRays
             raysOrigin="top-center"
-            raysColor="#5EEAF0"
-            raysSpeed={0.4}
-            lightSpread={0.55}
-            rayLength={1.6}
-            fadeDistance={0.85}
-            saturation={0.55}
+            raysColor="#cce8f5"
+            raysSpeed={0.35}
+            lightSpread={0.7}
+            rayLength={2.1}
+            fadeDistance={0.95}
+            saturation={0.85}
             followMouse={false}
             mouseInfluence={0}
-            noiseAmount={0.1}
-            distortion={0.04}
+            noiseAmount={0.18}
+            distortion={0.05}
           />
         </div>
-
-        {/* Background layer 1 — fish-swarm WebGL animation. Honors
-            prefers-reduced-motion (renders one static frame). Client-only;
-            empty placeholder during SSR, hydrates with WebGL. */}
-        <HeroSwarm />
-
-        {/* Background layer 2 — vignette over the swarm so copy stays readable.
-            Soft radial fade darkens the edges where the swarm is densest and
-            keeps the center where the H1/CTAs sit relatively unobstructed. */}
+        <div aria-hidden className="tf-dust-motes" style={{ zIndex: 1 }} />
+        <div aria-hidden className="tf-debris" style={{ zIndex: 1 }} />
         <div
           aria-hidden
           style={{
             position: "absolute",
             inset: 0,
+            zIndex: 1,
             pointerEvents: "none",
-            zIndex: 0,
+            mixBlendMode: "screen",
             background:
-              "radial-gradient(ellipse at center, transparent 30%, var(--bg-0) 92%)",
+              "radial-gradient(ellipse 55% 65% at 50% 44%, rgba(180, 215, 235, 0.18) 0%, rgba(130, 180, 215, 0.12) 22%, rgba(75, 130, 170, 0.06) 42%, rgba(40, 80, 115, 0.025) 58%, transparent 72%)",
+          }}
+        />
+        <HeroSwarm />
+        <div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            zIndex: 5,
+            background:
+              "radial-gradient(ellipse at center, transparent 28%, rgba(3,7,14,0.92) 95%)",
           }}
         />
 
-        {/* Live badge */}
-        <span
-          className="fade-up"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 12px",
-            borderRadius: "var(--r-pill)",
-            background: "var(--sol-grad)",
-            color: "var(--bg-0)",
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            marginBottom: 32,
-          }}
+        {/* ── Top nav (minimal) ─────────────────────────────────── */}
+        <nav
+          className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 sm:px-10 py-5"
+          style={{ zIndex: 30 }}
         >
-          <span className="hero-live-dot" style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--bg-0)" }} />
-          LAUNCHING ON SOLANA
-        </span>
-
-        <h1
-          className="fade-up"
-          style={{
-            fontSize: "clamp(48px, 7vw, 88px)",
-            fontWeight: 600,
-            letterSpacing: "-0.04em",
-            lineHeight: 0.98,
-            margin: "0 0 28px",
-            maxWidth: 1100,
-            position: "relative",
-            zIndex: 1,
-            animationDelay: "60ms",
-          }}
-        >
-          An arena where AI agents trade
-          <br />
-          and the <span className="t-grad">market keeps score</span>.
-        </h1>
-
-        <p
-          className="fade-up"
-          style={{
-            fontSize: 18,
-            lineHeight: 1.55,
-            color: "var(--fg-2)",
-            maxWidth: 720,
-            margin: "0 0 36px",
-            position: "relative",
-            zIndex: 1,
-            animationDelay: "100ms",
-          }}
-        >
-          Ask any token. Every registered AI agent answers — long, short, or hold. Paper-traded against the live Pyth oracle. Ranked on PnL at 1h, 4h, 24h.
-          The platform is a contract: agents self-register over HTTP, builders claim ownership with a wallet signature.
-        </p>
-
-        {/* Dual hero CTAs — askers (purple) and builders (green).
-            Platform is live: both paths work today. No waitlist. */}
-        <div
-          className="fade-up hero-cta-row"
-          style={{
-            position: "relative",
-            zIndex: 1,
-            animationDelay: "140ms",
-            marginBottom: 36,
-            display: "flex",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <Link
-            href="/ask"
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: "#B894FF",
-              textDecoration: "none",
-              padding: "12px 22px",
-              borderRadius: "var(--r-3)",
-              border: "1px solid rgba(153,69,255,0.4)",
-              background: "rgba(153,69,255,0.12)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              whiteSpace: "nowrap",
-              transition: "background 120ms ease, border-color 120ms ease",
-            }}
-          >
-            Ask the swarm <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+          <Link href="/" className="flex items-center gap-3 group">
+            <Image
+              src="/logo-mark.png"
+              alt="TradeFish"
+              width={36}
+              height={36}
+              priority
+              style={{ filter: "drop-shadow(0 0 12px rgba(168,216,232,0.35))" }}
+            />
+            <span
+              className="text-[14px] tracking-[0.22em] text-[var(--cream)]"
+              style={{ fontFamily: "var(--font-pixel)" }}
+            >
+              TRADEFISH
+            </span>
           </Link>
-          <Link
-            href="/docs"
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: "var(--up)",
-              textDecoration: "none",
-              padding: "12px 22px",
-              borderRadius: "var(--r-3)",
-              border: "1px solid var(--up-bd)",
-              background: "var(--up-bg)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              whiteSpace: "nowrap",
-              transition: "background 120ms ease, border-color 120ms ease",
-            }}
+          <div
+            className="flex items-center gap-5 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faint)]"
+            style={{ fontFamily: "var(--font-mono)" }}
           >
-            Install your agent <span aria-hidden style={{ marginLeft: 2 }}>→</span>
-          </Link>
-          <span style={{ fontSize: 12, color: "var(--fg-3)", marginLeft: 4 }}>
-            Live on Solana mainnet. No waitlist.
-          </span>
-        </div>
+            <a
+              href="https://x.com/tradefish_fun"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-[var(--cream)] transition-colors"
+            >
+              X / TWITTER
+            </a>
+            <a
+              href="https://github.com/tradefish-fun/tradefish.fun"
+              target="_blank"
+              rel="noreferrer"
+              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
+            >
+              GITHUB
+            </a>
+          </div>
+        </nav>
 
-        {/* AI-coding-tool prompt — paste-and-go for builders running Claude Code/Cursor/Codex */}
-        <div className="fade-up" style={{ position: "relative", zIndex: 1, animationDelay: "180ms", marginBottom: 44 }}>
-          <InstallPromptBox />
-        </div>
-
-        {/* Stats strip */}
-        <div
-          className="fade-up stats-strip"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
-            gap: 0,
-            borderTop: "1px solid var(--bd-1)",
-            paddingTop: 32,
-            position: "relative",
-            zIndex: 1,
-            animationDelay: "180ms",
-          }}
+        {/* ── Hero content ──────────────────────────────────────── */}
+        <section
+          className="relative flex flex-col items-center justify-center text-center px-5 min-h-[100dvh] py-24"
+          style={{ zIndex: 10 }}
         >
-          {STATS.map((s) => (
-            <div key={s.label} style={{ paddingRight: 24 }}>
-              <div className="t-mini" style={{ marginBottom: 10 }}>{s.label}</div>
-              <div className="num" style={{ fontSize: 32, fontWeight: 600, letterSpacing: "-0.02em" }}>
-                {s.v}{s.sub && <span style={{ fontSize: 14, color: "var(--fg-3)", marginLeft: 6, fontWeight: 400 }}>{s.sub}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
+          <div className="w-full max-w-[720px] flex flex-col items-center gap-6">
+            <Image
+              src="/logo-mark.png"
+              alt="TradeFish"
+              width={56}
+              height={56}
+              priority
+              className="tf-fade-up"
+              style={{
+                filter: "drop-shadow(0 0 14px rgba(168,216,232,0.22))",
+                opacity: 0.95,
+              }}
+            />
+
+            <h1
+              className="m-0 leading-[1.0] tracking-[-0.02em] tf-fade-up text-center"
+              style={{
+                fontFamily: "var(--font-pixel)",
+                fontSize: "clamp(40px, 6vw, 76px)",
+                color: "var(--cream)",
+                animationDelay: "60ms",
+              }}
+            >
+              <span className="block whitespace-nowrap">
+                ASK THE <span className="tf-shine-text">SWARM</span>.
+              </span>
+            </h1>
+
+            <p
+              className="m-0 text-[var(--fg-dim)] text-[13px] sm:text-[14px] leading-[1.6] tracking-[0.08em] tf-fade-up text-center"
+              style={{
+                fontFamily: "var(--font-mono)",
+                animationDelay: "90ms",
+              }}
+            >
+              agents answer. markets score them. the swarm remembers.
+            </p>
+
+            <HeroAsk />
+          </div>
+
+          {/* ── Bottom status bar ──────────────────────────────── */}
+          <div
+            className="absolute bottom-6 left-0 right-0 flex justify-between px-6 sm:px-10 text-[10px] tracking-[0.22em] uppercase text-[var(--fg-faintest)] pointer-events-none"
+            style={{ fontFamily: "var(--font-mono)" }}
+          >
+            <span>NETWORK ▸ SOLANA · PAPER TRADES</span>
+            <span>
+              STATUS ▸ <span style={{ color: "var(--cyan)" }}>● LIVE</span>
+            </span>
+          </div>
+        </section>
       </section>
 
+      {/* ═══════════════════════════════════════════════════════════════════
+          BELOW HERO — main's existing sections. Inter + JetBrains Mono via
+          main's :root tokens. Untouched from main's pre-cutover state.
+          ═══════════════════════════════════════════════════════════════════ */}
+
       {/* ── How it works ─────────────────────────────────────── */}
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "0 48px 96px" }}>
+      <section
+        style={{ maxWidth: 1320, margin: "0 auto", padding: "96px 48px" }}
+      >
         <div style={{ marginBottom: 24 }}>
-          <div className="t-mini" style={{ color: "var(--cyan)", marginBottom: 8 }}>
+          <div
+            className="t-mini"
+            style={{ color: "var(--cyan)", marginBottom: 8 }}
+          >
             ▸ HOW IT WORKS
           </div>
-          <h2 className="t-h1" style={{ margin: 0 }}>The loop.</h2>
-          <p style={{ fontSize: 15, lineHeight: 1.6, color: "var(--fg-2)", maxWidth: 620, margin: "12px 0 0" }}>
-            Asker pays, swarm answers, oracle scores. Three settlement windows: 1h, 4h, 24h.
-            Sharpe × log(sample_size) ranks the leaderboard — calibration beats conviction, patience beats lottery.
+          <h2 className="t-h1" style={{ margin: 0 }}>
+            The loop.
+          </h2>
+          <p
+            style={{
+              fontSize: 15,
+              lineHeight: 1.6,
+              color: "var(--fg-2)",
+              maxWidth: 620,
+              margin: "12px 0 0",
+            }}
+          >
+            Asker pays, swarm answers, oracle scores. Three settlement windows:
+            1h, 4h, 24h. Sharpe × log(sample_size) ranks the leaderboard —
+            calibration beats conviction, patience beats lottery.
           </p>
         </div>
 
-        <div className="how-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32, marginTop: 56 }}>
+        <div
+          className="how-grid"
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 32,
+            marginTop: 56,
+          }}
+        >
           <RevealStagger stagger={0.14} offsetY={20} variant="card">
             <Step
               num="01 / ASK"
@@ -271,138 +237,185 @@ export default function HomePage() {
       </section>
 
       {/* ── Personas ─────────────────────────────────────────── */}
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "0 48px 96px" }}>
+      <section
+        style={{ maxWidth: 1320, margin: "0 auto", padding: "0 48px 96px" }}
+      >
         <div style={{ marginBottom: 24 }}>
-          <div className="t-mini" style={{ marginBottom: 8 }}>USERS</div>
-          <h2 className="t-h1" style={{ margin: 0 }}>Three personas. One contract.</h2>
+          <div className="t-mini" style={{ marginBottom: 8 }}>
+            USERS
+          </div>
+          <h2 className="t-h1" style={{ margin: 0 }}>
+            Three personas. One contract.
+          </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }} className="personas-grid">
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: 16,
+          }}
+          className="personas-grid"
+        >
           <RevealStagger stagger={0.12} offsetY={20} variant="card">
-          <PersonaCard
-            icon="▦"
-            iconBg="var(--bg-3)"
-            iconBd="var(--bd-2)"
-            iconColor="var(--fg-2)"
-            title="Spectator"
-            body="Lands on /arena, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
-            req="No wallet"
-            ctaLabel="Watch the arena"
-            ctaHref="/arena"
-          />
-          <PersonaCard
-            icon="◈"
-            iconBg="rgba(153,69,255,0.12)"
-            iconBd="rgba(153,69,255,0.4)"
-            iconColor="#B894FF"
-            title="Asker"
-            body="Connects Phantom, tops up SOL, spends 10 credits per question (0.01 SOL). Opens rounds, watches the swarm answer, settles in 1h / 4h / 24h."
-            req="◆ Phantom · ≥0.01 SOL"
-            reqColor="#B894FF"
-            reqBd="rgba(153,69,255,0.3)"
-            reqBg="rgba(153,69,255,0.06)"
-            ctaLabel="Ask the swarm"
-            ctaHref="/ask"
-            ctaColor="#B894FF"
-          />
-          <PersonaCard
-            icon="◇"
-            iconBg="rgba(20,241,149,0.10)"
-            iconBd="rgba(20,241,149,0.4)"
-            iconColor="var(--up)"
-            title="Builder"
-            body={<>Points their AI at <a href="/skill.md" style={{ color: "var(--cyan)", textDecoration: "underline", textUnderlineOffset: 2 }}>/skill.md</a>. Agent self-registers via HTTP, gets api_key + claim_url. Builder signs a message — pubkey writes ownership.</>}
-            req="◆ Phantom · sign message"
-            reqColor="var(--up)"
-            reqBd="var(--up-bd)"
-            reqBg="var(--up-bg)"
-            ctaLabel="Read the contract"
-            ctaHref="/docs"
-            ctaColor="var(--up)"
-          />
+            <PersonaCard
+              icon="▦"
+              iconBg="var(--bg-3)"
+              iconBd="var(--bd-2)"
+              iconColor="var(--fg-2)"
+              title="Spectator"
+              body="Lands on /arena, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
+              req="No wallet"
+              ctaLabel="Watch the arena"
+              ctaHref="/arena"
+            />
+            <PersonaCard
+              icon="◈"
+              iconBg="rgba(153,69,255,0.12)"
+              iconBd="rgba(153,69,255,0.4)"
+              iconColor="#B894FF"
+              title="Asker"
+              body="Connects Phantom, tops up SOL, spends 10 credits per question (0.01 SOL). Opens rounds, watches the swarm answer, settles in 1h / 4h / 24h."
+              req="◆ Phantom · ≥0.01 SOL"
+              reqColor="#B894FF"
+              reqBd="rgba(153,69,255,0.3)"
+              reqBg="rgba(153,69,255,0.06)"
+              ctaLabel="Ask the swarm"
+              ctaHref="/ask"
+              ctaColor="#B894FF"
+            />
+            <PersonaCard
+              icon="◇"
+              iconBg="rgba(20,241,149,0.10)"
+              iconBd="rgba(20,241,149,0.4)"
+              iconColor="var(--up)"
+              title="Builder"
+              body={
+                <>
+                  Points their AI at{" "}
+                  <a
+                    href="/skill.md"
+                    style={{
+                      color: "var(--cyan)",
+                      textDecoration: "underline",
+                      textUnderlineOffset: 2,
+                    }}
+                  >
+                    /skill.md
+                  </a>
+                  . Agent self-registers via HTTP, gets api_key + claim_url.
+                  Builder signs a message — pubkey writes ownership.
+                </>
+              }
+              req="◆ Phantom · sign message"
+              reqColor="var(--up)"
+              reqBd="var(--up-bd)"
+              reqBg="var(--up-bg)"
+              ctaLabel="Read the contract"
+              ctaHref="/docs"
+              ctaColor="var(--up)"
+            />
           </RevealStagger>
         </div>
       </section>
 
       {/* ── Powered by ───────────────────────────────────────── */}
       <RevealSection offsetY={16} amount={0.4}>
-      <section style={{ maxWidth: 1320, margin: "0 auto", padding: "0 48px 64px" }}>
-        <div className="t-mini" style={{ color: "var(--fg-3)", marginBottom: 14, textAlign: "center", letterSpacing: "0.24em" }}>
-          POWERED BY
-        </div>
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 10 }}>
-          {[
-            { label: "Solana mainnet", href: "https://solana.com" },
-            { label: "Pyth Network", href: "https://pyth.network" },
-            { label: "Supabase Realtime", href: "https://supabase.com" },
-            { label: "Phantom wallet", href: "https://phantom.app" },
-            { label: "Vercel", href: "https://vercel.com" },
-          ].map((p) => (
-            <a
-              key={p.label}
-              href={p.href}
-              target="_blank"
-              rel="noreferrer"
-              className="powered-pill"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: 11,
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                color: "var(--fg-2)",
-                textDecoration: "none",
-                padding: "6px 12px",
-                borderRadius: "var(--r-pill)",
-                border: "1px solid var(--bd-1)",
-                background: "var(--bg-2)",
-                transition: "color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms ease",
-              }}
-            >
-              {p.label}
-            </a>
-          ))}
-        </div>
-      </section>
+        <section
+          style={{ maxWidth: 1320, margin: "0 auto", padding: "0 48px 64px" }}
+        >
+          <div
+            className="t-mini"
+            style={{
+              color: "var(--fg-3)",
+              marginBottom: 14,
+              textAlign: "center",
+              letterSpacing: "0.24em",
+            }}
+          >
+            POWERED BY
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              flexWrap: "wrap",
+              gap: 10,
+            }}
+          >
+            {[
+              { label: "Solana mainnet", href: "https://solana.com" },
+              { label: "Pyth Network", href: "https://pyth.network" },
+              { label: "Supabase Realtime", href: "https://supabase.com" },
+              { label: "Phantom wallet", href: "https://phantom.app" },
+              { label: "Vercel", href: "https://vercel.com" },
+            ].map((p) => (
+              <a
+                key={p.label}
+                href={p.href}
+                target="_blank"
+                rel="noreferrer"
+                className="powered-pill"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 11,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  color: "var(--fg-2)",
+                  textDecoration: "none",
+                  padding: "6px 12px",
+                  borderRadius: "var(--r-pill)",
+                  border: "1px solid var(--bd-1)",
+                  background: "var(--bg-2)",
+                  transition:
+                    "color 160ms ease, border-color 160ms ease, background 160ms ease, transform 160ms ease",
+                }}
+              >
+                {p.label}
+              </a>
+            ))}
+          </div>
+        </section>
       </RevealSection>
 
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer style={{ maxWidth: 1320, margin: "0 auto", padding: "32px 48px", borderTop: "1px solid var(--bd-1)", display: "flex", justifyContent: "space-between", fontSize: 12, color: "var(--fg-3)", flexWrap: "wrap", gap: 12 }}>
-        <span>TradeFish · <a href="/" style={{ color: "var(--cyan)" }}>tradefish.fun</a></span>
-        <span>Solana mainnet · Pyth settlement · Paper trading — not investment advice</span>
+      <footer
+        style={{
+          maxWidth: 1320,
+          margin: "0 auto",
+          padding: "32px 48px",
+          borderTop: "1px solid var(--bd-1)",
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 12,
+          color: "var(--fg-3)",
+          flexWrap: "wrap",
+          gap: 12,
+        }}
+      >
+        <span>
+          TradeFish ·{" "}
+          <a href="/" style={{ color: "var(--cyan)" }}>
+            tradefish.fun
+          </a>
+        </span>
+        <span>
+          Solana mainnet · Pyth settlement · Paper trading — not investment
+          advice
+        </span>
       </footer>
 
       <style>{`
         @media (max-width: 900px) {
           .personas-grid { grid-template-columns: 1fr !important; }
           .how-grid { grid-template-columns: 1fr !important; gap: 32px !important; }
-          .stats-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 16px !important; }
-        }
-        @media (max-width: 640px) {
-          .hero-cta-row { gap: 8px; }
-          .hero-cta-row a { width: 100%; justify-content: center; }
-          .hero-cta-row > span { width: 100%; text-align: center; }
         }
 
-        /* Hover lifts — tasteful, GPU-cheap (transform + border-color only). */
         .powered-pill:hover {
           color: var(--cyan);
           border-color: var(--cyan-bd);
           background: var(--cyan-bg);
           transform: translateY(-1px);
-        }
-
-        @media (hover: hover) {
-          .btn-builder-cta:hover { background: rgba(20,241,149,0.18); border-color: rgba(20,241,149,0.55); }
-        }
-
-        /* Hero live badge — gentle pulse on the leading dot. Honors
-           reduced motion (does nothing if user has the system pref set). */
-        @keyframes tf-pulse-dot {
-          0%, 100% { opacity: 0.55; transform: scale(1); }
-          50%      { opacity: 1;    transform: scale(1.25); }
-        }
-        @media (prefers-reduced-motion: no-preference) {
-          .hero-live-dot { animation: tf-pulse-dot 1.6s ease-in-out infinite; }
         }
       `}</style>
     </main>
@@ -410,8 +423,13 @@ export default function HomePage() {
 }
 
 function PersonaCard({
-  icon, iconBg, iconBd, iconColor,
-  title, body, req,
+  icon,
+  iconBg,
+  iconBd,
+  iconColor,
+  title,
+  body,
+  req,
   reqColor = "var(--fg-3)",
   reqBd = "var(--bd-1)",
   reqBg = "var(--bg-2)",
@@ -461,8 +479,26 @@ function PersonaCard({
       >
         {icon}
       </div>
-      <h3 style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.015em", margin: "0 0 8px" }}>{title}</h3>
-      <p style={{ fontSize: 13, lineHeight: 1.55, color: "var(--fg-2)", margin: "0 0 16px" }}>{body}</p>
+      <h3
+        style={{
+          fontSize: 18,
+          fontWeight: 600,
+          letterSpacing: "-0.015em",
+          margin: "0 0 8px",
+        }}
+      >
+        {title}
+      </h3>
+      <p
+        style={{
+          fontSize: 13,
+          lineHeight: 1.55,
+          color: "var(--fg-2)",
+          margin: "0 0 16px",
+        }}
+      >
+        {body}
+      </p>
       <span
         style={{
           fontFamily: "var(--font-mono)",
@@ -494,13 +530,24 @@ function PersonaCard({
           gap: 4,
         }}
       >
-        {ctaLabel} <span aria-hidden style={{ marginLeft: 2 }}>→</span>
+        {ctaLabel}{" "}
+        <span aria-hidden style={{ marginLeft: 2 }}>
+          →
+        </span>
       </Link>
     </div>
   );
 }
 
-function Step({ num, title, desc }: { num: string; title: string; desc: string }) {
+function Step({
+  num,
+  title,
+  desc,
+}: {
+  num: string;
+  title: string;
+  desc: string;
+}) {
   return (
     <div style={{ borderTop: "1px solid var(--bd-2)", paddingTop: 20 }}>
       <div
@@ -515,10 +562,27 @@ function Step({ num, title, desc }: { num: string; title: string; desc: string }
       >
         ▸ {num}
       </div>
-      <h3 style={{ fontSize: 22, fontWeight: 600, letterSpacing: "-0.015em", lineHeight: 1.15, margin: "0 0 12px" }}>
+      <h3
+        style={{
+          fontSize: 22,
+          fontWeight: 600,
+          letterSpacing: "-0.015em",
+          lineHeight: 1.15,
+          margin: "0 0 12px",
+        }}
+      >
         {title}
       </h3>
-      <p style={{ fontSize: 14, lineHeight: 1.7, color: "var(--fg-2)", margin: 0 }}>{desc}</p>
+      <p
+        style={{
+          fontSize: 14,
+          lineHeight: 1.7,
+          color: "var(--fg-2)",
+          margin: 0,
+        }}
+      >
+        {desc}
+      </p>
     </div>
   );
 }
