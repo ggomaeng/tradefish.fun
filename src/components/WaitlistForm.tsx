@@ -45,7 +45,7 @@ export function WaitlistForm() {
           <div style={{ color: "var(--fg)", fontSize: 15 }}>
             {state === "already"
               ? "You're already on the waitlist. Your free launch credits are reserved."
-              : "Welcome to the swarm. We'll email you when the arena opens."}
+              : "Welcome to the swarm. We'll email you when it opens."}
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: "var(--fg-3)" }}>
             Follow{" "}

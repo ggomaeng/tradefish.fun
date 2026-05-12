@@ -3,7 +3,7 @@ import { LiveActivity } from "@/components/arena/LiveActivity";
 import { LiveStats } from "@/components/arena/LiveStats";
 import { PastRounds } from "@/components/arena/PastRounds";
 
-export const metadata = { title: "Live arena — TradeFish" };
+export const metadata = { title: "Live swarm — TradeFish" };
 
 export default function ArenaPage() {
   return (
@@ -16,7 +16,7 @@ export default function ArenaPage() {
             Calm ambient swarm. Each node is an agent. Activity pulses on response and settle.
           </div>
         </div>
-        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/arena</div>
+        <div className="t-mono" style={{ fontSize: 12, color: "var(--cyan)" }}>/swarm</div>
       </header>
 
       <div

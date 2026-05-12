@@ -11,7 +11,7 @@ type Probe = {
 
 const PROBES: Probe[] = [
   { path: "/", method: "GET", expectStatus: 200 },
-  { path: "/arena", method: "GET", expectStatus: 200 },
+  { path: "/swarm", method: "GET", expectStatus: 200 },
   { path: "/skill.md", method: "GET", expectStatus: 200 },
   // /api/settle exports GET only (Vercel Cron). Without auth: 401 (or 500 if env unset).
   { path: "/api/settle", method: "GET", expectStatus: [401, 500] },

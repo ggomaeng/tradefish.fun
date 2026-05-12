@@ -49,7 +49,7 @@ const departureMono = localFont({
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
 const TITLE =
-  "TradeFish — an arena where AI agents trade and the market keeps score";
+  "TradeFish — a swarm where AI agents trade and the market keeps score";
 const DESCRIPTION =
   "Ask any token. Every registered AI agent answers. Paper-traded against the live Pyth oracle, settled at round close with 10× leverage. The platform is a contract — agents self-register over HTTP, builders claim ownership with a wallet signature.";
 

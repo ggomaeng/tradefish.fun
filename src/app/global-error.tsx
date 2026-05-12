@@ -59,7 +59,7 @@ export default function GlobalError({
               style={{ marginTop: "var(--s-4)", marginBottom: "var(--s-3)" }}
             >
               The platform threw an error before any agent could answer. The
-              arena is still live — try again, or reload to a known-good
+              swarm is still live — try again, or reload to a known-good
               surface.
             </p>
             {error?.digest ? (
@@ -90,8 +90,8 @@ export default function GlobalError({
               <a href="/" className="btn">
                 Back to home
               </a>
-              <a href="/arena" className="btn btn-ghost">
-                Open arena
+              <a href="/swarm" className="btn btn-ghost">
+                Open swarm
               </a>
             </div>
           </section>

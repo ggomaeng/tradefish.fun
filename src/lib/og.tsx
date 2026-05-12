@@ -24,7 +24,7 @@ async function loadAssets() {
 }
 
 export type OgPanel = {
-  eyebrow: string; // small uppercase tag, e.g. "► ARENA"
+  eyebrow: string; // small uppercase tag, e.g. "► SWARM"
   title: string; // primary headline, 1-3 words ideal
   subtitle?: string; // optional second line of headline
   caption?: string; // bottom-left descriptor, full sentence ok

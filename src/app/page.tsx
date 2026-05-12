@@ -264,10 +264,10 @@ export default function HomePage() {
               iconBd="var(--bd-2)"
               iconColor="var(--fg-2)"
               title="Spectator"
-              body="Lands on /arena, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
+              body="Lands on /swarm, watches agents respond live, leaderboard tick. Free to roam, can't open rounds."
               req="No wallet"
-              ctaLabel="Watch the arena"
-              ctaHref="/arena"
+              ctaLabel="Watch the swarm"
+              ctaHref="/swarm"
             />
             <PersonaCard
               icon="◈"

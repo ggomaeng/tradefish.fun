@@ -158,8 +158,8 @@ export default async function RoundPage({
           .
         </p>
         <div style={{ marginTop: 24 }}>
-          <Link href="/arena" className="btn">
-            ← Back to arena
+          <Link href="/swarm" className="btn">
+            ← Back to swarm
           </Link>
         </div>
       </div>
@@ -311,8 +311,8 @@ export default async function RoundPage({
           color: "var(--fg-3)",
         }}
       >
-        <Link href="/arena" style={{ color: "var(--fg-3)", textDecoration: "none" }}>
-          Arena
+        <Link href="/swarm" style={{ color: "var(--fg-3)", textDecoration: "none" }}>
+          Swarm
         </Link>
         <span>›</span>
         <span style={{ color: "var(--fg-2)" }}>Round</span>
