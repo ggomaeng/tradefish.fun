@@ -2252,6 +2252,151 @@ pre {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
+   LANDING HERO SCOPE — ocean palette (TEMPORARY).
+   The ocean hero JSX is removed in Section B of the design-v3 restyle.
+   This block stays until that commit lands. Scoped under .tf-landing-hero
+   so platform pages aren't affected.
+   ═══════════════════════════════════════════════════════════════════════ */
+.tf-landing-hero {
+  --cream: #f0e9e1;
+  --fg-dim: #a8b8c8;
+  --fg-faint: #6a7a8a;
+  --fg-faintest: #3a4858;
+  --cyan: #a8d8e8;
+  --cyan-bright: #c4ecf5;
+  --cyan-dim: #6a9bb5;
+  --magenta: #d96baa;
+  --short: #e07560;
+  --line-strong: rgba(168, 216, 232, 0.32);
+  --t-fast: 150ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --font-pixel: var(--font-departure), "VT323", ui-monospace, monospace;
+  --font-mono:
+    var(--font-departure), "JetBrains Mono", "IBM Plex Mono", ui-monospace,
+    "SF Mono", "Menlo", monospace;
+}
+.tf-landing-hero .tf-ocean-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 40% at 30% 0%,
+      rgba(76, 216, 232, 0.42),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 40% 32% at 70% 0%,
+      rgba(127, 224, 168, 0.28),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 50% 0%,
+      rgba(168, 216, 232, 0.36),
+      transparent 70%
+    );
+  background-size:
+    220% 100%,
+    200% 100%,
+    240% 100%;
+  background-repeat: no-repeat;
+  animation: tf-ocean-light 60s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes tf-ocean-light {
+  from {
+    background-position:
+      30% 0%,
+      70% 0%,
+      50% 0%;
+  }
+  to {
+    background-position:
+      130% 0%,
+      -30% 0%,
+      150% 0%;
+  }
+}
+.tf-landing-hero .tf-dust-motes,
+.tf-landing-hero .tf-debris {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+.tf-landing-hero .tf-attention-bloom {
+  position: absolute;
+  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  width: 820px;
+  height: 820px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(168, 216, 232, 0.24) 0%,
+    rgba(168, 216, 232, 0.1) 30%,
+    rgba(168, 216, 232, 0.02) 55%,
+    rgba(168, 216, 232, 0) 70%
+  );
+  opacity: 0;
+  transition: opacity 520ms var(--ease-out);
+  mix-blend-mode: screen;
+}
+.tf-landing-hero .tf-attention-bloom[data-attention="true"] {
+  opacity: 1;
+}
+@keyframes tf-caret-blink {
+  0%,
+  49% {
+    opacity: 0.85;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.tf-landing-hero .tf-caret-blink {
+  animation: tf-caret-blink 1s steps(1, end) infinite;
+}
+@keyframes tf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tf-landing-hero .tf-fade-up {
+  animation: tf-fade-up 600ms var(--ease-out) both;
+}
+@keyframes tf-shine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.tf-landing-hero .tf-shine-text {
+  background: linear-gradient(
+    90deg,
+    var(--cream) 0%,
+    var(--cream) 40%,
+    var(--cyan-bright) 50%,
+    var(--cream) 60%,
+    var(--cream) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tf-shine 5s linear infinite;
+}
+
+/* ─────────────────────────────────────────────────────────────────────
    MOBILE RESPONSIVE LAYER
    ───────────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
