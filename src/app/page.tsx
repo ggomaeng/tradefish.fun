@@ -11,11 +11,6 @@ import { RevealStagger, RevealSection } from "@/components/Reveal";
 export default function HomePage() {
   return (
     <main style={{ background: "var(--bg-0)", color: "var(--fg)" }}>
-      {/* HeroSwarm — page-level fixed layer. Sits above hero atmosphere
-          (z 0/1) and below hero foreground (vignette z 5, content z 10,
-          nav z 30). Fades out via its own scrollY listener past the hero. */}
-      <HeroSwarm />
-
       {/* ═══════════════════════════════════════════════════════════════════
           LANDING HERO — ocean palette, Departure Mono, scoped via .tf-landing-hero.
           Tokens (--cyan, --cream, --font-pixel, --font-mono) are locally
@@ -64,6 +59,7 @@ export default function HomePage() {
               "radial-gradient(ellipse 55% 65% at 50% 44%, rgba(180, 215, 235, 0.18) 0%, rgba(130, 180, 215, 0.12) 22%, rgba(75, 130, 170, 0.06) 42%, rgba(40, 80, 115, 0.025) 58%, transparent 72%)",
           }}
         />
+        <HeroSwarm />
         <div
           aria-hidden
           className="absolute inset-0 pointer-events-none"
