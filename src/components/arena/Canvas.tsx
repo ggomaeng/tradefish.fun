@@ -171,7 +171,7 @@ export function Canvas() {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Link
-              href={liveRoundId ? `/round/${liveRoundId}` : "/arena#past-rounds"}
+              href={liveRoundId ? `/round/${liveRoundId}` : "/swarm#past-rounds"}
               className="btn btn-ghost"
               scroll={!liveRoundId}
             >

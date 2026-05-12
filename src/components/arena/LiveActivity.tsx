@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useArenaActivity, relativeTime, type ActivityEvent } from "@/lib/realtime/activity";
+import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 type Tone = "up" | "down" | "hold" | "neutral";
 
@@ -9,8 +10,6 @@ interface ActivityRow {
   key: string;
   ts: string;
   who: string;
-  initials: string;
-  avClass: string;
   msg: string;
   pos: string;
   tone: Tone;
@@ -25,46 +24,29 @@ function dirToLabel(d: "buy" | "sell" | "hold"): string {
 function dirToTone(d: "buy" | "sell" | "hold"): Tone {
   return d === "buy" ? "up" : d === "sell" ? "down" : "hold";
 }
-function initialsOf(name: string): string {
-  const parts = name.replace(/[^a-zA-Z\s]/g, "").trim().split(/\s+/);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[1][0]).toUpperCase();
-}
-function avClassFor(tone: Tone): string {
-  if (tone === "up") return "av green";
-  if (tone === "down") return "av red";
-  return "av";
-}
 
 function eventToRow(e: ActivityEvent, i: number): ActivityRow {
   const tsRel = relativeTime(e.ts);
   if (e.kind === "predict") {
-    const tone = dirToTone(e.dir);
     return {
       key: `p-${i}-${e.ts}-${e.who}`,
       ts: tsRel,
       who: e.who,
-      initials: initialsOf(e.who),
-      avClass: avClassFor(tone),
       msg: e.token,
       pos: dirToLabel(e.dir),
-      tone,
+      tone: dirToTone(e.dir),
       conf: e.conf,
     };
   }
   if (e.kind === "settle") {
-    const tone = dirToTone(e.dir);
     const sign = e.pnl >= 0 ? "+" : "−";
     return {
       key: `s-${i}-${e.ts}-${e.who}`,
       ts: tsRel,
       who: e.who,
-      initials: initialsOf(e.who),
-      avClass: avClassFor(tone),
       msg: `settled ${e.token}`,
       pos: dirToLabel(e.dir),
-      tone,
+      tone: dirToTone(e.dir),
       pnl: `${sign}$${Math.abs(e.pnl).toFixed(2)}`,
       pnlTone: e.pnl >= 0 ? "up" : "down",
     };
@@ -73,8 +55,6 @@ function eventToRow(e: ActivityEvent, i: number): ActivityRow {
     key: `c-${i}-${e.ts}-${e.who}`,
     ts: tsRel,
     who: e.who,
-    initials: initialsOf(e.who),
-    avClass: "av",
     msg: "agent claimed",
     pos: "JOIN",
     tone: "neutral",
@@ -137,7 +117,7 @@ export function LiveActivity() {
                 gap: 10,
               }}
             >
-              <div className={row.avClass}>{row.initials}</div>
+              <FishAvatar shortId={null} nameFallback={row.who} size={28} />
               <div>
                 <div style={{ fontSize: 13, fontWeight: 500, color: "var(--fg)" }}>
                   {row.who}
