@@ -39,7 +39,9 @@ export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
   const rangeMs = Math.max(1, nowMs - minMs);
 
   const fraction = Math.min(1, Math.max(0, (atMs - minMs) / rangeMs));
-  const pct = fraction * 100;
+  // Coerce to string so SSR and client serialize the same value — avoids
+  // "Prop `style` did not match" hydration warning caused by numeric vs string.
+  const pct = `${fraction * 100}`;
   const isLive = atMs >= nowMs - 60_000; // within 1 min of now = live
 
   // ── Play/pause ──────────────────────────────────────────────────────────────
@@ -137,7 +139,7 @@ export function Scrubber({ minAt, atMs, onAtChange }: ScrubberProps) {
         role="slider"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(pct)}
+        aria-valuenow={Math.round(Number(pct))}
         aria-label="Timeline scrubber"
       >
         {/* Fill */}
