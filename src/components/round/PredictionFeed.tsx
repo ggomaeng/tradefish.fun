@@ -14,13 +14,29 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import type { RoundResponse, RoundPaperTrade, RoundComment } from "@/lib/realtime/round";
+import type {
+  RoundResponse,
+  RoundPaperTrade,
+  RoundComment,
+} from "@/lib/realtime/round";
 import { FishAvatar } from "@/components/avatar/FishAvatar";
 
 const DIR_LABEL = { buy: "▲ LONG", sell: "▼ SHORT", hold: "· HOLD" } as const;
-const DIR_COLOR = { buy: "var(--up)", sell: "var(--down)", hold: "var(--hold)" } as const;
-const DIR_BG = { buy: "var(--up-bg)", sell: "var(--down-bg)", hold: "var(--hold-bg)" } as const;
-const DIR_BD = { buy: "var(--up-bd)", sell: "var(--down-bd)", hold: "var(--hold-bd)" } as const;
+const DIR_COLOR = {
+  buy: "var(--up)",
+  sell: "var(--down)",
+  hold: "var(--hold)",
+} as const;
+const DIR_BG = {
+  buy: "var(--up-bg)",
+  sell: "var(--down-bg)",
+  hold: "var(--hold-bg)",
+} as const;
+const DIR_BD = {
+  buy: "var(--up-bd)",
+  sell: "var(--down-bd)",
+  hold: "var(--hold-bd)",
+} as const;
 
 interface Props {
   responses: RoundResponse[];
@@ -42,14 +58,16 @@ function formatOffset(ms: number): string {
 }
 
 function fmtPrice(p: number): string {
-  if (p >= 1000) return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  if (p >= 1000)
+    return `$${p.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
   if (p >= 1) return `$${p.toFixed(4)}`;
   return `$${p.toFixed(6)}`;
 }
 
 function fmtUsd(n: number): string {
   const abs = Math.abs(n);
-  if (abs >= 1000) return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  if (abs >= 1000)
+    return `$${abs.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
   return `$${abs.toFixed(2)}`;
 }
 
@@ -87,7 +105,8 @@ function PnlBadge({ pnlUsd }: { pnlUsd: number | undefined }) {
         border: `1px solid ${bd}`,
       }}
     >
-      {sign}{fmtUsd(pnlUsd)} PnL
+      {sign}
+      {fmtUsd(pnlUsd)} PnL
     </span>
   );
 }
@@ -106,7 +125,13 @@ type EntryCard = {
   enteredAt: string;
 };
 
-export function PredictionFeed({ responses, comments, paperTrades, isOpen, askedAt }: Props) {
+export function PredictionFeed({
+  responses,
+  comments,
+  paperTrades,
+  isOpen,
+  askedAt,
+}: Props) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -158,12 +183,16 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
   }
 
   // Sort by entered time ascending
-  entries.sort((a, b) => new Date(a.enteredAt).getTime() - new Date(b.enteredAt).getTime());
+  entries.sort(
+    (a, b) => new Date(a.enteredAt).getTime() - new Date(b.enteredAt).getTime(),
+  );
 
   const [filter, setFilter] = useState<"all" | "buy" | "sell" | "hold">("all");
 
   const totalResponses = responses.length;
-  const visible = entries.filter((e) => filter === "all" || e.direction === filter);
+  const visible = entries.filter(
+    (e) => filter === "all" || e.direction === filter,
+  );
   const counts = {
     buy: entries.filter((e) => e.direction === "buy").length,
     sell: entries.filter((e) => e.direction === "sell").length,
@@ -181,18 +210,32 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
           padding: "20px 32px 16px",
         }}
       >
-        <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>Agent predictions</h3>
+        <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+          Agent predictions
+        </h3>
         <div style={{ display: "flex", gap: 6 }}>
           <FilterBtn active={filter === "all"} onClick={() => setFilter("all")}>
             All <Count n={entries.length} />
           </FilterBtn>
-          <FilterBtn active={filter === "buy"} onClick={() => setFilter("buy")} color="var(--up)">
+          <FilterBtn
+            active={filter === "buy"}
+            onClick={() => setFilter("buy")}
+            color="var(--up)"
+          >
             ▲ <Count n={counts.buy} />
           </FilterBtn>
-          <FilterBtn active={filter === "sell"} onClick={() => setFilter("sell")} color="var(--down)">
+          <FilterBtn
+            active={filter === "sell"}
+            onClick={() => setFilter("sell")}
+            color="var(--down)"
+          >
             ▼ <Count n={counts.sell} />
           </FilterBtn>
-          <FilterBtn active={filter === "hold"} onClick={() => setFilter("hold")} color="var(--hold)">
+          <FilterBtn
+            active={filter === "hold"}
+            onClick={() => setFilter("hold")}
+            color="var(--hold)"
+          >
             · <Count n={counts.hold} />
           </FilterBtn>
         </div>
@@ -217,9 +260,10 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
             const a = entry.direction;
             const offsetMs =
               new Date(entry.enteredAt).getTime() - new Date(askedAt).getTime();
-            const pnlUsd = entry.kind === "response"
-              ? pnlByResponseId.get(entry.id)
-              : pnlByCommentId.get(entry.id);
+            const pnlUsd =
+              entry.kind === "response"
+                ? pnlByResponseId.get(entry.id)
+                : pnlByCommentId.get(entry.id);
 
             return (
               <motion.div
@@ -253,19 +297,20 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
 
                 {/* Content */}
                 <div>
+                  {/* Metadata row — de-emphasized so reasoning dominates */}
                   <div
                     style={{
                       display: "flex",
                       alignItems: "center",
                       gap: 8,
                       flexWrap: "wrap",
-                      marginBottom: 6,
+                      marginBottom: 8,
                     }}
                   >
                     <Link
                       href={`/agents/${entry.agentShortId}`}
                       style={{
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: 600,
                         color: "var(--fg)",
                         textDecoration: "none",
@@ -293,52 +338,127 @@ export function PredictionFeed({ responses, comments, paperTrades, isOpen, asked
                     <span
                       style={{
                         fontFamily: "var(--font-mono)",
-                        fontSize: 11,
-                        padding: "2px 8px",
+                        fontSize: 10,
+                        padding: "2px 7px",
                         borderRadius: "var(--r-2)",
                         color: DIR_COLOR[a],
                         background: DIR_BG[a],
                         border: `1px solid ${DIR_BD[a]}`,
+                        letterSpacing: "0.06em",
                       }}
                     >
                       {DIR_LABEL[a]}
                     </span>
                     <span
                       className="num"
-                      style={{ fontSize: 11, color: "var(--fg-3)" }}
+                      style={{ fontSize: 10, color: "var(--fg-4)" }}
                     >
                       {Number(entry.confidence).toFixed(2)} conf
                     </span>
                     <span
                       className="num"
-                      style={{ fontSize: 11, color: "var(--fg-3)" }}
+                      style={{ fontSize: 10, color: "var(--fg-4)" }}
                     >
                       ${entry.positionSizeUsd.toFixed(0)} size
                     </span>
                     <span
                       className="num"
-                      style={{ fontSize: 11, color: "var(--fg-3)" }}
+                      style={{ fontSize: 10, color: "var(--fg-4)" }}
                     >
                       @ {fmtPrice(entry.entryPrice)}
                     </span>
                   </div>
 
+                  {/* Reasoning — the main content. Bigger, brighter, with a
+                      side accent in the direction color so the agent's
+                      thesis reads as the primary signal. */}
                   {entry.thesis && (
                     <div
                       style={{
-                        fontSize: 13,
-                        color: "var(--fg-2)",
-                        lineHeight: 1.6,
-                        maxWidth: 560,
+                        fontSize: 14.5,
+                        color: "var(--fg)",
+                        lineHeight: 1.65,
+                        maxWidth: 640,
                         marginBottom: 10,
+                        paddingLeft: 12,
+                        borderLeft: `2px solid ${DIR_BD[a]}`,
                       }}
                     >
                       {entry.thesis}
                     </div>
                   )}
 
+                  {/* Conviction bar — confidence × (position_size / $1000).
+                      Visually weights high-conviction-big-position agents so
+                      the Tank can be skimmed at a glance. Top fillers
+                      get a glow; low-conviction ones stay subtle. */}
+                  {(() => {
+                    const conv = Math.max(
+                      0,
+                      Math.min(
+                        1,
+                        Number(entry.confidence) *
+                          (entry.positionSizeUsd / 1000),
+                      ),
+                    );
+                    const showGlow = conv > 0.55;
+                    return (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: "relative",
+                            width: 96,
+                            height: 4,
+                            background: "var(--bg-3)",
+                            borderRadius: "var(--r-1)",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: "absolute",
+                              inset: 0,
+                              width: `${conv * 100}%`,
+                              background: DIR_COLOR[a],
+                              boxShadow: showGlow
+                                ? `0 0 8px ${DIR_BD[a]}`
+                                : "none",
+                              transition: "width 240ms var(--ease-out)",
+                            }}
+                          />
+                        </div>
+                        <span
+                          className="num"
+                          style={{
+                            fontSize: 9,
+                            color: "var(--fg-4)",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                            fontFamily: "var(--font-mono)",
+                          }}
+                        >
+                          Conviction {Math.round(conv * 100)}
+                        </span>
+                      </div>
+                    );
+                  })()}
+
                   {/* Settlement PnL badge — single, USD-denominated */}
-                  <div style={{ display: "flex", gap: 6, marginTop: 4, flexWrap: "wrap" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 6,
+                      marginTop: 6,
+                      flexWrap: "wrap",
+                    }}
+                  >
                     <PnlBadge pnlUsd={pnlUsd} />
                   </div>
                 </div>
@@ -383,9 +503,7 @@ function FilterBtn({
 }
 
 function Count({ n }: { n: number }) {
-  return (
-    <span style={{ color: "var(--fg-4)", marginLeft: 3 }}>{n}</span>
-  );
+  return <span style={{ color: "var(--fg-4)", marginLeft: 3 }}>{n}</span>;
 }
 
 function DeliberatingPulse() {
@@ -409,9 +527,22 @@ function DeliberatingPulse() {
       >
         <span
           className="dot"
-          style={{ width: 8, height: 8, background: "var(--cyan)", borderRadius: "50%", animation: "pulse 2s infinite" }}
+          style={{
+            width: 8,
+            height: 8,
+            background: "var(--cyan)",
+            borderRadius: "50%",
+            animation: "pulse 2s infinite",
+          }}
         />
-        <span style={{ fontSize: 13, color: "var(--fg-3)", fontFamily: "var(--font-mono)", letterSpacing: "0.08em" }}>
+        <span
+          style={{
+            fontSize: 13,
+            color: "var(--fg-3)",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.08em",
+          }}
+        >
           DELIBERATING…
         </span>
       </div>
