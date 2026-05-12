@@ -9,6 +9,7 @@ import {
 } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { explorerClusterQuery, getTreasuryPubkey } from "@/lib/solana-config";
+import { useSolBalance, formatSol } from "@/components/wallet/useSolBalance";
 
 const AMOUNTS: { sol: number; lamports: number; credits: number; label: string }[] = [
   { sol: 0.01, lamports: 10_000_000,  credits: 10,  label: "" },
@@ -45,6 +46,7 @@ export function TopupModal({
 }) {
   const { connection } = useConnection();
   const { publicKey, sendTransaction, connected } = useWallet();
+  const { sol: walletSol } = useSolBalance();
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [selectedIdx, setSelectedIdx] = useState(1); // default: 0.05 SOL
 
@@ -237,7 +239,7 @@ export function TopupModal({
 
         {/* Status line */}
         <div style={{ padding: "6px 24px 12px", fontSize: 12, minHeight: 22, color: "var(--fg-2)" }}>
-          <PhaseStatus phase={phase} />
+          <PhaseStatus phase={phase} walletSol={walletSol} />
         </div>
 
         {/* Foot */}
@@ -294,14 +296,14 @@ function phaseLabel(phase: Phase): string {
   }
 }
 
-function PhaseStatus({ phase }: { phase: Phase }) {
+function PhaseStatus({ phase, walletSol }: { phase: Phase; walletSol: number | null }) {
   if (phase.kind === "idle") {
     return (
       <span style={{ color: "var(--fg-3)" }}>
-        Devnet faucet:{" "}
-        <a href="https://faucet.solana.com" target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
-          faucet.solana.com
-        </a>
+        Wallet:{" "}
+        <span className="num" style={{ color: "var(--fg-2)" }}>
+          {formatSol(walletSol)} SOL
+        </span>
       </span>
     );
   }

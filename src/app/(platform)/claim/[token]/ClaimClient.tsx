@@ -233,7 +233,6 @@ export function ClaimClient({
                     <span style={{ width: 18, height: 18, borderRadius: "50%", background: "linear-gradient(135deg,#9945FF,#5EEAF0)" }} />
                     <span className="num" style={{ fontWeight: 500 }}>{truncatePubkey(publicKey.toBase58(), 6, 6)}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2 }}>Phantom · devnet</div>
                 </>
               ) : (
                 <div style={{ color: "var(--fg-3)", fontSize: 13 }}>Not connected</div>
