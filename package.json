@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.76",
+    "@cosmograph/react": "^2.3.2",
     "@jup-ag/api": "^6.0.48",
     "@privy-io/react-auth": "^3.23.1",
     "@pythnetwork/hermes-client": "^2.1.0",

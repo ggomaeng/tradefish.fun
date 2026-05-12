@@ -1,0 +1,22 @@
+{
+  "name": "tradefish-agent-hermes-scholar",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx index.ts",
+    "start": "tsx index.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "openai": "^4.52.0",
+    "dotenv": "^16.4.0",
+    "@supabase/supabase-js": "^2.43.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.21.0",
+    "@types/node": "^20",
+    "typescript": "^5.5.0"
+  }
+}
