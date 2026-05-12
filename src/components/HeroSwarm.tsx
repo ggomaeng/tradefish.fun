@@ -4,55 +4,195 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 /**
- * Hero fish-swarm v3 — one cohesive swarm, signal contagion, consensus.
+ * Hero swarm v6 — neon-phosphor wedge that gazes at the cursor. ~1200
+ * desktop / ~520 mobile pixel-fish in an inverted-triangle (▽) formation
+ * filling a substantial portion of the canvas. Brand palette is logo-matched
+ * neon (magenta / violet / indigo / cyan / mint).
  *
- * The 12k particles always live inside one fish silhouette (no morph cycle,
- * no separate schools). Three layered behaviors:
+ *  1. **Inverted-triangle wedge formation** — wide at the top, narrowing
+ *     toward a small apex at the bottom. Dramatic silhouette that reads
+ *     deliberately even at a glance.
  *
- *  1. **Per-particle breath orbits.** Each particle wobbles on its own
- *     deterministic micro-pattern (3-axis sine with hashed freqs/phases/amps).
- *     Stagger without sync — the body is alive but never falls apart.
+ *  2. **Curl-flow ocean current** drives X/Y velocity (2D simplex noise
+ *     sampled at time-shifted coordinates), producing organic swirling
+ *     motion without per-pair flocking math.
  *
- *  2. **Signal contagion.** Random particles emit green pulses; the wave
- *     spreads outward through home-position distance with a Gaussian
- *     envelope. Up to 4 concurrent waves. Visualizes inter-agent signal
- *     exchange.
+ *  3. **Homing spring + speed cap** keeps the wedge silhouette readable —
+ *     each particle is pulled back toward its assigned formation slot and
+ *     can't exceed a velocity ceiling.
  *
- *  3. **Consensus convergence cycle.** Every 12s the whole body's hues
- *     pull together: random drift → all green → release. Visualizes the
- *     emergence of a market consensus across the agent swarm.
+ *  4. **Cursor soft pull + gaze override** — the marquee interaction. When
+ *     the cursor is on the canvas, every fish ROTATES to face it (overriding
+ *     velocity heading) and the whole wedge leans toward it with a gentle
+ *     attraction force. Reads as "the swarm is watching you."
  *
- * Performance budget: 12k particles × ~25 mul/add per particle per frame
- * + 4 wave intensity lookups stays well under 16ms. Inner loop is
- * allocation-free.
+ *  5. **Velocity-aligned glyphs (when idle)** — when the cursor is away,
+ *     each pixel-fish rotates to face its instantaneous velocity so the
+ *     school visibly swims.
+ *
+ *  6. **Two-pass render** — main pass (hard-pixel rectangles, NormalBlending)
+ *     plus a halo pass (larger gl_PointSize, soft circular alpha, additive)
+ *     sharing geometry. Bioluminescent glow behind hard pixels.
+ *
+ *  7. **Depth fog** in the vertex shader pulls far particles toward the
+ *     background colour, giving the staging an underwater read.
+ *
+ *  8. **Stochastic directional waves** — random angle, strength, cadence.
+ *     No phase coupling, no consensus cycle — the swarm reads as
+ *     continuously alive without any perceivable "loop."
+ *
+ * Color path is uniform-driven: each particle holds an integer palette index
+ * (aPaletteIdx) and a per-frame quantized brightness (aBrightness, 4 discrete
+ * steps). The fragment shader writes hard rectangles — no smoothstep, no AA
+ * — so the pixel identity from the X banner stays intact.
  *
  * Honors prefers-reduced-motion (renders one static frame at t=0).
- * StrictMode-safe: cleans up renderer / geometry / RAF / ResizeObserver.
+ * StrictMode-safe: cleans up renderer / geometry / RAF / ResizeObserver /
+ * pointer listeners / halo material.
  */
 
 const TAU = Math.PI * 2;
 const GOLDEN = 2.39996322972865332;
 
-// HSL hue for the consensus / signal color. 0.36 ≈ #7fe0a8 (brand phosphor).
-const GREEN_HUE = 0.36;
-const SWIM_SPEED = 0.55;
-const WIGGLE_AMP = 2.6;
+// DEFAULT (calm) palette — iridescent deep-sea school with silhouette
+// shadow-side. ~30% of fish are deep navy that reads as DARK SILHOUETTES
+// against the central bloom (matches real bait-ball footage where half
+// the school is in shadow). The brighter cyan/mint/pearl tones carry
+// the iridescent light-catching side. Solana neon takes over on burst.
+const PALETTE_HEX = [
+  0xeaf4f9, // silver-pearl highlight (rare, sells iridescence)
+  0x9adae8, // pale cyan
+  0x2dd4ff, // vivid cyan (focal — carries narrative weight)
+  0x7fe0a8, // mint
+  0x0e1a28, // deep navy silhouette (shadow side — reads dark vs bloom)
+] as const;
+// Distribution: pearl rare (10%), silhouettes substantial (30%) so the
+// school has clear value range, cyan + mint fill the middle.
+const PALETTE_CUMULATIVE = [0.1, 0.35, 0.55, 0.7, 1.0] as const;
 
-// Signal contagion — directional sweeps across the school. Up to 3
-// concurrent waves so DIVERGE phase reads as multiple agents debating
-// at once; CONSENSUS phase issues a single decisive horizontal broadcast.
-const MAX_WAVES = 3;
-const WAVE_DURATION = 5.0;
-// Spawn cadence varies by consensus phase — see scheduler in renderFrame.
-// These are the diverge-phase defaults (rapid back-and-forth chatter).
-const WAVE_INTERVAL_MIN = 0.35;
-const WAVE_INTERVAL_MAX = 1.1;
+// Solana-brand palette — fired during the submit burst when the user
+// commits a question. Purple (#9945FF) → magenta bridge (#DC1FFF) →
+// green (#14F195). The vertex shader linearly mixes PALETTE_HEX with
+// this one by `uPaletteMix` (0 = calm, 1 = full Solana neon).
+const SOLANA_HEX = [
+  0x9945ff, // Solana purple
+  0xb566ff, // purple → pink bridge
+  0xdc1fff, // hot magenta
+  0x14f195, // Solana green
+  0x58f7b0, // mint-green highlight
+] as const;
 
-// Consensus convergence (12s loop)
-const CONSENSUS_CYCLE = 12;
-const PHASE_DIVERGE_END = 6 / 12;
-const PHASE_CONVERGE_END = 9 / 12;
-const PHASE_CONSENSUS_END = 11 / 12;
+// Directional sweep waves — pure stochastic (no phase coupling, no cycle).
+const MAX_WAVES = 2;
+const WAVE_DURATION = 5.5;
+const WAVE_INTERVAL_MIN = 1.1;
+const WAVE_INTERVAL_MAX = 3.4;
+
+// ── Boids tuning constants ──────────────────────────────────────────
+// Calibrated for visible cluster formation + dramatic predator response.
+// Earlier values (1200 fish, COH_R 75, W_COH 0.10) produced a uniform
+// "bacterial colony" look because density was too high and cohesion
+// radius was so broad each fish averaged out to no preferred direction.
+// Reduced count + tighter neighbor radii + stronger cohesion/alignment
+// = real emergent groups. Stronger predator = visible escape void.
+// School packing with UNIFORM spacing — fish cluster but maintain personal
+// space. Bumped SEP_R 5 → 11 so separation force acts before fish actually
+// touch, producing visibly even gaps within each cluster.
+const SEP_R = 11;
+const ALI_R = 20;
+const COH_R = 28;
+const PRED_R = 140; // detection radius — fish notice cursor + start fleeing
+const MAX_SPEED = 22;
+const PANIC_SPEED = 38; // when within PANIC_R, fish exceed MAX_SPEED escaping
+const PANIC_R = 75; // inside this radius, velocity is INJECTED toward escape
+const PANIC_BLEND = 0.55; // 55% of velocity replaced toward escape per frame
+// Cohesion bumped so the school travels as one body. Alignment kept just
+// loose enough that sub-groups can vary heading slightly — sells "organic
+// school with internal sub-currents" over "lockstep parade".
+const W_SEP = 0.4;
+const W_ALI = 0.2;
+const W_COH = 0.22;
+// CRITICAL: W_BND raised from 0.015 → 0.18 to actually contain fish.
+// At 0.015 the bounds force was max ~0.8 units/sec² — fish at MAX_SPEED
+// needed >200 units to decelerate, far beyond our 30-unit buffer, so
+// the swarm broke out of canvas and "disappeared." 0.18 gives ~10 sec²
+// max decel — fish stop within the buffer cleanly.
+const W_BND = 0.18;
+// Wander reduced further (0.025 → 0.018) so Brownian jitter doesn't fight
+// the stronger cohesion. School moves deliberately, in unison.
+const W_RAND = 0.018;
+// W_PRED softened from 0.65 → 0.40 — strong enough for visible escape
+// void but no longer flings fish through the bounds wall.
+const W_PRED = 0.4;
+// Visible canvas bounds (approx from camera z=380, fov 45°). Kept for the
+// spatial hash + initial seed scatter. The actual fish-containment force
+// now uses ELLIPTICAL bounds (BOUND_A / BOUND_B) recentered each frame on
+// the current orbit center so the school always lives in the viewport.
+const BOUND_X = 310;
+const BOUND_Y = 160;
+// Buffer doubled 30 → 60 for more deceleration runway against MAX_SPEED.
+const BOUND_BUFFER = 60;
+// Elliptical-bounds semi-axes. Tightened in a second pass so the school
+// clusters near viewport center instead of smearing all the way to the
+// corners — reads more as a cohesive shoal, less as ambient dust.
+const BOUND_A = 215;
+const BOUND_B = 170;
+// Soft-shell radius (squared, normalised) — inside this, no bounds force.
+// Crossing it ramps push linearly to 1 at the ellipse edge.
+const BOUND_SHELL_SQ = 0.78;
+// Spatial hash cell size — matches COH_R. With 2500 fish + cellSize 28,
+// avg ~9 fish per cell × 9-cell query = ~80 per fish; total ~200k
+// comparisons/frame ≈ 10 ms (within 16 ms budget).
+const CELL_SIZE = 28;
+const SEP_R_SQ = SEP_R * SEP_R;
+const ALI_R_SQ = ALI_R * ALI_R;
+const COH_R_SQ = COH_R * COH_R;
+const PRED_R_SQ = PRED_R * PRED_R;
+const PANIC_R_SQ = PANIC_R * PANIC_R;
+
+// ── Attention mode (input focus) tuning ─────────────────────────────
+// When the user focuses the landing input the swarm flips from
+// "predator flee" to "vortex around the input center" — a radial-
+// spring + tangential-bias steering force computed per fish.
+// V_ORBIT_FOCUS sits just below MAX_SPEED so Boids forces still nudge.
+// _BURST values are reached during the ~600ms submit collapse.
+// Two orbit-radius tiers. The LOOSE radius is the default state — fish
+// continuously circulate as a cohesive blob around the viewport center
+// (the radial spring is weak at loose, so they swirl around R instead of
+// snapping to a strict ring). FOCUS tightens with full radial spring.
+// At fov 45°, z=380, world half-height ≈ 157 → keep both inside bounds.
+const R_LOOSE_DESKTOP = 110;
+const R_LOOSE_MOBILE = 80;
+const R_FOCUS_DESKTOP = 130;
+const R_FOCUS_MOBILE = 95;
+const R_TARGET_BURST = 50;
+// Radial spring strength: stronger pull at loose (14) so the band edges
+// hold cleanly and fish snap into the vortex shape on load. FULL strength
+// at focus tightens further onto a denser ring.
+const V_RADIAL_GAIN_LOOSE = 14;
+// Faster orbit so the swirl is obvious within 1s of focus. Was 18 — at
+// r=140 that gave ~7s/lap, way too lazy to read as a vortex. 28 ≈ ~3s/lap.
+const V_ORBIT_FOCUS = 28;
+const V_ORBIT_BURST = 8;
+const V_RADIAL_GAIN = 22;
+// Snappier convergence — fish settle onto the ring in <600ms.
+const K_STEER = 4.0;
+// Fish render-size multiplier while attention is engaged. Bigger
+// baseline (~80% bigger per fish vs v1) means this multiplier can be
+// gentler — just enough to make the orbit visibly "lean in" without
+// blowing the school out of proportion.
+const SIZE_MULT_FOCUS = 1.3;
+const SIZE_MULT_BURST = 1.7;
+// Per-frame lerp factors at 60fps: ATTENTION_LERP_IN ≈ 500ms ramp-up,
+// ATTENTION_LERP_OUT ≈ 800ms ramp-down. Multiplied by dt*60 in the
+// loop so the effective time is frame-rate-independent.
+const ATTENTION_LERP_IN = 0.045;
+const ATTENTION_LERP_OUT = 0.025;
+// Submit burst envelope (seconds): rise → hold → decay.
+const BURST_RISE = 0.1;
+const BURST_HOLD = 0.05;
+const BURST_DECAY = 0.45;
+const BURST_TOTAL = BURST_RISE + BURST_HOLD + BURST_DECAY;
 
 interface SignalWave {
   active: boolean;
@@ -83,97 +223,97 @@ function hash01(x: number): number {
 }
 
 /**
- * Lens-shape school formation — particles randomly scattered within an
- * elongated horizontal ellipsoid. No tail fork: real fish schools form
- * lens / oval clouds, and dropping the tail removes the visual ambiguity
- * of "is this one big fish or a school of fish".
+ * Simple uniform-grid spatial hash for O(N·k) Boids neighbor queries.
  *
- * Cross-section profile blends a flat 0.45 floor with a 0.55 sin bump,
- * so endpoints retain ~45% of the central thickness instead of tapering
- * to a point. This keeps inter-particle spacing roughly even across the
- * entire school instead of clumping particles into thin lines at the tips.
+ * Each cell stores fish indices in a preallocated bucket (Int32Array) with
+ * a `counts` array tracking how many indices are currently in each cell.
+ * `clear()` resets counts (zero-cost, doesn't dirty the buckets). `insert`
+ * appends an index. `forEachNeighborCell(px, py, cb)` invokes `cb(cellIdx)`
+ * for the 9 cells in a 3×3 neighborhood around `(px, py)`.
  *
- * Radial position uses `sqrt(r)` so particles are uniformly distributed
- * across cross-section area (no center clumping).
+ * Bucket capacity is pre-sized for our worst-case density (cells in a
+ * tight cohesion cluster). Overflow is silently dropped — acceptable since
+ * a missed neighbor on one frame self-corrects within a few frames as the
+ * cluster relaxes.
  */
-function buildSchoolFormation(
-  out: Float32Array,
-  n: number,
-  length: number,
-  height: number,
-  depth: number,
-): void {
-  for (let i = 0; i < n; i++) {
-    const idx = i * 3;
-    const r1 = hash01(i * 1811 + 17);
-    const r2 = hash01(i * 1811 + 23);
-    const r3 = hash01(i * 1811 + 29);
-
-    const t = r1;
-    const profile = 0.45 + 0.55 * Math.sin(t * Math.PI);
-    const innerR = Math.sqrt(r2);
-    const angle = r3 * TAU;
-
-    out[idx] = (t - 0.5) * length;
-    out[idx + 1] = Math.cos(angle) * profile * height * 0.5 * innerR;
-    out[idx + 2] = Math.sin(angle) * profile * depth * 0.5 * innerR;
+class SpatialHash {
+  readonly cellsX: number;
+  readonly cellsY: number;
+  readonly bucketSize: number;
+  readonly counts: Int32Array;
+  readonly buckets: Int32Array;
+  constructor(
+    private readonly boundX: number,
+    private readonly boundY: number,
+    private readonly cellSize: number,
+    bucketSize: number,
+  ) {
+    this.cellsX = Math.ceil((boundX * 2 + cellSize) / cellSize);
+    this.cellsY = Math.ceil((boundY * 2 + cellSize) / cellSize);
+    this.bucketSize = bucketSize;
+    this.counts = new Int32Array(this.cellsX * this.cellsY);
+    this.buckets = new Int32Array(this.cellsX * this.cellsY * bucketSize);
+  }
+  clear(): void {
+    this.counts.fill(0);
+  }
+  cellIndex(px: number, py: number): number {
+    const cx = Math.min(
+      this.cellsX - 1,
+      Math.max(0, Math.floor((px + this.boundX) / this.cellSize)),
+    );
+    const cy = Math.min(
+      this.cellsY - 1,
+      Math.max(0, Math.floor((py + this.boundY) / this.cellSize)),
+    );
+    return cy * this.cellsX + cx;
+  }
+  insert(idx: number, px: number, py: number): void {
+    const cell = this.cellIndex(px, py);
+    const count = this.counts[cell];
+    if (count < this.bucketSize) {
+      this.buckets[cell * this.bucketSize + count] = idx;
+      this.counts[cell] = count + 1;
+    }
+    // overflow: silently drop (self-corrects within a frame or two)
+  }
+  /** Returns the start offset in `buckets` for cell `cellIdx`. */
+  bucketStart(cellIdx: number): number {
+    return cellIdx * this.bucketSize;
   }
 }
 
 /**
- * Per-particle micro-motion seeds — 9 floats per particle: 3 frequencies,
- * 3 phase offsets, 3 amplitudes. Deterministic from index.
- *
- * Frequencies in 0.35..1.4 rad/sec range, amplitudes 1.5..5.5 units. With
- * the sparse-school layout (~12 unit spacing), this gives each particle a
- * visibly distinct wobble without colliding with its neighbors.
+ * Per-particle palette index ∈ {0,1,2,3,4}. Deterministic from particle
+ * index. The cumulative-distribution check picks magenta/violet/indigo/
+ * cyan/mint with the bias defined in PALETTE_CUMULATIVE — cyan + mint
+ * dominate so the screen reads phosphor-y, magenta + violet are accent
+ * sparks (matches the X banner palette).
  */
-function buildBreathParams(out: Float32Array, n: number): void {
+function buildPaletteIndices(out: Float32Array, n: number): void {
   for (let i = 0; i < n; i++) {
-    const j = i * 9;
-    out[j] = 0.35 + hash01(i * 7919 + 1) * 1.05;
-    out[j + 1] = 0.35 + hash01(i * 7919 + 2) * 1.05;
-    out[j + 2] = 0.35 + hash01(i * 7919 + 3) * 1.05;
-    out[j + 3] = hash01(i * 7919 + 4) * TAU;
-    out[j + 4] = hash01(i * 7919 + 5) * TAU;
-    out[j + 5] = hash01(i * 7919 + 6) * TAU;
-    out[j + 6] = 0.6 + hash01(i * 7919 + 7) * 2.0;
-    out[j + 7] = 0.6 + hash01(i * 7919 + 8) * 2.0;
-    out[j + 8] = 0.6 + hash01(i * 7919 + 9) * 2.0;
+    const r = hash01(i * 104729 + 11);
+    if (r < PALETTE_CUMULATIVE[0]) out[i] = 0;
+    else if (r < PALETTE_CUMULATIVE[1]) out[i] = 1;
+    else if (r < PALETTE_CUMULATIVE[2]) out[i] = 2;
+    else if (r < PALETTE_CUMULATIVE[3]) out[i] = 3;
+    else out[i] = 4;
   }
 }
 
 /**
- * Per-particle hue seeds — 2 floats: base hue [0,1) and drift speed.
- * During the divergent phase each particle slowly cycles through its own
- * personal hue. Consensus phase pulls them all toward GREEN_HUE.
+ * Build the uPalette uniform value as a flat array of THREE.Vector3 (Three.js
+ * passes vec3 array uniforms as {x,y,z} per element). Linear-RGB; no
+ * gamma correction — the additive-free fragment shader writes vColor
+ * directly to gl_FragColor.
  */
-function buildHueSeeds(out: Float32Array, n: number): void {
-  for (let i = 0; i < n; i++) {
-    const j = i * 2;
-    out[j] = hash01(i * 104729 + 11);
-    out[j + 1] = 0.04 + hash01(i * 104729 + 13) * 0.1;
-  }
-}
-
-/**
- * Consensus phase factor [0..1] across the 12s cycle.
- *  0–6s   diverge   → 0
- *  6–9s   converge  → smoothstep 0..1
- *  9–11s  consensus → 1
- *  11–12s release   → smoothstep 1..0
- */
-function consensusFactor(timeSec: number): number {
-  const t = (timeSec % CONSENSUS_CYCLE) / CONSENSUS_CYCLE;
-  if (t < PHASE_DIVERGE_END) return 0;
-  if (t < PHASE_CONVERGE_END) {
-    const u =
-      (t - PHASE_DIVERGE_END) / (PHASE_CONVERGE_END - PHASE_DIVERGE_END);
-    return u * u * (3 - 2 * u);
-  }
-  if (t < PHASE_CONSENSUS_END) return 1;
-  const u = (t - PHASE_CONSENSUS_END) / (1 - PHASE_CONSENSUS_END);
-  return 1 - u * u * (3 - 2 * u);
+function buildPaletteUniform(hexes: readonly number[]): THREE.Vector3[] {
+  return hexes.map((hex) => {
+    const r = ((hex >> 16) & 0xff) / 255;
+    const g = ((hex >> 8) & 0xff) / 255;
+    const b = (hex & 0xff) / 255;
+    return new THREE.Vector3(r, g, b);
+  });
 }
 
 export function HeroSwarm() {
@@ -187,17 +327,15 @@ export function HeroSwarm() {
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    // School: ~800 particles in a lens-shape ellipsoid school formation.
-    // Aspect ratio length:height:depth ≈ 2.5 : 1 : 0.45 for a classic
-    // side-view sardine-school silhouette.
-    const count = isMobile ? 350 : 800;
-    const length = isMobile ? 220 : 320;
-    const height = isMobile ? 90 : 130;
-    const depth = isMobile ? 40 : 60;
-    const halfLen = length / 2;
-    // Wave: directional plane sweep across the school. Wider envelope so
-    // a substantial slab of fish lights up at once (more dramatic).
-    const waveWidth = isMobile ? 26 : 36;
+    // Particle count — reduced from 2800/1250 (dense bait ball) to
+    // 1100/480 (sparser school). Combined with the larger per-fish
+    // baseSize below, individual fish read as recognisable creatures
+    // rather than dust, which matches the design direction of a clearer
+    // orbital silhouette at the expense of "infinite swarm" density.
+    const count = isMobile ? 500 : 1100;
+    // Wave: directional plane sweep across the school for random brightness
+    // bursts on top of Boids motion. Wave projection uses world position.
+    const waveWidth = isMobile ? 36 : 56;
 
     const initialRect = container.getBoundingClientRect();
     const canvasW = Math.max(1, initialRect.width);
@@ -219,104 +357,296 @@ export function HeroSwarm() {
     container.appendChild(renderer.domElement);
 
     // Per-particle precomputed buffers — allocated once, mutated each frame.
+    // Color comes from a 5-stop palette LUT in the shader (uPalette) indexed
+    // per-particle by aPaletteIdx, modulated by aBrightness (quantized to 4
+    // steps each frame for the phosphor-step look). `aHeading` rotates each
+    // pixel-fish to face its velocity direction (atan2(vy, vx) per frame).
     const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
+    const velocities = new Float32Array(count * 2); // 2D: vx, vy. Z is anchored.
     const intensities = new Float32Array(count);
     const sizes = new Float32Array(count);
+    const paletteIndices = new Float32Array(count);
+    const brightnesses = new Float32Array(count);
     const headings = new Float32Array(count);
-    const homePositions = new Float32Array(count * 3);
-    const breathParams = new Float32Array(count * 9);
-    const hueSeeds = new Float32Array(count * 2);
-    buildSchoolFormation(homePositions, count, length, height, depth);
-    buildBreathParams(breathParams, count);
-    buildHueSeeds(hueSeeds, count);
+    const swimPhases = new Float32Array(count);
+    buildPaletteIndices(paletteIndices, count);
+    // Per-fish swim wiggle phase desync — some bend left, some right.
+    for (let i = 0; i < count; i++) {
+      swimPhases[i] = hash01(i * 39769 + 7) * TAU;
+    }
     sizes.fill(1.0); // Main school: uniform baseline size; pulse via aIntensity.
-    headings.fill(0); // Main school glyphs face +X (school is laid out along X).
+
+    // ── Boids initial state ─────────────────────────────────────────
+    // VORTEX-SEEDED: fish start in a wide ring BAND at evenly-spaced
+    // angles, all moving tangentially CCW. Per-fish HETEROGENEITY: each
+    // fish gets a stable preferred radius offset, orbital speed multi,
+    // and heading jitter so the school has natural variation instead of
+    // a perfectly synchronized ring.
+    const initialRingR = isMobile ? R_LOOSE_MOBILE : R_LOOSE_DESKTOP;
+    const ringBand = 35;
+    const zSpeeds = new Float32Array(count);
+    // Per-fish preferred radius offset (±25 around the nominal R_LOOSE).
+    const radiusOffsets = new Float32Array(count);
+    // Per-fish orbital speed multiplier (0.75..1.25 → ±25% variation).
+    const speedMults = new Float32Array(count);
+    // Per-fish heading jitter for less synchronized facing direction.
+    const headingJitter = new Float32Array(count);
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3;
+      const ringAngle = (i / count) * TAU + hash01(i * 1811 + 53) * 0.12;
+      // Per-fish preferred radius offset (stable across the whole run).
+      // Triangular distribution biased toward the nominal radius.
+      radiusOffsets[i] =
+        (hash01(i * 1811 + 17) + hash01(i * 1811 + 31) - 1) * ringBand;
+      // Per-fish orbital speed multiplier — natural overtaking.
+      speedMults[i] = 0.75 + hash01(i * 1811 + 89) * 0.5; // [0.75, 1.25]
+      // Per-fish heading jitter — fish aren't all perfectly tangent.
+      headingJitter[i] = (hash01(i * 1811 + 103) * 2 - 1) * 0.1;
+
+      const r = initialRingR + radiusOffsets[i];
+      positions[i3] = r * Math.cos(ringAngle);
+      positions[i3 + 1] = r * Math.sin(ringAngle);
+      // Wide z range (±100) for layered depth so front fish render large +
+      // bright, back fish tiny + faded — gives the real 3D sardine feel.
+      positions[i3 + 2] = (hash01(i * 1811 + 29) * 2 - 1) * 100;
+      zSpeeds[i] = (hash01(i * 1811 + 71) * 2 - 1) * 5; // ±5 units/sec z-drift
+      // Tangent velocity (CCW) matches the orbital force direction → no
+      // jolt on first frame.
+      const tangent = ringAngle + Math.PI / 2 + headingJitter[i];
+      const speed = MAX_SPEED * (0.5 + hash01(i * 1811 + 67) * 0.2);
+      velocities[i * 2] = Math.cos(tangent) * speed;
+      velocities[i * 2 + 1] = Math.sin(tangent) * speed;
+      headings[i] = tangent;
+    }
+
+    // Spatial hash for O(N·k) neighbor lookup in the Boids force loop.
+    // Bucket size sized for worst-case density (a tight cohesion cluster).
+    const spatialHash = new SpatialHash(BOUND_X, BOUND_Y, CELL_SIZE, 96);
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     geometry.setAttribute(
       "aIntensity",
       new THREE.BufferAttribute(intensities, 1),
     );
     geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
+    geometry.setAttribute(
+      "aPaletteIdx",
+      new THREE.BufferAttribute(paletteIndices, 1),
+    );
+    geometry.setAttribute(
+      "aBrightness",
+      new THREE.BufferAttribute(brightnesses, 1),
+    );
     geometry.setAttribute("aHeading", new THREE.BufferAttribute(headings, 1));
+    geometry.setAttribute(
+      "aSwimPhase",
+      new THREE.BufferAttribute(swimPhases, 1),
+    );
 
-    // Custom shader: per-particle size pulse driven by aIntensity, plus
-    // each sprite rendered as a velocity-aligned oval (≈ side-view fish
-    // glyph). baseSize bumped so non-pulsed particles still read as ovals;
-    // pulseSize reduced so peak (baseSize + pulseSize) stays roughly the
-    // same as before — the wave-hit "fat" emphasis level is preserved.
-    const baseSize = isMobile ? 4.0 : 5.5;
-    const pulseSize = isMobile ? 4.3 : 5.8;
+    // Custom shader for the pixel-CRT retrofit: each particle is a hard-edged
+    // pixel rectangle drawn in one of 5 phosphor colors selected from a
+    // uniform palette LUT. The main school renders as HORIZONTAL PIXEL-FISH
+    // bars (uAspect.x = 1.0 = full width, uAspect.y ≈ 0.42 = squat height)
+    // — each one reads as a tiny side-view fish swimming along the school's
+    // +X axis. Ambient particles use square aspect (1.0, 1.0) so they read
+    // as background dust, distinct from the focal school. Brightness is
+    // quantized per-frame to 4 discrete steps for the CRT phosphor-step
+    // look. NormalBlending replaces additive so overlapping particles
+    // never saturate to white.
+    // Larger sprites pair with the lower particle count for a "fewer,
+    // bigger fish" read. Each pixel-fish is now ~80% bigger than v1 so
+    // the body shape + swim wiggle are visible at a glance.
+    const baseSize = isMobile ? 11.0 : 16.5;
+    const pulseSize = isMobile ? 4.2 : 6.0;
     const sizeUniform = { value: new THREE.Vector2(baseSize, pulseSize) };
     const scaleUniform = {
       value: renderer.domElement.height / 2,
     };
+    const paletteUniform = { value: buildPaletteUniform(PALETTE_HEX) };
+    // Solana-neon alternate palette — interpolated against `paletteUniform`
+    // by `paletteMixUniform`. Both share the same 5-stop indexing scheme,
+    // so a fish keeps its "species" (its aPaletteIdx) across the mix.
+    const paletteAltUniform = { value: buildPaletteUniform(SOLANA_HEX) };
+    const paletteMixUniform = { value: 0 };
+    // Global brightness multiplier. Pumped during the submit burst so the
+    // entire school visibly flares as the page hands off to /round/[id].
+    const burstBrightUniform = { value: 1.0 };
+    // Per-fish size multiplier. Default 1.0; ramped up by aEff during
+    // attention mode so the orbit pattern is obvious at a glance.
+    const sizeMultUniform = { value: 1.0 };
+    // Main school: SLIMMER horizontal egg-shape (uAspect.y 0.38 → 0.28)
+    // — fish look like long sardines rather than chunky pills.
+    const aspectMain = { value: new THREE.Vector2(1.0, 0.28) };
+    // uTime drives the per-fish 2-joint swim animation in the fragment
+    // shader (sinusoidal S-curve body bend).
+    const timeUniform = { value: 0 };
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uSize: sizeUniform,
         uScale: scaleUniform,
+        uPalette: paletteUniform,
+        uPaletteAlt: paletteAltUniform,
+        uPaletteMix: paletteMixUniform,
+        uBurstBright: burstBrightUniform,
+        uSizeMult: sizeMultUniform,
+        uAspect: aspectMain,
+        uTime: timeUniform,
       },
       vertexShader: `
         attribute float aIntensity;
         attribute float aSize;
+        attribute float aPaletteIdx;
+        attribute float aBrightness;
         attribute float aHeading;
+        attribute float aSwimPhase;
         uniform vec2 uSize;
         uniform float uScale;
+        uniform vec3 uPalette[5];
+        uniform vec3 uPaletteAlt[5];
+        uniform float uPaletteMix;
+        uniform float uBurstBright;
+        uniform float uSizeMult;
         varying vec3 vColor;
-        varying float vIntensity;
         varying float vHeading;
+        varying float vSwimPhase;
         void main() {
-          vColor = color;
-          vIntensity = aIntensity;
-          vHeading = aHeading;
+          // Branch-pick BOTH palette colours by integer index, then mix.
+          // Bulletproof on every WebGL1 driver vs dynamic uniform-array
+          // indexing. Mixing at the source keeps the per-fish "species"
+          // identity (aPaletteIdx) consistent across the cyan→Solana swap.
+          int idx = int(aPaletteIdx);
+          vec3 baseA;
+          vec3 baseB;
+          if (idx == 0) { baseA = uPalette[0]; baseB = uPaletteAlt[0]; }
+          else if (idx == 1) { baseA = uPalette[1]; baseB = uPaletteAlt[1]; }
+          else if (idx == 2) { baseA = uPalette[2]; baseB = uPaletteAlt[2]; }
+          else if (idx == 3) { baseA = uPalette[3]; baseB = uPaletteAlt[3]; }
+          else { baseA = uPalette[4]; baseB = uPaletteAlt[4]; }
+          vec3 base = mix(baseA, baseB, uPaletteMix);
           vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-          // aSize is a per-particle size scalar (1.0 = baseline). Used by
-          // ambient fish to render with varied sizes; always 1.0 for the
-          // main school (their pulse comes from aIntensity).
-          float size = uSize.x * aSize + aIntensity * uSize.y;
+          // Depth fog in CAMERA space. With z spread ±110, mvPos.z ranges
+          // ~-270 (closest, big + bright) to ~-490 (farthest, small + dim).
+          // Combined with perspective gl_PointSize scaling, this gives the
+          // dramatic layered depth of a real sardine school.
+          float depthFog = mix(0.35, 1.0, smoothstep(-490.0, -270.0, mvPos.z));
+          vColor = base * aBrightness * depthFog * uBurstBright;
+          vHeading = aHeading;
+          vSwimPhase = aSwimPhase;
+          float size = (uSize.x * aSize + aIntensity * uSize.y) * uSizeMult;
           gl_PointSize = size * (uScale / -mvPos.z);
           gl_Position = projectionMatrix * mvPos;
         }
       `,
       fragmentShader: `
         varying vec3 vColor;
-        varying float vIntensity;
         varying float vHeading;
+        varying float vSwimPhase;
+        uniform vec2 uAspect;
+        uniform float uTime;
         void main() {
-          // Sprite-local coords in [-1, 1]. gl_PointCoord.y is flipped (top=0
-          // in WebGL), so we negate Y to align with world-Y orientation.
+          // Rotation to body-local coords (gl_PointCoord.y is flipped vs
+          // world Y, so the sin term is negated).
           vec2 uv = (gl_PointCoord - vec2(0.5)) * 2.0;
-          vec2 uvWorld = vec2(uv.x, -uv.y);
-          // Rotate uv by -heading so the ellipse's long axis aligns with
-          // the fish's swim direction.
           float c = cos(vHeading);
           float s = sin(vHeading);
-          vec2 uvLocal = vec2(
-            uvWorld.x * c + uvWorld.y * s,
-            -uvWorld.x * s + uvWorld.y * c
-          );
-          // Fish-glyph: oval ~3× wider than tall along the heading direction.
-          float ax = 1.0;
-          float ay = 0.34;
-          float d2 = (uvLocal.x * uvLocal.x) / (ax * ax) +
-                     (uvLocal.y * uvLocal.y) / (ay * ay);
-          if (d2 > 1.0) discard;
-          float alpha = smoothstep(1.0, 0.45, d2);
-          gl_FragColor = vec4(vColor, alpha);
+          vec2 r = vec2(uv.x * c - uv.y * s, -uv.x * s - uv.y * c);
+
+          // ── 2-joint swimming animation ─────────────────────────
+          // The body bends along a sin wave that TRAVELS from head to tail
+          // over time — like a real fish's propulsion wave. Two visible
+          // peaks (head + body joint, body + tail joint) because the
+          // wavelength matches the body length (k = π) with a phase shift.
+          // Tail-weighted: amplitude grows from head (0) to tail (max).
+          // Thrust-shaped wave: sign(sin) * |sin|^1.6 spends MORE time near
+          // 0 (straight body) and snaps quickly to peaks — like a real
+          // fish that's mostly rigid and flexes briefly during propulsion.
+          float swimT = uTime * 3.6 + vSwimPhase;
+          float raw = sin(swimT - r.x / uAspect.x * 3.14159);
+          float wave = sign(raw) * pow(abs(raw), 1.6);
+          float tailness = (1.0 - r.x / uAspect.x) * 0.5; // 0 at head, 1 at tail
+          // Amplitude dropped hard: fish look STRAIGHT 80% of the time,
+          // with only a brief tail flick during the thrust phase.
+          float bend = wave * tailness * 0.18;
+
+          // Apply bend, then test against a HEAD-BIASED TEARDROP body
+          // plus a small FORKED TAIL FIN behind the body tip. Body-local
+          // coords: u along axis (-1 = tail base, +1 = head tip);
+          // v perpendicular.
+          float yBent = r.y - bend * uAspect.y;
+          float u = r.x / uAspect.x;
+          float v = yBent / uAspect.y;
+
+          // Body silhouette: head-biased teardrop. We cap body length at
+          // u=-0.9 (not -1.0) to give the tail fin more visual real estate
+          // — body is the front 1.9 units, tail is the back 0.7 units, so
+          // tail reads as ~27% of total fish length instead of ~16%.
+          float profile = pow(max(0.0, 1.0 + u), 0.6)
+                        * pow(max(0.0, 1.0 - u), 0.3) * 0.85;
+          bool inBody = abs(v) < profile && u > -0.9 && u < 1.0;
+
+          // Caudal fin: triangular flare extending from u=-0.9 to -1.6.
+          // Wider tip (×1.45 vs ×1.25) so the tail clearly reads as a
+          // tail at this rendered size.
+          float tailU = -0.9 - u;            // 0 at body/tail joint, +0.7 at fin tip
+          float halfWidth = tailU * 1.45;
+          float vAbs = abs(v);
+          bool inTail = u < -0.9 && u > -1.6 && vAbs < halfWidth;
+
+          if (!inBody && !inTail) discard;
+          // Body and tail share the fish's color — no dimming. The tail is
+          // simply a continuation of the body silhouette.
+          gl_FragColor = vec4(vColor, 1.0);
+        }
+      `,
+      transparent: true,
+      blending: THREE.NormalBlending,
+      depthWrite: false,
+    });
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    // ── Bioluminescent halo ──────────────────────────────────────────
+    // A second draw sharing the same geometry, with larger gl_PointSize and
+    // a soft circular alpha falloff blended additively. Sits BEHIND the
+    // hard-pixel main pass via renderOrder, giving each fish a subtle glow
+    // without dissolving the pixel-edge identity.
+    const haloSizeUniform = {
+      value: new THREE.Vector2(baseSize * 1.7, pulseSize * 1.7),
+    };
+    const haloMaterial = new THREE.ShaderMaterial({
+      uniforms: {
+        uSize: haloSizeUniform,
+        uScale: scaleUniform,
+        uPalette: paletteUniform,
+        uPaletteAlt: paletteAltUniform,
+        uPaletteMix: paletteMixUniform,
+        uBurstBright: burstBrightUniform,
+        uSizeMult: sizeMultUniform,
+      },
+      vertexShader: material.vertexShader,
+      fragmentShader: `
+        varying vec3 vColor;
+        varying float vHeading;
+        varying float vSwimPhase;
+        void main() {
+          // Soft circular halo — vHeading and vSwimPhase are declared to
+          // satisfy the shared vertex shader's outputs but neither affects
+          // a radial falloff. Multiplying by 0 lets the compiler drop them.
+          float ignore = (vHeading + vSwimPhase) * 0.0;
+          vec2 c = gl_PointCoord - vec2(0.5);
+          float d = length(c) * 2.0;
+          float a = 1.0 - smoothstep(0.0, 1.0, d);
+          gl_FragColor = vec4(vColor, a * 0.28 + ignore);
         }
       `,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
-      vertexColors: true,
     });
-    const points = new THREE.Points(geometry, material);
-    scene.add(points);
-
-    const tmpColor = new THREE.Color();
+    const halo = new THREE.Points(geometry, haloMaterial);
+    halo.renderOrder = -1;
+    scene.add(halo);
 
     // ── Ambient marine life ────────────────────────────────────────────
     // Background fish drifting across the scene. ~55% are organized into
@@ -324,22 +654,23 @@ export function HeroSwarm() {
     // velocity, clustered tightly); the rest are solo wanderers. Real
     // ocean footage shows this exact mix: one focal school plus smaller
     // schools darting around it and lone fish meandering through.
-    const ambientCount = isMobile ? 40 : 80;
+    const ambientCount = isMobile ? 18 : 44;
     const ambientPositions = new Float32Array(ambientCount * 3);
-    const ambientColors = new Float32Array(ambientCount * 3);
     const ambientIntensities = new Float32Array(ambientCount);
     const ambientSizes = new Float32Array(ambientCount);
-    const ambientHeadings = new Float32Array(ambientCount);
+    const ambientPaletteIndices = new Float32Array(ambientCount);
+    const ambientBrightnesses = new Float32Array(ambientCount);
+    const ambientHeadings = new Float32Array(ambientCount); // all zeros — ambient = squares, rotation no-op
+    const ambientSwimPhases = new Float32Array(ambientCount);
+    for (let i = 0; i < ambientCount; i++) {
+      ambientSwimPhases[i] = hash01(i * 39769 + 113) * TAU;
+    }
     const ambientVelocities = new Float32Array(ambientCount * 3);
 
     const ambientGeometry = new THREE.BufferGeometry();
     ambientGeometry.setAttribute(
       "position",
       new THREE.BufferAttribute(ambientPositions, 3),
-    );
-    ambientGeometry.setAttribute(
-      "color",
-      new THREE.BufferAttribute(ambientColors, 3),
     );
     ambientGeometry.setAttribute(
       "aIntensity",
@@ -350,24 +681,45 @@ export function HeroSwarm() {
       new THREE.BufferAttribute(ambientSizes, 1),
     );
     ambientGeometry.setAttribute(
+      "aPaletteIdx",
+      new THREE.BufferAttribute(ambientPaletteIndices, 1),
+    );
+    ambientGeometry.setAttribute(
+      "aBrightness",
+      new THREE.BufferAttribute(ambientBrightnesses, 1),
+    );
+    ambientGeometry.setAttribute(
       "aHeading",
       new THREE.BufferAttribute(ambientHeadings, 1),
+    );
+    ambientGeometry.setAttribute(
+      "aSwimPhase",
+      new THREE.BufferAttribute(ambientSwimPhases, 1),
     );
 
     const ambientSizeUniform = {
       value: new THREE.Vector2(isMobile ? 2.4 : 3.2, 0),
     };
+    // Ambient = square pixel dust (uAspect 1, 1) so the focal wedge stays
+    // visually distinct from these background drifters.
+    const aspectAmbient = { value: new THREE.Vector2(1.0, 1.0) };
     const ambientMaterial = new THREE.ShaderMaterial({
       uniforms: {
         uSize: ambientSizeUniform,
         uScale: scaleUniform,
+        uPalette: paletteUniform,
+        uPaletteAlt: paletteAltUniform,
+        uPaletteMix: paletteMixUniform,
+        uBurstBright: burstBrightUniform,
+        uSizeMult: sizeMultUniform,
+        uAspect: aspectAmbient,
+        uTime: timeUniform,
       },
       vertexShader: material.vertexShader,
       fragmentShader: material.fragmentShader,
       transparent: true,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
       depthWrite: false,
-      vertexColors: true,
     });
     const ambientPoints = new THREE.Points(ambientGeometry, ambientMaterial);
     scene.add(ambientPoints);
@@ -435,7 +787,6 @@ export function HeroSwarm() {
       const isLeader = groupId < 0 || ambientGroups[groupId].leaderIdx === i;
       if (!isLeader) return;
 
-      const i3 = i * 3;
       const inGroup = groupId >= 0;
       const r = Math.random();
       const baseSpeed = (inGroup ? 24 : 14) + Math.random() * 28;
@@ -463,7 +814,6 @@ export function HeroSwarm() {
         vy = -baseSpeed * (0.15 + Math.random() * 0.15);
       }
       const vz = (Math.random() - 0.5) * 6;
-      const heading = Math.atan2(vy, vx);
 
       let startX: number;
       let startY: number;
@@ -479,10 +829,18 @@ export function HeroSwarm() {
       }
       const startZ = (Math.random() - 0.5) * ambBoundZ;
 
-      // Group "species" base color so members of a school look related.
-      const baseHue = 0.5 + (Math.random() - 0.5) * 0.1;
-      const baseSat = 0.22 + Math.random() * 0.4;
-      const baseLight = 0.46 + Math.random() * 0.22;
+      // Pick a palette index for this group/solo. Members of a school share
+      // the same "species" colour; brightness varies slightly per member.
+      const palRoll = Math.random();
+      let groupPalIdx: number;
+      if (palRoll < PALETTE_CUMULATIVE[0]) groupPalIdx = 0;
+      else if (palRoll < PALETTE_CUMULATIVE[1]) groupPalIdx = 1;
+      else if (palRoll < PALETTE_CUMULATIVE[2]) groupPalIdx = 2;
+      else if (palRoll < PALETTE_CUMULATIVE[3]) groupPalIdx = 3;
+      else groupPalIdx = 4;
+      // Ambient is background drift — pop-bright but kept subordinate to the
+      // focal wedge through smaller per-particle size.
+      const baseBrightness = 0.55 + Math.random() * 0.25;
 
       const writeMember = (
         idx: number,
@@ -490,9 +848,7 @@ export function HeroSwarm() {
         offsetY: number,
         offsetZ: number,
         sizeJitter: number,
-        hueJitter: number,
-        satJitter: number,
-        lightJitter: number,
+        brightnessJitter: number,
       ): void => {
         const m3 = idx * 3;
         ambientPositions[m3] = startX + offsetX;
@@ -501,22 +857,20 @@ export function HeroSwarm() {
         ambientVelocities[m3] = vx;
         ambientVelocities[m3 + 1] = vy;
         ambientVelocities[m3 + 2] = vz;
-        ambientHeadings[idx] = heading;
         const sizeRoll = Math.random();
         const sizeBase = 0.4 + Math.pow(sizeRoll, 1.6) * 2.2;
         ambientSizes[idx] = sizeBase * sizeJitter;
-        tmpColor.setHSL(
-          baseHue + hueJitter,
-          Math.min(1, Math.max(0, baseSat + satJitter)),
-          Math.min(0.9, Math.max(0.2, baseLight + lightJitter)),
+        ambientPaletteIndices[idx] = groupPalIdx;
+        // Quantize brightness to 4 discrete steps for the CRT phosphor look.
+        const cont = Math.min(
+          0.99,
+          Math.max(0.25, baseBrightness + brightnessJitter),
         );
-        ambientColors[m3] = tmpColor.r;
-        ambientColors[m3 + 1] = tmpColor.g;
-        ambientColors[m3 + 2] = tmpColor.b;
+        ambientBrightnesses[idx] = Math.floor(cont * 4) / 4;
       };
 
       // Place leader (or solo).
-      writeMember(i, 0, 0, 0, 1.0, 0, 0, 0);
+      writeMember(i, 0, 0, 0, 1.0, 0);
 
       // If leader of group, place all followers with their offsets and
       // small per-member jitter (similar but not identical = more lifelike).
@@ -531,9 +885,7 @@ export function HeroSwarm() {
             ambientGroupOffsets[off3 + 1],
             ambientGroupOffsets[off3 + 2],
             0.8 + Math.random() * 0.4,
-            (Math.random() - 0.5) * 0.04,
-            (Math.random() - 0.5) * 0.1,
-            (Math.random() - 0.5) * 0.08,
+            (Math.random() - 0.5) * 0.15,
           );
         }
       }
@@ -541,9 +893,9 @@ export function HeroSwarm() {
 
     for (let i = 0; i < ambientCount; i++) spawnAmbient(i, true);
     ambientGeometry.attributes.position.needsUpdate = true;
-    ambientGeometry.attributes.color.needsUpdate = true;
     ambientGeometry.attributes.aSize.needsUpdate = true;
-    ambientGeometry.attributes.aHeading.needsUpdate = true;
+    ambientGeometry.attributes.aPaletteIdx.needsUpdate = true;
+    ambientGeometry.attributes.aBrightness.needsUpdate = true;
 
     // Signal-wave ring buffer — fixed-size, reused.
     const waves: SignalWave[] = [];
@@ -562,7 +914,82 @@ export function HeroSwarm() {
     let nextSpawn =
       WAVE_INTERVAL_MIN +
       Math.random() * (WAVE_INTERVAL_MAX - WAVE_INTERVAL_MIN);
-    let consensusBroadcastFired = false;
+
+    // ── Cursor state ────────────────────────────────────────────────
+    // mouseTarget = raw NDC from last pointermove; mouseNDC lerps toward it
+    // each frame for liquid smoothing. cursorWorld is the unprojected
+    // world-space position on the z=0 plane. Sentinel 999 = off-screen.
+    // In v8 the cursor acts as a PREDATOR — fish flee from it.
+    const OFFSCREEN = 999;
+    const mouseTarget = new THREE.Vector2(OFFSCREEN, OFFSCREEN);
+    const mouseNDC = new THREE.Vector2(OFFSCREEN, OFFSCREEN);
+    const cursorWorld = new THREE.Vector3(OFFSCREEN, OFFSCREEN, 0);
+    const ndcVec = new THREE.Vector3();
+    const camDir = new THREE.Vector3();
+    let lastPointerTime = 0;
+
+    const onPointerMove = (e: PointerEvent) => {
+      const rect = container.getBoundingClientRect();
+      mouseTarget.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouseTarget.y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+      lastPointerTime = performance.now();
+    };
+    const onPointerLeave = () => {
+      mouseTarget.set(OFFSCREEN, OFFSCREEN);
+    };
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerleave", onPointerLeave);
+
+    // ── Attention-mode bridge (HeroAsk → HeroSwarm) ────────────────
+    // The orbit is now the DEFAULT — fish always cohere into a loose
+    // school around the viewport center. The attention events tighten
+    // that orbit into a denser ring while the ask-input is focused:
+    //   • swarm:attention-on   → focusStrength ramps to 1 (tight ring)
+    //   • swarm:attention-off  → focusStrength ramps back to 0 (loose)
+    //   • swarm:submit-burst   → ~600ms vortex collapse + palette flip
+    let focusTarget = 0;
+    let focusStrength = 0;
+    let burstStart = -1e9;
+    let lastSimTime = 0;
+    const rTargetLoose = isMobile ? R_LOOSE_MOBILE : R_LOOSE_DESKTOP;
+    const rTargetFocus = isMobile ? R_FOCUS_MOBILE : R_FOCUS_DESKTOP;
+
+    const onAttentionOn = () => {
+      focusTarget = 1;
+    };
+    const onAttentionOff = () => {
+      focusTarget = 0;
+    };
+    const onSubmitBurst = () => {
+      burstStart = lastSimTime;
+    };
+    window.addEventListener("swarm:attention-on", onAttentionOn);
+    window.addEventListener("swarm:attention-off", onAttentionOff);
+    window.addEventListener("swarm:submit-burst", onSubmitBurst);
+
+    // ── Scroll-follow plumbing ─────────────────────────────────────
+    // The orbit center is the WORLD-SPACE projection of the current
+    // viewport center. As the user scrolls, the canvas (absolute inset:0
+    // of a min-h-screen <main>) scrolls with the page; we recompute the
+    // viewport center in canvas-local coords each frame so the school
+    // always sits in view. While the user is actively scrolling we relax
+    // the orbit weight so the fish read as "swimming freely between
+    // sections" rather than rigidly tracking the scroll position.
+    let lastScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+    let scrollVel = 0;
+    let lastScrollAt = -1e9;
+    const onScroll = () => {
+      scrollVel = Math.abs(window.scrollY - lastScrollY);
+      lastScrollY = window.scrollY;
+      lastScrollAt = performance.now();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    const orbitCenterWorld = new THREE.Vector3(0, 0, 0);
+    const orbitNdc = new THREE.Vector3();
+    const orbitCamDir = new THREE.Vector3();
+    const viewportCenterTarget = new THREE.Vector2(0, 0);
+    const viewportCenterSmoothed = new THREE.Vector2(0, 0);
 
     const t0 = performance.now();
     let raf = 0;
@@ -570,50 +997,129 @@ export function HeroSwarm() {
     let lastTime = -1;
 
     const renderFrame = (timeSec: number) => {
-      const t = timeSec * SWIM_SPEED;
-      // Time delta for frame-rate-independent ambient motion. Cap at 50ms
-      // to avoid teleporting fish if the tab was backgrounded.
+      // Time delta for frame-rate-independent motion. Cap at 50ms to avoid
+      // teleporting fish if the tab was backgrounded.
       const dt = lastTime < 0 ? 0 : Math.min(0.05, timeSec - lastTime);
       lastTime = timeSec;
+      lastSimTime = timeSec;
+      // Drive the shader-side swim animation.
+      timeUniform.value = timeSec;
 
-      // Whole-body glide — kept tight around center so the school stays
-      // visually anchored rather than swinging across the whole canvas.
-      const fishCenterX = Math.sin(t * 0.13) * 45;
-      const fishCenterY = Math.sin(t * 0.09 + 1.2) * 18;
-      const fishYaw = Math.sin(t * 0.07) * 0.35;
-      const cosY = Math.cos(fishYaw);
-      const sinY = Math.sin(fishYaw);
+      // ── Focus strength (smoothed input-focus state) ──────────────
+      // Lerp toward focusTarget. Drives orbit-tightening, not orbit-on/off
+      // — the orbit itself is always on (see "base orbit" below).
+      const lerpRate =
+        focusTarget > focusStrength ? ATTENTION_LERP_IN : ATTENTION_LERP_OUT;
+      focusStrength +=
+        (focusTarget - focusStrength) *
+        Math.min(1, lerpRate * Math.max(0.0001, dt) * 60);
 
-      // Consensus phase + soft breathing pulse during the all-green phase.
-      const consensus = consensusFactor(timeSec);
-      const phaseT = (timeSec % CONSENSUS_CYCLE) / CONSENSUS_CYCLE;
-      let consensusPulse = 0;
-      if (phaseT >= PHASE_CONVERGE_END && phaseT < PHASE_CONSENSUS_END) {
-        const localT =
-          (phaseT - PHASE_CONVERGE_END) /
-          (PHASE_CONSENSUS_END - PHASE_CONVERGE_END);
-        const fade = Math.min(1, Math.min(localT * 4, (1 - localT) * 4));
-        consensusPulse = (0.5 + 0.5 * Math.sin(timeSec * 4.0)) * fade;
+      // ── Submit burst envelope (0..1 over BURST_TOTAL seconds) ────
+      let burstStrength = 0;
+      const tBurst = timeSec - burstStart;
+      if (tBurst >= 0 && tBurst < BURST_TOTAL) {
+        if (tBurst < BURST_RISE) {
+          burstStrength = tBurst / BURST_RISE;
+        } else if (tBurst < BURST_RISE + BURST_HOLD) {
+          burstStrength = 1;
+        } else {
+          burstStrength = 1 - (tBurst - BURST_RISE - BURST_HOLD) / BURST_DECAY;
+        }
       }
 
-      // ── Wave scheduler — agent debate dynamics ──────────────────────
-      // DIVERGE   : rapid, often concurrent waves from random directions
-      //             with varying strength (many agents speaking, soft
-      //             voices, conflicting opinions).
-      // CONVERGE  : waves get more biased toward horizontal as opinions
-      //             align; cadence slows; strength rises.
-      // CONSENSUS : exactly one decisive horizontal broadcast (left→right)
-      //             at full strength — the network's final answer.
-      // RELEASE   : quiet trail-off, occasional soft echo.
-      const inConsensus =
-        phaseT >= PHASE_CONVERGE_END && phaseT < PHASE_CONSENSUS_END;
-      const inConverge =
-        phaseT >= PHASE_DIVERGE_END && phaseT < PHASE_CONVERGE_END;
-      const inRelease = phaseT >= PHASE_CONSENSUS_END;
+      // Effective focus including the burst — keeps the orbit tight
+      // through the submit collapse even if the input already blurred.
+      const fEff = Math.max(focusStrength, burstStrength);
 
-      // Reset the once-per-cycle broadcast flag at the start of each cycle.
-      if (phaseT < 0.05) consensusBroadcastFired = false;
+      // Drive shader uniforms from the focus + burst envelopes.
+      paletteMixUniform.value = burstStrength;
+      burstBrightUniform.value = 1.0 + 0.8 * burstStrength;
+      // Size multiplier: 1.0 baseline → SIZE_MULT_FOCUS during steady
+      // focus, lerping to SIZE_MULT_BURST at burst peak.
+      const focusSizeMult = 1.0 + (SIZE_MULT_FOCUS - 1.0) * focusStrength;
+      sizeMultUniform.value =
+        focusSizeMult + (SIZE_MULT_BURST - focusSizeMult) * burstStrength;
 
+      // ── Orbit center = viewport center, projected into world ─────
+      // Recomputed every frame so the school follows scroll smoothly. We
+      // also decay the scroll velocity so `scrolling` returns to 0 a few
+      // hundred ms after the user stops scrolling.
+      let orbitCenterValid = false;
+      const cRect = container.getBoundingClientRect();
+      if (cRect.width > 0 && cRect.height > 0) {
+        const vpCenterX = window.innerWidth / 2;
+        const vpCenterY = window.innerHeight / 2;
+        const localX = vpCenterX - cRect.left;
+        const localY = vpCenterY - cRect.top;
+        viewportCenterTarget.x = (localX / cRect.width) * 2 - 1;
+        viewportCenterTarget.y = -((localY / cRect.height) * 2 - 1);
+
+        // Frame-rate-independent smoothing toward the new target.
+        const smooth = 1 - Math.exp(-dt * 8);
+        viewportCenterSmoothed.lerp(viewportCenterTarget, smooth);
+
+        orbitNdc
+          .set(viewportCenterSmoothed.x, viewportCenterSmoothed.y, 0.5)
+          .unproject(camera);
+        orbitCamDir.copy(orbitNdc).sub(camera.position).normalize();
+        const tParam = -camera.position.z / orbitCamDir.z;
+        orbitCenterWorld
+          .copy(camera.position)
+          .addScaledVector(orbitCamDir, tParam);
+        orbitCenterValid = true;
+      }
+
+      // ── Orbit target radius + speed (loose by default, tight on focus) ─
+      const looseR = rTargetLoose + (rTargetFocus - rTargetLoose) * fEff;
+      const orbitRTarget =
+        looseR * (1 - burstStrength) + R_TARGET_BURST * burstStrength;
+      // Loose orbit is deliberate + graceful (real bait-ball pace); focus
+      // speeds it up; burst pushes to its own (slow, collapsing) target.
+      const looseV = V_ORBIT_FOCUS * (0.4 + 0.6 * fEff);
+      const orbitVOrbit =
+        looseV * (1 - burstStrength) + V_ORBIT_BURST * burstStrength;
+
+      // Scroll-induced relaxation. While the user is actively scrolling
+      // (within ~0.4s of the last scroll event), drop the orbit weight so
+      // boids forces dominate → the school visibly "swims free" between
+      // sections. Settles back to a cohesive orbit a moment after stop.
+      const sinceScroll = (performance.now() - lastScrollAt) / 1000;
+      const scrolling =
+        Math.min(1, scrollVel / 12) * Math.exp(-sinceScroll * 2.5);
+      scrollVel *= Math.exp(-dt * 5);
+
+      // Base orbit weight is always positive — fish are always orbiting
+      // the viewport. Scroll relaxes it; nothing turns it off.
+      const orbitWeight = 0.7 * (1 - 0.55 * scrolling);
+      // Predator (cursor) flee is suppressed by focus — committed orbit
+      // fish ignore the cursor — but loose-orbit fish still react.
+      const predatorWeight = 1 - 0.6 * fEff;
+
+      // ── Cursor projection ───────────────────────────────────────────
+      // Touch-device timeout: if no pointermove for 1.2 s, retire the cursor.
+      // pointerleave doesn't fire reliably after taps on touch devices.
+      if (
+        mouseTarget.x !== OFFSCREEN &&
+        performance.now() - lastPointerTime > 1200
+      ) {
+        mouseTarget.set(OFFSCREEN, OFFSCREEN);
+      }
+      if (mouseTarget.x !== OFFSCREEN) {
+        mouseNDC.lerp(mouseTarget, 0.12);
+        // Unproject NDC to the school's z=0 plane.
+        ndcVec.set(mouseNDC.x, mouseNDC.y, 0.5).unproject(camera);
+        camDir.copy(ndcVec).sub(camera.position).normalize();
+        const tParam = -camera.position.z / camDir.z;
+        cursorWorld.copy(camera.position).addScaledVector(camDir, tParam);
+      } else {
+        cursorWorld.x = OFFSCREEN;
+        mouseNDC.set(OFFSCREEN, OFFSCREEN);
+      }
+
+      // ── Wave scheduler ─────────────────────────────────────────────
+      // Pure-stochastic directional sweeps. No phase coupling, no cycle —
+      // just random angles, random strengths, random cadence. The eye
+      // can't lock onto a pattern, so the swarm reads as continuously alive.
       const spawnWave = (
         angle: number,
         strength: number,
@@ -628,17 +1134,14 @@ export function HeroSwarm() {
             const ndx = dx / dlen;
             const ndy = dy / dlen;
             const ndz = dz / dlen;
-            let minProj = Infinity;
-            let maxProj = -Infinity;
-            for (let p = 0; p < count; p++) {
-              const p3 = p * 3;
-              const proj =
-                homePositions[p3] * ndx +
-                homePositions[p3 + 1] * ndy +
-                homePositions[p3 + 2] * ndz;
-              if (proj < minProj) minProj = proj;
-              if (proj > maxProj) maxProj = proj;
-            }
+            // Wave projection spans the canvas bounding box. Computed
+            // analytically from BOUND_X / BOUND_Y / z-extent — no per-fish
+            // loop needed (was iterating homePositions in the wedge era).
+            const maxProj =
+              BOUND_X * Math.abs(ndx) +
+              BOUND_Y * Math.abs(ndy) +
+              24 * Math.abs(ndz);
+            const minProj = -maxProj;
             waves[wi].active = true;
             waves[wi].dirX = ndx;
             waves[wi].dirY = ndy;
@@ -653,49 +1156,17 @@ export function HeroSwarm() {
         return false;
       };
 
-      // Fire the consensus broadcast exactly once when entering consensus.
-      if (inConsensus && !consensusBroadcastFired) {
-        // Clear noisy partial debate waves so the broadcast lands cleanly.
-        for (let wi = 0; wi < waves.length; wi++) waves[wi].active = false;
-        spawnWave(0, 1.0, 0); // Always horizontal left→right.
-        consensusBroadcastFired = true;
-        nextSpawn = timeSec + WAVE_DURATION + 0.6;
-      } else if (timeSec >= nextSpawn && !inConsensus) {
-        if (inConverge) {
-          // Settling phase: bias toward horizontal, stronger voices,
-          // slower cadence.
-          const horizontalBias =
-            (phaseT - PHASE_DIVERGE_END) /
-            (PHASE_CONVERGE_END - PHASE_DIVERGE_END);
-          const baseAngle = Math.random() < 0.5 ? 0 : Math.PI;
-          const jitter = (Math.random() - 0.5) * Math.PI * (1 - horizontalBias);
-          const angle = baseAngle + jitter;
-          const strength = 0.7 + Math.random() * 0.3;
-          spawnWave(angle, strength, (Math.random() - 0.5) * 0.2);
-          nextSpawn = timeSec + 0.55 + Math.random() * 0.9;
-        } else if (inRelease) {
-          // Quiet trail-off: occasional dim wave.
-          if (Math.random() < 0.6) {
-            const angle = Math.random() * TAU;
-            const strength = 0.4 + Math.random() * 0.2;
-            spawnWave(angle, strength, (Math.random() - 0.5) * 0.3);
-          }
-          nextSpawn = timeSec + 0.9 + Math.random() * 1.0;
-        } else {
-          // Diverge — debate. Random angles + strong vertical occasionally.
-          // Varying strength (0.45..0.95) → soft and loud voices mixing.
-          let angle = Math.random() * TAU;
-          if (Math.random() < 0.18) {
-            const sign = Math.random() < 0.5 ? 1 : -1;
-            angle = sign * (Math.PI / 2) + (Math.random() - 0.5) * 0.4;
-          }
-          const strength = 0.45 + Math.random() * 0.5;
-          spawnWave(angle, strength, (Math.random() - 0.5) * 0.3);
-          nextSpawn =
-            timeSec +
-            WAVE_INTERVAL_MIN +
-            Math.random() * (WAVE_INTERVAL_MAX - WAVE_INTERVAL_MIN);
-        }
+      if (timeSec >= nextSpawn) {
+        const angle = Math.random() * TAU;
+        // Softer peak strength — was 0.5..1.0, now 0.35..0.75. Combined
+        // with the narrower brightness range below this reduces the
+        // overall sparkle from "chaotic" to "alive."
+        const strength = 0.35 + Math.random() * 0.4;
+        spawnWave(angle, strength, (Math.random() - 0.5) * 0.3);
+        nextSpawn =
+          timeSec +
+          WAVE_INTERVAL_MIN +
+          Math.random() * (WAVE_INTERVAL_MAX - WAVE_INTERVAL_MIN);
       }
 
       for (let wi = 0; wi < waves.length; wi++) {
@@ -704,52 +1175,335 @@ export function HeroSwarm() {
         }
       }
 
+      const cursorActive = cursorWorld.x !== OFFSCREEN;
+      const cursorX = cursorWorld.x;
+      const cursorY = cursorWorld.y;
+
+      // ── Build spatial hash ─────────────────────────────────────────
+      // O(N): each fish dropped into the cell containing its position.
+      // Bucket overflow self-corrects within a frame as cohesion relaxes.
+      spatialHash.clear();
+      for (let i = 0; i < count; i++) {
+        spatialHash.insert(i, positions[i * 3], positions[i * 3 + 1]);
+      }
+      const cellsX = spatialHash.cellsX;
+      const cellsY = spatialHash.cellsY;
+      const bucketSize = spatialHash.bucketSize;
+      const buckets = spatialHash.buckets;
+      const cellCounts = spatialHash.counts;
+
+      // Acceleration scale converts per-frame unit-magnitude forces into
+      // per-second world-unit accelerations. With sum-of-weights ≈ 1.1
+      // and ACCEL_SCALE = 54, max accel ≈ 60 units/sec² — fish reach
+      // MAX_SPEED (18) in ~0.3s under predator escape.
+      const ACCEL_SCALE = 54;
+      const dtScaled = dt; // dt is already in seconds
+
       for (let i = 0; i < count; i++) {
         const i3 = i * 3;
-        const i9 = i * 9;
         const i2 = i * 2;
 
-        const hx = homePositions[i3];
-        const hy = homePositions[i3 + 1];
-        const hz = homePositions[i3 + 2];
+        const px = positions[i3];
+        const py = positions[i3 + 1];
+        const pz = positions[i3 + 2];
+        const myVx = velocities[i2];
+        const myVy = velocities[i2 + 1];
 
-        // Per-particle breath orbit — staggered micro-motion.
-        const breathX =
-          Math.sin(timeSec * breathParams[i9] + breathParams[i9 + 3]) *
-          breathParams[i9 + 6];
-        const breathY =
-          Math.sin(timeSec * breathParams[i9 + 1] + breathParams[i9 + 4]) *
-          breathParams[i9 + 7];
-        const breathZ =
-          Math.sin(timeSec * breathParams[i9 + 2] + breathParams[i9 + 5]) *
-          breathParams[i9 + 8];
+        // ── Boids force accumulators ───────────────────────────────
+        let sepX = 0,
+          sepY = 0;
+        let aliX = 0,
+          aliY = 0;
+        let cohX = 0,
+          cohY = 0;
 
-        // Tail wiggle on Y — ramps from 0 at front body to 1 at tail tip.
-        // Vertical motion reads more clearly than lateral wiggle on a
-        // side-view fish at this camera angle.
-        const tailT = Math.max(0, Math.min(1, -hx / halfLen));
-        const wiggle = Math.sin(t * 4.5 + tailT * 6.0) * WIGGLE_AMP * tailT;
+        // Query 3×3 cells around the fish's cell. The spatial hash drops
+        // brute-force O(N²) to O(N·k) where k ≈ average neighbors per cell.
+        const myCx = Math.min(
+          cellsX - 1,
+          Math.max(0, Math.floor((px + BOUND_X) / CELL_SIZE)),
+        );
+        const myCy = Math.min(
+          cellsY - 1,
+          Math.max(0, Math.floor((py + BOUND_Y) / CELL_SIZE)),
+        );
+        for (let ddx = -1; ddx <= 1; ddx++) {
+          const ncx = myCx + ddx;
+          if (ncx < 0 || ncx >= cellsX) continue;
+          for (let ddy = -1; ddy <= 1; ddy++) {
+            const ncy = myCy + ddy;
+            if (ncy < 0 || ncy >= cellsY) continue;
+            const cellIdx = ncy * cellsX + ncx;
+            const start = cellIdx * bucketSize;
+            const cnt = cellCounts[cellIdx];
+            for (let k = 0; k < cnt; k++) {
+              const j = buckets[start + k];
+              if (j === i) continue;
+              const j3 = j * 3;
+              const j2 = j * 2;
+              const dx = px - positions[j3];
+              const dy = py - positions[j3 + 1];
+              const distSq = dx * dx + dy * dy;
+              if (distSq > COH_R_SQ) continue;
+              const dist = Math.sqrt(distSq) + 1e-6;
+              // Separation: stronger when closer; direction = away from j
+              if (distSq < SEP_R_SQ) {
+                const w = (1 - dist / SEP_R) / dist;
+                sepX += dx * w;
+                sepY += dy * w;
+              }
+              // Alignment: weighted by inverse distance; direction = j's vel
+              if (distSq < ALI_R_SQ) {
+                const jVx = velocities[j2];
+                const jVy = velocities[j2 + 1];
+                const jSp = Math.sqrt(jVx * jVx + jVy * jVy) + 1e-6;
+                const w = (1 - dist / ALI_R) / jSp;
+                aliX += jVx * w;
+                aliY += jVy * w;
+              }
+              // Cohesion: pulls toward j; direction = toward j (negate dx,dy)
+              if (distSq < COH_R_SQ) {
+                const w = (1 - dist / COH_R) / dist;
+                cohX += -dx * w;
+                cohY += -dy * w;
+              }
+            }
+          }
+        }
 
-        const localX = hx + breathX;
-        const localY = hy + breathY + wiggle;
-        const localZ = hz + breathZ;
+        // Clamp each Boids force to unit magnitude (vetemaa's optimized
+        // mode). Forces are now in [0, 1], comparable, weight-scalable.
+        const sepLen = Math.sqrt(sepX * sepX + sepY * sepY);
+        if (sepLen > 1) {
+          sepX /= sepLen;
+          sepY /= sepLen;
+        }
+        const aliLen = Math.sqrt(aliX * aliX + aliY * aliY);
+        if (aliLen > 1) {
+          aliX /= aliLen;
+          aliY /= aliLen;
+        }
+        const cohLen = Math.sqrt(cohX * cohX + cohY * cohY);
+        if (cohLen > 1) {
+          cohX /= cohLen;
+          cohY /= cohLen;
+        }
 
-        // Yaw rotation around Y axis, then whole-body translation.
-        const rotX = localX * cosY - localZ * sinY;
-        const rotZ = localX * sinY + localZ * cosY;
-        positions[i3] = rotX + fishCenterX;
-        positions[i3 + 1] = localY + fishCenterY;
-        positions[i3 + 2] = rotZ;
+        // ── Bounds force (elliptical, recentered on orbit) ─────────
+        // Old rectangular bounds at (0,0) produced a wide, short ribbon.
+        // New: a soft elliptical shell centered on the CURRENT orbit
+        // center (which tracks viewport center). Fish always live in a
+        // rounded school around wherever the user's attention is.
+        let bndX = 0,
+          bndY = 0;
+        const dxBnd = px - orbitCenterWorld.x;
+        const dyBnd = py - orbitCenterWorld.y;
+        const ex = dxBnd / BOUND_A;
+        const ey = dyBnd / BOUND_B;
+        const r2 = ex * ex + ey * ey;
+        if (r2 > BOUND_SHELL_SQ) {
+          const r = Math.sqrt(r2);
+          const shell = Math.sqrt(BOUND_SHELL_SQ);
+          let push = (r - shell) / (1 - shell);
+          if (push > 1) push = 1;
+          bndX = -(ex / r) * push;
+          bndY = -(ey / r) * push;
+        }
 
-        // ── Color ──────────────────────────────────────────────────
-        // Per-particle drifting hue (random palette during diverge phase).
-        const baseHue = (hueSeeds[i2] + timeSec * hueSeeds[i2 + 1]) % 1.0;
+        // ── Predator avoidance (cursor) — flee force + panic injection ─
+        // Two-tier escape: at the outer radius (PRED_R) the standard Boids
+        // flee force applies (gentle accel). Inside the PANIC_R inner
+        // radius, the fish "panics" — velocity is DIRECTLY blended toward
+        // a high-speed escape vector. This makes close fish actually look
+        // like they're being chased rather than slowly steering away.
+        let fleeX = 0,
+          fleeY = 0;
+        let panicActive = false;
+        let panicVx = 0;
+        let panicVy = 0;
+        if (cursorActive) {
+          const dxc = px - cursorX;
+          const dyc = py - cursorY;
+          const dcSq = dxc * dxc + dyc * dyc;
+          if (dcSq < PRED_R_SQ) {
+            const dc = Math.sqrt(dcSq) + 1e-6;
+            const w = (1 - dc / PRED_R) / dc;
+            fleeX = dxc * w;
+            fleeY = dyc * w;
+            const fleeLen = Math.sqrt(fleeX * fleeX + fleeY * fleeY);
+            if (fleeLen > 1) {
+              fleeX /= fleeLen;
+              fleeY /= fleeLen;
+            }
+            // Panic zone — close enough that the fish would be "caught."
+            if (dcSq < PANIC_R_SQ) {
+              panicActive = true;
+              const escapeFracIn = 1 - dc / PANIC_R; // 0 at edge, 1 at cursor
+              const targetSpeed =
+                MAX_SPEED + (PANIC_SPEED - MAX_SPEED) * escapeFracIn;
+              panicVx = (dxc / dc) * targetSpeed;
+              panicVy = (dyc / dc) * targetSpeed;
+            }
+          }
+        }
 
-        // Signal-wave intensity — DIRECTIONAL plane sweep across the school.
-        // Asymmetric envelope: sharp Gaussian leading edge (particles ahead
-        // of the wavefront pop quickly) + long exponential afterglow tail
-        // (particles behind it fade slowly). Reads as a comet sweeping
-        // through the school instead of a symmetric blob.
+        // ── Wander ────────────────────────────────────────────────
+        const wandX = Math.random() - 0.5;
+        const wandY = Math.random() - 0.5;
+
+        // ── Orbital steering (attention mode) ─────────────────────
+        // Radial spring toward `orbitRTarget` + tangential bias (CCW).
+        // Output is in real accel units; combined into ax/ay below
+        // with `orbitWeight` so it ramps in/out smoothly with focus.
+        let orbitAx = 0;
+        let orbitAy = 0;
+        if (orbitCenterValid && orbitWeight > 0.001) {
+          const odx = px - orbitCenterWorld.x;
+          const ody = py - orbitCenterWorld.y;
+          const orR = Math.sqrt(odx * odx + ody * ody) + 1e-6;
+          // Tangential = radial rotated 90° (counter-clockwise viewed
+          // from the camera).
+          const tngX = -ody / orR;
+          const tngY = odx / orR;
+          // Per-fish preferred radius: only applies at loose. At focus,
+          // all fish converge to the same tight ring.
+          const perFishR = orbitRTarget + radiusOffsets[i] * (1 - fEff);
+          // Radial spring toward this fish's preferred radius.
+          const radialErr = (orR - perFishR) / perFishR;
+          const radX = (-odx / orR) * radialErr;
+          const radY = (-ody / orR) * radialErr;
+          // Radial gain ramps with focus — at loose, fish swirl around R
+          // without strictly snapping to it; at focus, full converge.
+          const radialGain =
+            V_RADIAL_GAIN_LOOSE + (V_RADIAL_GAIN - V_RADIAL_GAIN_LOOSE) * fEff;
+          // Per-fish orbital speed mult (only at loose — focus
+          // synchronizes them for the tight-ring effect).
+          const fishSpeedMult = 1 + (speedMults[i] - 1) * (1 - fEff);
+          const desVx = tngX * orbitVOrbit * fishSpeedMult + radX * radialGain;
+          const desVy = tngY * orbitVOrbit * fishSpeedMult + radY * radialGain;
+          orbitAx = (desVx - myVx) * K_STEER;
+          orbitAy = (desVy - myVy) * K_STEER;
+        }
+
+        // ── Combine forces → acceleration ─────────────────────────
+        // Predator weight is suppressed by attention (fish stop fleeing
+        // the cursor mid-orbit). The orbit term adds on top — Boids
+        // forces are NOT scaled down so separation + bounds still apply
+        // and keep the school well-spaced and contained.
+        const ax =
+          (sepX * W_SEP +
+            aliX * W_ALI +
+            cohX * W_COH +
+            bndX * W_BND +
+            fleeX * W_PRED * predatorWeight +
+            wandX * W_RAND) *
+            ACCEL_SCALE +
+          orbitAx * orbitWeight;
+        const ay =
+          (sepY * W_SEP +
+            aliY * W_ALI +
+            cohY * W_COH +
+            bndY * W_BND +
+            fleeY * W_PRED * predatorWeight +
+            wandY * W_RAND) *
+            ACCEL_SCALE +
+          orbitAy * orbitWeight;
+
+        // ── Integrate velocity, clamp speed, integrate position ───
+        let nvx = myVx + ax * dtScaled;
+        let nvy = myVy + ay * dtScaled;
+        const sp = Math.sqrt(nvx * nvx + nvy * nvy);
+        if (sp > MAX_SPEED) {
+          nvx = (nvx * MAX_SPEED) / sp;
+          nvy = (nvy * MAX_SPEED) / sp;
+        }
+        // Panic injection — instantaneous velocity blend toward escape.
+        // Bypasses the slow accel build-up so close fish actually look like
+        // they're fleeing for their lives rather than gently drifting away.
+        // Allowed to exceed MAX_SPEED (clamped to PANIC_SPEED via target).
+        if (panicActive) {
+          nvx = nvx * (1 - PANIC_BLEND) + panicVx * PANIC_BLEND;
+          nvy = nvy * (1 - PANIC_BLEND) + panicVy * PANIC_BLEND;
+          const panicSp = Math.sqrt(nvx * nvx + nvy * nvy);
+          if (panicSp > PANIC_SPEED) {
+            nvx = (nvx * PANIC_SPEED) / panicSp;
+            nvy = (nvy * PANIC_SPEED) / panicSp;
+          }
+        }
+        let nx = px + nvx * dtScaled;
+        let ny = py + nvy * dtScaled;
+        // Slow z-drift so fish swim toward/away from camera. Bounce inside
+        // [-110, 110] for the wider z spread (more visible 3D layering).
+        let nz = pz + zSpeeds[i] * dtScaled;
+        if (nz < -110) {
+          nz = -110;
+          zSpeeds[i] = -zSpeeds[i];
+        } else if (nz > 110) {
+          nz = 110;
+          zSpeeds[i] = -zSpeeds[i];
+        }
+        // Hard bounds wall: safety net if a fish has somehow crossed the
+        // elliptical soft shell (strong predator + transient). Clamp onto
+        // the hard ellipse (slightly larger than the soft shell) and reflect
+        // the outward velocity component with damping. Recentered on the
+        // current orbit center so the safety net follows the school.
+        const hardA = BOUND_A * 1.15;
+        const hardB = BOUND_B * 1.15;
+        const hdx = nx - orbitCenterWorld.x;
+        const hdy = ny - orbitCenterWorld.y;
+        const hex = hdx / hardA;
+        const hey = hdy / hardB;
+        const hr2 = hex * hex + hey * hey;
+        if (hr2 > 1) {
+          const hr = Math.sqrt(hr2);
+          // Pull back to the ellipse surface
+          nx = orbitCenterWorld.x + hdx / hr;
+          ny = orbitCenterWorld.y + hdy / hr;
+          // Outward unit normal (in unstretched space)
+          const nrmX = hex / hr;
+          const nrmY = hey / hr;
+          // Reflect velocity if moving outward (along ellipse normal direction)
+          const vOut = nvx * nrmX + nvy * nrmY;
+          if (vOut > 0) {
+            nvx -= 1.5 * vOut * nrmX;
+            nvy -= 1.5 * vOut * nrmY;
+          }
+        }
+        positions[i3] = nx;
+        positions[i3 + 1] = ny;
+        positions[i3 + 2] = nz;
+        velocities[i2] = nvx;
+        velocities[i2 + 1] = nvy;
+
+        // ── Heading: smoothed toward velocity direction + body sway ──
+        // Fish rotate with INERTIA — heading lerps toward the velocity-
+        // direction target instead of snapping. Eliminates per-frame
+        // tremble while letting fish turn responsively (~70ms half-life).
+        // A small, slow whole-body sway is layered on top so fish read
+        // as actively swimming, not gliding.
+        const finalSp = Math.sqrt(nvx * nvx + nvy * nvy);
+        let targetHeading: number;
+        if (finalSp > 0.5) {
+          targetHeading = Math.atan2(nvy, nvx);
+        } else {
+          targetHeading = headings[i];
+        }
+        // Frame-rate-independent heading smoothing — faster than the
+        // first pass so fish can flee/turn responsively but no tremble.
+        const headingSmooth = 1 - Math.exp(-dt * 10);
+        let dh = targetHeading - headings[i];
+        if (dh > Math.PI) dh -= TAU;
+        else if (dh < -Math.PI) dh += TAU;
+        headings[i] += dh * headingSmooth;
+        // Subtle body sway — ~1° amplitude, 3 Hz cadence, desynchronized
+        // per fish. Adds "alive swimming" feel without any tremble.
+        const swayFreq = 3.0;
+        const swayAmp = 0.018;
+        headings[i] += Math.sin(timeSec * swayFreq + swimPhases[i]) * swayAmp;
+
+        // ── Wave intensity (random brightness pops) ───────────────
+        // Wave projection now in WORLD space — Boids fish move freely so
+        // wave detection uses their current position.
         let waveIntensity = 0;
         for (let wi = 0; wi < waves.length; wi++) {
           const wave = waves[wi];
@@ -757,12 +1511,8 @@ export function HeroSwarm() {
           const elapsed = timeSec - wave.startTime;
           const wavePos =
             wave.startProj + wave.spanProj * (elapsed / WAVE_DURATION);
-          const proj = hx * wave.dirX + hy * wave.dirY + hz * wave.dirZ;
+          const proj = px * wave.dirX + py * wave.dirY + pz * wave.dirZ;
           const norm = (wavePos - proj) / waveWidth;
-          // Asymmetric Gaussian: very sharp leading edge (norm < 0), wider
-          // trailing tail (norm > 0) — gives a clean comet-head sweep.
-          // Per-wave `strength` modulates loudness (debate has soft/loud
-          // voices; consensus broadcast is full strength).
           const env =
             (norm >= 0
               ? Math.exp(-norm * norm * 0.6)
@@ -770,40 +1520,21 @@ export function HeroSwarm() {
           if (env > waveIntensity) waveIntensity = env;
         }
 
-        // Pull hue toward green by both consensus and wave intensity.
-        const greenPull = consensus > waveIntensity ? consensus : waveIntensity;
-        const hue = baseHue * (1 - greenPull) + GREEN_HUE * greenPull;
-
-        // Saturation: subdued when divergent, vivid under wave or consensus.
-        const sat = 0.45 + 0.45 * greenPull;
-
-        // Lightness: dim base + a measured wave bump. Capped at 0.78 so
-        // overlapping wave-lit particles don't saturate to pure white via
-        // additive blending — the size pulse carries the rest of the
-        // emphasis.
-        const light = Math.min(
-          0.78,
-          0.4 + waveIntensity * 0.32 + consensus * 0.1 + consensusPulse * 0.06,
-        );
-
-        tmpColor.setHSL(hue, sat, light);
-        colors[i3] = tmpColor.r;
-        colors[i3 + 1] = tmpColor.g;
-        colors[i3 + 2] = tmpColor.b;
-
-        // Size-pulse intensity drives the per-particle gl_PointSize bump in
-        // the vertex shader. Wave dominates; consensus pulse contributes a
-        // synchronized breathing pulse during the consensus hold phase.
-        const pulse =
-          waveIntensity > consensusPulse * 0.7
-            ? waveIntensity
-            : consensusPulse * 0.7;
-        intensities[i] = pulse;
+        // Calm default brightness — wave amp 0.15 so individual fish don't
+        // flash. Focus mode bumps amplitude back up (Phase 2 reveal): the
+        // swarm visibly "thinks louder" while the input is focused.
+        const waveAmpBoost = 0.15 + 0.3 * fEff;
+        const intensityBoost = 0.25 + 0.3 * fEff;
+        const continuous = 0.6 + waveIntensity * waveAmpBoost;
+        const clamped = continuous > 1 ? 1 : continuous;
+        brightnesses[i] = Math.floor(clamped * 4 + 0.0001) / 4;
+        intensities[i] = waveIntensity * intensityBoost;
       }
 
       geometry.attributes.position.needsUpdate = true;
-      geometry.attributes.color.needsUpdate = true;
+      geometry.attributes.aBrightness.needsUpdate = true;
       geometry.attributes.aIntensity.needsUpdate = true;
+      geometry.attributes.aHeading.needsUpdate = true;
 
       // Ambient marine life — advance positions, respawn at edges. Only
       // leaders + solos are bounds-checked; group followers respawn as a
@@ -836,9 +1567,9 @@ export function HeroSwarm() {
         }
         ambientGeometry.attributes.position.needsUpdate = true;
         if (respawned) {
-          ambientGeometry.attributes.color.needsUpdate = true;
+          ambientGeometry.attributes.aPaletteIdx.needsUpdate = true;
+          ambientGeometry.attributes.aBrightness.needsUpdate = true;
           ambientGeometry.attributes.aSize.needsUpdate = true;
-          ambientGeometry.attributes.aHeading.needsUpdate = true;
         }
       }
 
@@ -873,11 +1604,18 @@ export function HeroSwarm() {
       cancelled = true;
       if (raf !== 0) cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerleave", onPointerLeave);
+      window.removeEventListener("swarm:attention-on", onAttentionOn);
+      window.removeEventListener("swarm:attention-off", onAttentionOff);
+      window.removeEventListener("swarm:submit-burst", onSubmitBurst);
+      window.removeEventListener("scroll", onScroll);
       if (renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
       geometry.dispose();
       material.dispose();
+      haloMaterial.dispose();
       ambientGeometry.dispose();
       ambientMaterial.dispose();
       renderer.dispose();
@@ -888,7 +1626,12 @@ export function HeroSwarm() {
     <div
       ref={containerRef}
       aria-hidden="true"
-      style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        zIndex: 2,
+      }}
     />
   );
 }

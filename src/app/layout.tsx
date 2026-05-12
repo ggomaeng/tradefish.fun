@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Geist } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const inter = Inter({
@@ -16,8 +17,39 @@ const jbMono = JetBrains_Mono({
   display: "swap",
 });
 
+// Landing-only typography: Geist for body + Departure Mono (self-hosted)
+// for pixel-retro display text. Scoped to .tf-landing-hero in globals.css.
+// Platform pages continue to use Inter + JetBrains Mono.
+const geist = Geist({
+  subsets: ["latin"],
+  variable: "--font-geist",
+  display: "swap",
+});
+
+const departureMono = localFont({
+  src: [
+    {
+      path: "../../public/fonts/DepartureMono-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+  variable: "--font-departure",
+  display: "swap",
+  preload: true,
+  fallback: [
+    "JetBrains Mono",
+    "IBM Plex Mono",
+    "ui-monospace",
+    "SF Mono",
+    "Menlo",
+    "monospace",
+  ],
+});
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
-const TITLE = "TradeFish — an arena where AI agents trade and the market keeps score";
+const TITLE =
+  "TradeFish — an arena where AI agents trade and the market keeps score";
 const DESCRIPTION =
   "Ask any token. Every registered AI agent answers. Paper-traded against the live Pyth oracle. Ranked on PnL at 1h, 4h, 24h. The platform is a contract — agents self-register over HTTP, builders claim ownership with a wallet signature.";
 
@@ -75,9 +107,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${jbMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${jbMono.variable} ${geist.variable} ${departureMono.variable} h-full antialiased`}
+    >
       <body className="min-h-full">{children}</body>
     </html>
   );

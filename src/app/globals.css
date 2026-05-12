@@ -11,46 +11,50 @@
 
 :root {
   /* ── Backgrounds (dark default) ─────────────────────── */
-  --bg-0: #0A0A0B;
-  --bg-1: #0F0F11;
-  --bg-2: #15151A;
-  --bg-3: #1C1C22;
-  --bg-4: #25252C;
+  --bg-0: #0a0a0b;
+  --bg-1: #0f0f11;
+  --bg-2: #15151a;
+  --bg-3: #1c1c22;
+  --bg-4: #25252c;
 
   /* ── Foreground ─────────────────────────────────────── */
-  --fg:   #F5F5F7;
-  --fg-2: #A0A0A8;
-  --fg-3: #6E6E78;
+  --fg: #f5f5f7;
+  --fg-2: #a0a0a8;
+  --fg-3: #6e6e78;
   --fg-4: #404048;
 
   /* ── Borders ────────────────────────────────────────── */
-  --bd-1: rgba(255,255,255,0.06);
-  --bd-2: rgba(255,255,255,0.10);
-  --bd-3: rgba(255,255,255,0.18);
+  --bd-1: rgba(255, 255, 255, 0.06);
+  --bd-2: rgba(255, 255, 255, 0.1);
+  --bd-3: rgba(255, 255, 255, 0.18);
 
   /* ── Brand cyan — derived from the TradeFish logo ───── */
-  --cyan:        #5EEAF0;
-  --cyan-bright: #A8F4F8;
-  --cyan-dim:    #2DA8B0;
-  --cyan-bg:     rgba(94,234,240,0.08);
-  --cyan-bd:     rgba(94,234,240,0.32);
+  --cyan: #5eeaf0;
+  --cyan-bright: #a8f4f8;
+  --cyan-dim: #2da8b0;
+  --cyan-bg: rgba(94, 234, 240, 0.08);
+  --cyan-bd: rgba(94, 234, 240, 0.32);
 
   /* ── Solana — used as ONE-SHOT gradient, never solid ── */
-  --sol-purple: #9945FF;
-  --sol-green:  #14F195;
-  --sol-grad:      linear-gradient(135deg, #9945FF 0%, #14F195 100%);
-  --sol-grad-soft: linear-gradient(135deg, rgba(153,69,255,0.18), rgba(20,241,149,0.14));
+  --sol-purple: #9945ff;
+  --sol-green: #14f195;
+  --sol-grad: linear-gradient(135deg, #9945ff 0%, #14f195 100%);
+  --sol-grad-soft: linear-gradient(
+    135deg,
+    rgba(153, 69, 255, 0.18),
+    rgba(20, 241, 149, 0.14)
+  );
 
   /* ── Trading semantic ───────────────────────────────── */
-  --up:      #14F195;
-  --up-bg:   rgba(20,241,149,0.10);
-  --up-bd:   rgba(20,241,149,0.30);
-  --down:    #FF4D6D;
-  --down-bg: rgba(255,77,109,0.10);
-  --down-bd: rgba(255,77,109,0.30);
-  --hold:    #FFB347;
-  --hold-bg: rgba(255,179,71,0.10);
-  --hold-bd: rgba(255,179,71,0.30);
+  --up: #14f195;
+  --up-bg: rgba(20, 241, 149, 0.1);
+  --up-bd: rgba(20, 241, 149, 0.3);
+  --down: #ff4d6d;
+  --down-bg: rgba(255, 77, 109, 0.1);
+  --down-bd: rgba(255, 77, 109, 0.3);
+  --hold: #ffb347;
+  --hold-bg: rgba(255, 179, 71, 0.1);
+  --hold-bd: rgba(255, 179, 71, 0.3);
 
   /* Aliases retained for any older callsite. */
   --long: var(--up);
@@ -60,17 +64,21 @@
   --violet: var(--sol-purple);
 
   /* ── Type stacks ────────────────────────────────────── */
-  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  --font-mono: var(--font-jbmono), 'JetBrains Mono', 'SF Mono', ui-monospace, 'Menlo', monospace;
+  --font-sans:
+    var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
+  --font-mono:
+    var(--font-jbmono), "JetBrains Mono", "SF Mono", ui-monospace, "Menlo",
+    monospace;
 
   /* ── Type scale (display-down) ──────────────────────── */
   --t-display: 56px;
-  --t-h1:      32px;
-  --t-h2:      22px;
-  --t-h3:      16px;
-  --t-body:    14px;
-  --t-small:   13px;
-  --t-mini:    11px;
+  --t-h1: 32px;
+  --t-h2: 22px;
+  --t-h3: 16px;
+  --t-body: 14px;
+  --t-small: 13px;
+  --t-mini: 11px;
 
   /* ── Radii — codex sharpness, restrained ─────────────── */
   --r-1: 4px;
@@ -92,9 +100,9 @@
 
   /* ── Motion ─────────────────────────────────────────── */
   --t-fast: 120ms;
-  --t-med:  220ms;
+  --t-med: 220ms;
   --t-slow: 360ms;
-  --ease:   cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Layout ─────────────────────────────────────────── */
@@ -116,36 +124,41 @@
 
 /* ── Light-mode parity — opt in on any subtree ────────── */
 [data-theme="light"] {
-  --bg-0: #FAFAFA;
-  --bg-1: #FFFFFF;
-  --bg-2: #F5F5F7;
-  --bg-3: #ECECEE;
-  --bg-4: #E0E0E4;
-  --fg:   #0A0A0B;
-  --fg-2: #4A4A52;
-  --fg-3: #8A8A92;
-  --fg-4: #C0C0C8;
-  --bd-1: rgba(0,0,0,0.06);
-  --bd-2: rgba(0,0,0,0.10);
-  --bd-3: rgba(0,0,0,0.18);
-  --cyan-bg: rgba(45,168,176,0.10);
-  --cyan-bd: rgba(45,168,176,0.32);
+  --bg-0: #fafafa;
+  --bg-1: #ffffff;
+  --bg-2: #f5f5f7;
+  --bg-3: #ececee;
+  --bg-4: #e0e0e4;
+  --fg: #0a0a0b;
+  --fg-2: #4a4a52;
+  --fg-3: #8a8a92;
+  --fg-4: #c0c0c8;
+  --bd-1: rgba(0, 0, 0, 0.06);
+  --bd-2: rgba(0, 0, 0, 0.1);
+  --bd-3: rgba(0, 0, 0, 0.18);
+  --cyan-bg: rgba(45, 168, 176, 0.1);
+  --cyan-bd: rgba(45, 168, 176, 0.32);
 }
 
 @theme inline {
   --color-background: var(--bg-0);
   --color-foreground: var(--fg);
-  --color-cyan:    var(--cyan);
-  --color-up:      var(--up);
-  --color-down:    var(--down);
-  --color-hold:    var(--hold);
+  --color-cyan: var(--cyan);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-hold: var(--hold);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   background: var(--bg-0);
@@ -153,14 +166,24 @@ html, body {
   font-family: var(--font-sans);
   font-size: var(--t-body);
   line-height: 1.5;
-  font-feature-settings: 'cv11', 'ss01';
+  font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-::selection { background: var(--cyan); color: var(--bg-0); }
-a { color: inherit; text-decoration: none; }
-button { font-family: inherit; color: inherit; cursor: pointer; }
+::selection {
+  background: var(--cyan);
+  color: var(--bg-0);
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+}
 
 /* ═══ Numerics + semantic colors ════════════════════════════════════════ */
 .num {
@@ -168,112 +191,276 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
-.up   { color: var(--up); }
-.down { color: var(--down); }
-.hold { color: var(--hold); }
+.up {
+  color: var(--up);
+}
+.down {
+  color: var(--down);
+}
+.hold {
+  color: var(--hold);
+}
 
 /* ═══ Type roles ════════════════════════════════════════════════════════ */
-.t-display { font-size: var(--t-display); font-weight: 600; letter-spacing: -0.035em; line-height: 1.0;  color: var(--fg); }
-.t-h1      { font-size: var(--t-h1);      font-weight: 600; letter-spacing: -0.025em; line-height: 1.15; color: var(--fg); }
-.t-h2      { font-size: var(--t-h2);      font-weight: 600; letter-spacing: -0.018em; line-height: 1.2;  color: var(--fg); }
-.t-h3      { font-size: var(--t-h3);      font-weight: 600; letter-spacing: -0.01em;  line-height: 1.3;  color: var(--fg); }
-.t-body    { font-size: var(--t-body);    font-weight: 400; line-height: 1.55; color: var(--fg-2); }
-.t-small   { font-size: var(--t-small);   font-weight: 400; line-height: 1.5;  color: var(--fg-2); }
-.t-mini    { font-size: var(--t-mini);    font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); }
-.t-mono    { font-family: var(--font-mono); }
+.t-display {
+  font-size: var(--t-display);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: var(--fg);
+}
+.t-h1 {
+  font-size: var(--t-h1);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  color: var(--fg);
+}
+.t-h2 {
+  font-size: var(--t-h2);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+  color: var(--fg);
+}
+.t-h3 {
+  font-size: var(--t-h3);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--fg);
+}
+.t-body {
+  font-size: var(--t-body);
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--fg-2);
+}
+.t-small {
+  font-size: var(--t-small);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--fg-2);
+}
+.t-mini {
+  font-size: var(--t-mini);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+.t-mono {
+  font-family: var(--font-mono);
+}
 
 /* ═══ App top nav ═══════════════════════════════════════════════════════ */
 .appnav {
   height: 56px;
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 0 24px;
   border-bottom: 1px solid var(--bd-1);
-  background: rgba(15,15,17,0.8);
+  background: rgba(15, 15, 17, 0.8);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
-  position: sticky; top: 0; z-index: 60;
+  position: sticky;
+  top: 0;
+  z-index: 60;
 }
-.appnav .left { display: flex; align-items: center; gap: 28px; }
-.appnav .logo { display: flex; align-items: center; gap: 8px; font-weight: 600; letter-spacing: -0.01em; color: var(--fg); }
-.appnav .logo img { width: 22px; height: 22px; object-fit: contain; }
-.appnav nav { display: flex; gap: 4px; }
+.appnav .left {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.appnav .logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.appnav .logo img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.appnav nav {
+  display: flex;
+  gap: 4px;
+}
 .appnav nav a {
-  font-size: 13px; font-weight: 500;
-  padding: 6px 12px; border-radius: var(--r-2);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--r-2);
   color: var(--fg-2);
-  transition: background var(--t-fast), color var(--t-fast);
+  transition:
+    background var(--t-fast),
+    color var(--t-fast);
 }
-.appnav nav a:hover { color: var(--fg); background: var(--bg-2); }
-.appnav nav a.active { color: var(--fg); background: var(--bg-2); }
-.appnav .right { display: flex; align-items: center; gap: 10px; }
+.appnav nav a:hover {
+  color: var(--fg);
+  background: var(--bg-2);
+}
+.appnav nav a.active {
+  color: var(--fg);
+  background: var(--bg-2);
+}
+.appnav .right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 
 /* ═══ Buttons ═══════════════════════════════════════════════════════════ */
 .btn {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 7px 14px;
   border: 1px solid var(--bd-2);
   background: transparent;
   color: var(--fg);
   border-radius: var(--r-2);
-  font-size: 13px; font-weight: 500;
+  font-size: 13px;
+  font-weight: 500;
   transition: all var(--t-fast) var(--ease);
 }
-.btn:hover { background: var(--bg-3); border-color: var(--bd-3); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:hover {
+  background: var(--bg-3);
+  border-color: var(--bd-3);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .btn-primary {
-  background: var(--fg); color: var(--bg-0);
+  background: var(--fg);
+  color: var(--bg-0);
   border-color: var(--fg);
 }
-.btn-primary:hover { background: var(--cyan-bright); border-color: var(--cyan-bright); color: var(--bg-0); }
-.btn-ghost { border-color: transparent; color: var(--fg-2); }
-.btn-ghost:hover { background: var(--bg-2); color: var(--fg); }
-.btn-sol {
-  background: var(--sol-grad); color: var(--bg-0);
-  border-color: transparent; font-weight: 600;
+.btn-primary:hover {
+  background: var(--cyan-bright);
+  border-color: var(--cyan-bright);
+  color: var(--bg-0);
 }
-.btn-sol:hover { filter: brightness(1.08); }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
-.btn-lg { padding: 10px 18px; font-size: 14px; }
+.btn-ghost {
+  border-color: transparent;
+  color: var(--fg-2);
+}
+.btn-ghost:hover {
+  background: var(--bg-2);
+  color: var(--fg);
+}
+.btn-sol {
+  background: var(--sol-grad);
+  color: var(--bg-0);
+  border-color: transparent;
+  font-weight: 600;
+}
+.btn-sol:hover {
+  filter: brightness(1.08);
+}
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+.btn-lg {
+  padding: 10px 18px;
+  font-size: 14px;
+}
 
 /* ═══ Wallet widget ═════════════════════════════════════════════════════ */
 .wallet {
-  display: inline-flex; align-items: center; gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 10px 6px 8px;
   border: 1px solid var(--bd-2);
   border-radius: var(--r-2);
   background: var(--bg-2);
   font-size: 12px;
   cursor: pointer;
-  transition: border-color var(--t-fast), background var(--t-fast);
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast);
 }
-.wallet:hover { border-color: var(--bd-3); background: var(--bg-3); }
+.wallet:hover {
+  border-color: var(--bd-3);
+  background: var(--bg-3);
+}
 .wallet .av {
-  width: 18px; height: 18px; border-radius: 50%;
-  background: linear-gradient(135deg, #9945FF, #5EEAF0);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9945ff, #5eeaf0);
   flex: none;
 }
-.wallet .pk  { font-family: var(--font-mono); color: var(--fg); }
-.wallet .bal { color: var(--fg-3); border-left: 1px solid var(--bd-1); padding-left: 8px; margin-left: 2px; }
+.wallet .pk {
+  font-family: var(--font-mono);
+  color: var(--fg);
+}
+.wallet .bal {
+  color: var(--fg-3);
+  border-left: 1px solid var(--bd-1);
+  padding-left: 8px;
+  margin-left: 2px;
+}
 
 /* ═══ Chips ═════════════════════════════════════════════════════════════ */
 .chip {
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 3px 8px;
-  font-size: 11px; font-weight: 500;
+  font-size: 11px;
+  font-weight: 500;
   border-radius: var(--r-pill);
   border: 1px solid var(--bd-2);
   color: var(--fg-2);
   background: var(--bg-2);
 }
-.chip-up   { color: var(--up);   background: var(--up-bg);   border-color: var(--up-bd); }
-.chip-down { color: var(--down); background: var(--down-bg); border-color: var(--down-bd); }
-.chip-hold { color: var(--hold); background: var(--hold-bg); border-color: var(--hold-bd); }
-.chip-cyan { color: var(--cyan); background: var(--cyan-bg); border-color: var(--cyan-bd); }
-.chip-live { color: var(--up);   background: var(--up-bg);   border-color: var(--up-bd); }
-.chip-live .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--up); animation: pulse-up 1.4s ease-out infinite; }
+.chip-up {
+  color: var(--up);
+  background: var(--up-bg);
+  border-color: var(--up-bd);
+}
+.chip-down {
+  color: var(--down);
+  background: var(--down-bg);
+  border-color: var(--down-bd);
+}
+.chip-hold {
+  color: var(--hold);
+  background: var(--hold-bg);
+  border-color: var(--hold-bd);
+}
+.chip-cyan {
+  color: var(--cyan);
+  background: var(--cyan-bg);
+  border-color: var(--cyan-bd);
+}
+.chip-live {
+  color: var(--up);
+  background: var(--up-bg);
+  border-color: var(--up-bd);
+}
+.chip-live .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--up);
+  animation: pulse-up 1.4s ease-out infinite;
+}
 @keyframes pulse-up {
-  0%   { box-shadow: 0 0 0 0 rgba(20,241,149,0.7); }
-  100% { box-shadow: 0 0 0 8px rgba(20,241,149,0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(20, 241, 149, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(20, 241, 149, 0);
+  }
 }
 
 /* ═══ Cards ═════════════════════════════════════════════════════════════ */
@@ -283,42 +470,96 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
   border-radius: var(--r-3);
   padding: 18px;
 }
-.card-hover { transition: border-color var(--t-fast), background var(--t-fast); }
-.card-hover:hover { border-color: var(--bd-2); background: var(--bg-3); }
+.card-hover {
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast);
+}
+.card-hover:hover {
+  border-color: var(--bd-2);
+  background: var(--bg-3);
+}
 
 /* ═══ Token markers ═════════════════════════════════════════════════════ */
 .token {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 28px; height: 28px; border-radius: 50%;
-  font-family: var(--font-mono); font-size: 10px; font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
   color: var(--bg-0);
   flex: none;
 }
-.token-bonk { background: linear-gradient(135deg,#FFD93D,#FF6B35); }
-.token-sol  { background: linear-gradient(135deg,#9945FF,#14F195); }
-.token-jup  { background: linear-gradient(135deg,#22D3EE,#06B6D4); }
-.token-wif  { background: linear-gradient(135deg,#FFB6E1,#A78BFA); }
-.token-pyth { background: linear-gradient(135deg,#7C3AED,#9F67FF); color: #fff; }
-.token-jto  { background: linear-gradient(135deg,#3B82F6,#2DD4BF); color: #fff; }
-.token-jto-light { background: linear-gradient(135deg,#3B82F6,#2DD4BF); }
+.token-bonk {
+  background: linear-gradient(135deg, #ffd93d, #ff6b35);
+}
+.token-sol {
+  background: linear-gradient(135deg, #9945ff, #14f195);
+}
+.token-jup {
+  background: linear-gradient(135deg, #22d3ee, #06b6d4);
+}
+.token-wif {
+  background: linear-gradient(135deg, #ffb6e1, #a78bfa);
+}
+.token-pyth {
+  background: linear-gradient(135deg, #7c3aed, #9f67ff);
+  color: #fff;
+}
+.token-jto {
+  background: linear-gradient(135deg, #3b82f6, #2dd4bf);
+  color: #fff;
+}
+.token-jto-light {
+  background: linear-gradient(135deg, #3b82f6, #2dd4bf);
+}
 
 /* ═══ Avatars (used in feeds, leaderboard, agent dashboard) ═════════════ */
 .av {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: linear-gradient(135deg, #5EEAF0, #9945FF);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-mono); font-size: 10px; font-weight: 600; color: var(--bg-0);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5eeaf0, #9945ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--bg-0);
   flex: none;
 }
-.av.green { background: linear-gradient(135deg, #14F195, #5EEAF0); }
-.av.red   { background: linear-gradient(135deg, #FF4D6D, #FFB347); }
-.av-2 { background: linear-gradient(135deg, #14F195, #5EEAF0); }
-.av-3 { background: linear-gradient(135deg, #FF4D6D, #9945FF); }
-.av-4 { background: linear-gradient(135deg, #FFB347, #FF4D6D); }
-.av-5 { background: linear-gradient(135deg, #A78BFA, #5EEAF0); }
-.av-6 { background: linear-gradient(135deg, #FF4D6D, #5EEAF0); }
-.av-7 { background: linear-gradient(135deg, #14F195, #A78BFA); }
-.av-8 { background: linear-gradient(135deg, #FFB347, #5EEAF0); }
+.av.green {
+  background: linear-gradient(135deg, #14f195, #5eeaf0);
+}
+.av.red {
+  background: linear-gradient(135deg, #ff4d6d, #ffb347);
+}
+.av-2 {
+  background: linear-gradient(135deg, #14f195, #5eeaf0);
+}
+.av-3 {
+  background: linear-gradient(135deg, #ff4d6d, #9945ff);
+}
+.av-4 {
+  background: linear-gradient(135deg, #ffb347, #ff4d6d);
+}
+.av-5 {
+  background: linear-gradient(135deg, #a78bfa, #5eeaf0);
+}
+.av-6 {
+  background: linear-gradient(135deg, #ff4d6d, #5eeaf0);
+}
+.av-7 {
+  background: linear-gradient(135deg, #14f195, #a78bfa);
+}
+.av-8 {
+  background: linear-gradient(135deg, #ffb347, #5eeaf0);
+}
 
 /* ═══ Codeblocks ════════════════════════════════════════════════════════ */
 .codeblock {
@@ -326,20 +567,34 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
   border: 1px solid var(--bd-1);
   border-radius: var(--r-3);
   padding: 16px;
-  font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
   color: var(--fg-2);
   white-space: pre;
   overflow-x: auto;
   margin: 14px 0 24px;
   position: relative;
 }
-.codeblock .k { color: var(--cyan); }
-.codeblock .s { color: var(--up); }
-.codeblock .c { color: var(--fg-3); font-style: italic; }
-.codeblock .v { color: #A78BFA; }
+.codeblock .k {
+  color: var(--cyan);
+}
+.codeblock .s {
+  color: var(--up);
+}
+.codeblock .c {
+  color: var(--fg-3);
+  font-style: italic;
+}
+.codeblock .v {
+  color: #a78bfa;
+}
 .codeblock .copy {
-  position: absolute; top: 10px; right: 10px;
-  font-size: 10px; color: var(--fg-3);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 10px;
+  color: var(--fg-3);
   padding: 4px 8px;
   border: 1px solid var(--bd-1);
   border-radius: var(--r-1);
@@ -348,21 +603,54 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 }
 
 /* ═══ Stat row (used in agent dashboard, hero stats) ════════════════════ */
-.stat-l { font-size: 11px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-3); margin-bottom: 8px; }
-.stat-v { font-family: var(--font-mono); font-size: 28px; font-weight: 500; color: var(--fg); }
+.stat-l {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fg-3);
+  margin-bottom: 8px;
+}
+.stat-v {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--fg);
+}
 
 /* ═══ Animations ════════════════════════════════════════════════════════ */
-@keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 @keyframes shine {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-.fade-up { animation: fade-up 600ms var(--ease) both; }
+.fade-up {
+  animation: fade-up 600ms var(--ease) both;
+}
 
 /* Skeleton placeholders — used by route-level loading.tsx fallbacks.
    Matches existing .card/.chip silhouettes so the layout never shifts. */
@@ -382,16 +670,25 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
   user-select: none;
   pointer-events: none;
 }
-.skeleton-line { height: 12px; border-radius: var(--r-1); border: none; }
-.skeleton-block { min-height: 60px; }
+.skeleton-line {
+  height: 12px;
+  border-radius: var(--r-1);
+  border: none;
+}
+.skeleton-block {
+  min-height: 60px;
+}
 @media (prefers-reduced-motion: reduce) {
-  .skeleton { animation: none; }
+  .skeleton {
+    animation: none;
+  }
 }
 
 /* Brand gradient text (use sparingly — one moment per page) */
 .t-grad {
   background: var(--sol-grad);
-  -webkit-background-clip: text; background-clip: text;
+  -webkit-background-clip: text;
+  background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
 }
@@ -399,12 +696,18 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 /* Cyan focus ring on interactive elements */
 .focus-ring:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--bg-0), 0 0 0 4px var(--cyan);
+  box-shadow:
+    0 0 0 2px var(--bg-0),
+    0 0 0 4px var(--cyan);
 }
 
 /* Hide native scrollbars on internal scroll regions */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
 
 /* Page shell — used by every (platform) route */
 .page {
@@ -420,13 +723,30 @@ button { font-family: inherit; color: inherit; cursor: pointer; }
 }
 
 /* Compatibility shims for older waitlist callsites that referenced --cream */
-:root { --cream: var(--fg); --fg-dim: var(--fg-2); --fg-faint: var(--fg-3); --fg-faintest: var(--fg-4); }
-:root { --line: var(--bd-1); --line-strong: var(--bd-2); --line-bright: var(--bd-3); }
-:root { --surface: var(--bg-2); --surface-deep: rgba(15,15,17,0.92); --surface-glass: rgba(94,234,240,0.04); }
+:root {
+  --cream: var(--fg);
+  --fg-dim: var(--fg-2);
+  --fg-faint: var(--fg-3);
+  --fg-faintest: var(--fg-4);
+}
+:root {
+  --line: var(--bd-1);
+  --line-strong: var(--bd-2);
+  --line-bright: var(--bd-3);
+}
+:root {
+  --surface: var(--bg-2);
+  --surface-deep: rgba(15, 15, 17, 0.92);
+  --surface-glass: rgba(94, 234, 240, 0.04);
+}
 
 /* Prevent body horizontal scroll on narrow viewports. Long mints/sigs
    should wrap or be wrapped in `.no-scrollbar` containers. */
-html, body { overflow-x: hidden; max-width: 100vw; }
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
 
 /* ═══ Mobile responsive layer ═══════════════════════════════════════════
    Single source of truth for platform breakpoints. See --bp-md / --bp-sm
@@ -435,7 +755,9 @@ html, body { overflow-x: hidden; max-width: 100vw; }
    ════════════════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
   /* Page shell — tighter side gutters on narrow viewports */
-  .page { padding: 0 var(--s-4); }
+  .page {
+    padding: 0 var(--s-4);
+  }
 
   /* App top nav: allow wrapping rather than overflowing.
      Logo + a slightly compressed nav stay on row 1; right-side
@@ -447,37 +769,446 @@ html, body { overflow-x: hidden; max-width: 100vw; }
     flex-wrap: wrap;
     gap: 8px;
   }
-  .appnav .left { gap: 14px; flex-wrap: wrap; }
-  .appnav nav { gap: 0; }
-  .appnav nav a { padding: 6px 8px; font-size: 12px; }
-  .appnav .right { gap: 6px; }
+  .appnav .left {
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .appnav nav {
+    gap: 0;
+  }
+  .appnav nav a {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+  .appnav .right {
+    gap: 6px;
+  }
 
   /* Wallet pill — keep readable but compact. */
-  .wallet { padding: 6px 8px; font-size: 11px; }
+  .wallet {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
 }
 
 @media (max-width: 640px) {
   /* Phone portrait: hide secondary nav links to avoid wrapping the
      header into 3+ rows. Primary CTA + wallet stay visible. */
-  .appnav nav { display: none; }
-  .appnav .left { gap: 10px; }
-  .appnav .logo span { font-size: 14px; }
+  .appnav nav {
+    display: none;
+  }
+  .appnav .left {
+    gap: 10px;
+  }
+  .appnav .logo span {
+    font-size: 14px;
+  }
 
   /* Cards — slightly less padding on phones */
-  .card { padding: 14px; }
+  .card {
+    padding: 14px;
+  }
 
   /* Tables in narrow viewports: allow horizontal scroll inside the
      parent card rather than overflowing the page. Used by /agents
      leaderboard. */
-  .card table, table { display: block; overflow-x: auto; max-width: 100%; }
+  .card table,
+  table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+  }
 }
 
 /* Tap-target floor: 44x44 CSS px on every interactive control on
    phone-sized viewports. Buttons stay visually compact via padding,
    but min-height ensures comfortable touch. */
 @media (max-width: 640px) and (pointer: coarse) {
-  .btn, .wallet, .chip {
+  .btn,
+  .wallet,
+  .chip {
     min-height: 40px;
   }
-  .btn-sm { min-height: 36px; }
+  .btn-sm {
+    min-height: 36px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   LANDING HERO SCOPE — ocean palette, Departure Mono, water-light layers.
+   Lifted from feat/waitlist-ticket-redesign hero redesign. Scoped under
+   .tf-landing-hero so platform pages (/arena, /agents, /round, /docs)
+   stay on main's Inter + JetBrains Mono + neutral tokens. A site-wide
+   design refresh will follow this merge.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.tf-landing-hero {
+  /* Local token overrides — only descendants of .tf-landing-hero see these. */
+  --cream: #f0e9e1;
+  --fg-dim: #a8b8c8;
+  --fg-faint: #6a7a8a;
+  --fg-faintest: #3a4858;
+
+  --cyan: #a8d8e8;
+  --cyan-bright: #c4ecf5;
+  --cyan-dim: #6a9bb5;
+
+  --magenta: #d96baa;
+  --short: #e07560;
+
+  --line-strong: rgba(168, 216, 232, 0.32);
+
+  --t-fast: 150ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Departure Mono via local font + fallbacks (declared in layout.tsx). */
+  --font-pixel: var(--font-departure), "VT323", ui-monospace, monospace;
+  --font-mono:
+    var(--font-departure), "JetBrains Mono", "IBM Plex Mono", ui-monospace,
+    "SF Mono", "Menlo", monospace;
+}
+
+/* Ocean sunlight aurora — top-anchored radial blooms drifting horizontally. */
+.tf-landing-hero .tf-ocean-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 55% 40% at 30% 0%,
+      rgba(76, 216, 232, 0.42),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 40% 32% at 70% 0%,
+      rgba(127, 224, 168, 0.28),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 50% 35% at 50% 0%,
+      rgba(168, 216, 232, 0.36),
+      transparent 70%
+    );
+  background-size:
+    220% 100%,
+    200% 100%,
+    240% 100%;
+  background-repeat: no-repeat;
+  animation: tf-ocean-light 60s linear infinite;
+  mix-blend-mode: screen;
+}
+@keyframes tf-ocean-light {
+  from {
+    background-position:
+      30% 0%,
+      70% 0%,
+      50% 0%;
+  }
+  to {
+    background-position:
+      130% 0%,
+      -30% 0%,
+      150% 0%;
+  }
+}
+
+/* Floating dust motes — marine snow drifting upward. */
+.tf-landing-hero .tf-dust-motes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      1.8px 1.8px at 12% 18%,
+      rgba(220, 240, 250, 0.7),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.4px 1.4px at 78% 22%,
+      rgba(180, 230, 240, 0.6),
+      transparent 60%
+    ),
+    radial-gradient(
+      2px 2px at 58% 78%,
+      rgba(220, 240, 250, 0.55),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.5px 1.5px at 92% 65%,
+      rgba(200, 240, 250, 0.6),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.6px 1.6px at 22% 88%,
+      rgba(180, 230, 240, 0.5),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.4px 1.4px at 65% 12%,
+      rgba(220, 240, 250, 0.6),
+      transparent 60%
+    ),
+    radial-gradient(
+      1.8px 1.8px at 38% 48%,
+      rgba(200, 230, 240, 0.55),
+      transparent 60%
+    ),
+    radial-gradient(
+      1px 1px at 8% 55%,
+      rgba(168, 216, 232, 0.4),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 48% 28%,
+      rgba(168, 216, 232, 0.35),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 88% 42%,
+      rgba(168, 216, 232, 0.4),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 28% 65%,
+      rgba(168, 216, 232, 0.35),
+      transparent 50%
+    ),
+    radial-gradient(
+      1px 1px at 72% 92%,
+      rgba(168, 216, 232, 0.4),
+      transparent 50%
+    );
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  animation: tf-dust-drift 80s linear infinite;
+  mix-blend-mode: screen;
+  opacity: 1;
+}
+@keyframes tf-dust-drift {
+  from {
+    background-position:
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%;
+  }
+  to {
+    background-position:
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%,
+      0% -100%;
+  }
+}
+
+/* Suspended debris — chunkier mid-distance particulates drifting downward. */
+.tf-landing-hero .tf-debris {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(
+      2.5px 2.5px at 18% 12%,
+      rgba(200, 225, 240, 0.32),
+      transparent 70%
+    ),
+    radial-gradient(
+      3px 3px at 72% 38%,
+      rgba(180, 215, 235, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      2px 2px at 44% 62%,
+      rgba(210, 230, 245, 0.3),
+      transparent 70%
+    ),
+    radial-gradient(
+      2.8px 2.8px at 88% 78%,
+      rgba(190, 220, 235, 0.26),
+      transparent 70%
+    ),
+    radial-gradient(
+      1.8px 1.8px at 6% 84%,
+      rgba(200, 225, 240, 0.32),
+      transparent 70%
+    ),
+    radial-gradient(
+      2.2px 2.2px at 58% 6%,
+      rgba(195, 220, 235, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      3.2px 3.2px at 28% 42%,
+      rgba(185, 215, 230, 0.24),
+      transparent 70%
+    ),
+    radial-gradient(
+      2px 2px at 82% 18%,
+      rgba(205, 225, 240, 0.3),
+      transparent 70%
+    ),
+    radial-gradient(
+      2.6px 2.6px at 38% 90%,
+      rgba(190, 220, 235, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      1.6px 1.6px at 96% 52%,
+      rgba(200, 225, 240, 0.32),
+      transparent 70%
+    );
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  animation: tf-debris-drift 140s linear infinite;
+  mix-blend-mode: screen;
+  opacity: 0.7;
+  filter: blur(0.4px);
+}
+@keyframes tf-debris-drift {
+  from {
+    background-position:
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
+  to {
+    background-position:
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%,
+      0% 100%;
+  }
+}
+
+/* Attention bloom — soft cyan glow behind HeroAsk while focused. */
+.tf-landing-hero .tf-attention-bloom {
+  position: absolute;
+  pointer-events: none;
+  left: 50%;
+  top: 50%;
+  width: 820px;
+  height: 820px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(168, 216, 232, 0.24) 0%,
+    rgba(168, 216, 232, 0.1) 30%,
+    rgba(168, 216, 232, 0.02) 55%,
+    rgba(168, 216, 232, 0) 70%
+  );
+  opacity: 0;
+  transition: opacity 520ms var(--ease-out);
+  mix-blend-mode: screen;
+}
+.tf-landing-hero .tf-attention-bloom[data-attention="true"] {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tf-landing-hero .tf-attention-bloom {
+    transition: opacity 220ms linear;
+  }
+}
+
+/* Caret blink — terminal-style square-wave cursor. */
+@keyframes tf-caret-blink {
+  0%,
+  49% {
+    opacity: 0.85;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+.tf-landing-hero .tf-caret-blink {
+  animation: tf-caret-blink 1s steps(1, end) infinite;
+}
+
+/* Entrance fade-up for hero copy. */
+@keyframes tf-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tf-landing-hero .tf-fade-up {
+  animation: tf-fade-up 600ms var(--ease-out) both;
+}
+
+/* Animated text shine across the hero h1. */
+@keyframes tf-shine {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.tf-landing-hero .tf-shine-text {
+  background: linear-gradient(
+    90deg,
+    var(--cream) 0%,
+    var(--cream) 40%,
+    var(--cyan-bright) 50%,
+    var(--cream) 60%,
+    var(--cream) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tf-shine 5s linear infinite;
 }
