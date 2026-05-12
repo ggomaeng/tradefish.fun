@@ -645,11 +645,12 @@ export function HeroSwarm() {
           bool inBody = abs(v) < profile && u > -0.7 && u < 0.95;
 
           // Tail spike: thin tapered extension from u=-0.7 to u=-1.0,
-          // half-width grows linearly from 0 at joint to 0.15 at tip.
-          // No fan flare — reads as the trailing point of a top-down
-          // torpedo, not a side-view caudal fin.
+          // half-width grows linearly from 0 at joint to ~0.27 at tip.
+          // Steepness 0.9 — between the original side-view fan (1.45)
+          // and a pure top-down spike (0.5). Reads as a slightly-flared
+          // trailing fin without losing the top-down silhouette.
           float tailU = -0.7 - u;            // 0 at body/tail joint, +0.3 at tip
-          float halfWidth = tailU * 0.5;
+          float halfWidth = tailU * 0.9;
           float vAbs = abs(v);
           bool inTail = u < -0.7 && u > -1.0 && vAbs < halfWidth;
 
@@ -1111,7 +1112,12 @@ export function HeroSwarm() {
 
       // Drive shader uniforms from the focus + burst envelopes.
       paletteMixUniform.value = burstStrength;
-      burstBrightUniform.value = 1.0 + 0.8 * burstStrength;
+      // Brightness: focus adds a 0.45 lift so the Solana palette reads
+      // as NEON GLOW (not just a color swap at the same brightness).
+      // Burst still peaks higher (+0.8) for the climactic moment. Use
+      // max() so the two paths don't double up.
+      burstBrightUniform.value =
+        1.0 + Math.max(0.45 * focusStrength, 0.8 * burstStrength);
       // Size multiplier: 1.0 baseline → SIZE_MULT_FOCUS during steady
       // focus, lerping to SIZE_MULT_BURST at burst peak.
       const focusSizeMult = 1.0 + (SIZE_MULT_FOCUS - 1.0) * focusStrength;
