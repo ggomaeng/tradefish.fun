@@ -4,7 +4,6 @@ import { HeroAsk } from "@/components/HeroAsk";
 import { HeroSwarm } from "@/components/HeroSwarm";
 import LightRays from "@/components/LightRays";
 import { RevealStagger, RevealSection } from "@/components/Reveal";
-import TargetCursor from "@/components/TargetCursor";
 
 // HeroSwarm + LightRays are client components (`"use client"`) — they render as
 // empty placeholders during SSR and hydrate with WebGL on the client.
@@ -12,16 +11,6 @@ import TargetCursor from "@/components/TargetCursor";
 export default function HomePage() {
   return (
     <main style={{ background: "var(--bg-0)", color: "var(--fg)" }}>
-      {/* Neon-fish target cursor — mounted only on the landing page (not in
-          layout.tsx) so platform pages keep the default OS cursor. Sets
-          document.body.style.cursor = 'none' on mount and restores on
-          unmount. Mobile/touch devices are auto-excluded by the component. */}
-      <TargetCursor
-        spinDuration={1.1}
-        hideDefaultCursor
-        parallaxOn
-        hoverDuration={0.85}
-      />
       {/* ═══════════════════════════════════════════════════════════════════
           LANDING HERO — ocean palette, Departure Mono, scoped via .tf-landing-hero.
           Tokens (--cyan, --cream, --font-pixel, --font-mono) are locally
@@ -86,10 +75,7 @@ export default function HomePage() {
           className="absolute top-0 left-0 right-0 flex items-center justify-between px-6 sm:px-10 py-5"
           style={{ zIndex: 30 }}
         >
-          <Link
-            href="/"
-            className="cursor-target flex items-center gap-3 group"
-          >
+          <Link href="/" className="flex items-center gap-3 group">
             <Image
               src="/logo-mark.png"
               alt="TradeFish"
@@ -113,7 +99,7 @@ export default function HomePage() {
               href="https://x.com/tradefish_fun"
               target="_blank"
               rel="noreferrer"
-              className="cursor-target hover:text-[var(--cream)] transition-colors"
+              className="hover:text-[var(--cream)] transition-colors"
             >
               X / TWITTER
             </a>
@@ -121,7 +107,7 @@ export default function HomePage() {
               href="https://github.com/tradefish-fun/tradefish.fun"
               target="_blank"
               rel="noreferrer"
-              className="cursor-target hidden sm:inline hover:text-[var(--cream)] transition-colors"
+              className="hidden sm:inline hover:text-[var(--cream)] transition-colors"
             >
               GITHUB
             </a>

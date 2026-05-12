@@ -211,7 +211,7 @@ export function HeroAsk() {
 
         <div
           data-swarm-anchor
-          className="cursor-target relative w-full flex items-stretch transition-colors"
+          className="relative w-full flex items-stretch transition-colors"
           style={{
             background: "rgba(13,24,48,0.78)",
             border: `1px solid ${focused ? "var(--cyan)" : "var(--line-strong)"}`,
@@ -290,7 +290,7 @@ export function HeroAsk() {
             disabled={submitting}
             aria-label="ask the swarm"
             title="Ask the swarm"
-            className="cursor-target inline-flex items-center justify-center w-12 h-auto self-stretch transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center w-12 h-auto self-stretch transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--cyan)",
               color: "var(--bg-0)",
