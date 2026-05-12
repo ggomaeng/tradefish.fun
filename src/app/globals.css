@@ -2164,17 +2164,15 @@ pre {
   color: var(--mint-bright);
 }
 
-/* ─────────────────────────────────────────────────────────────────────
-   APP NAV — sticky platform header
-   ───────────────────────────────────────────────────────────────────── */
+/* ═══ App top nav — match main verbatim (do not v3-restyle without ask) ══ */
 .appnav {
   height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(12, 12, 22, 0.85);
+  border-bottom: 1px solid var(--bd-1);
+  background: rgba(15, 15, 17, 0.8);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
   position: sticky;
@@ -2190,9 +2188,8 @@ pre {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--fg);
 }
 .appnav .logo img {
@@ -2205,25 +2202,22 @@ pre {
   gap: 4px;
 }
 .appnav nav a {
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   padding: 6px 12px;
-  border-radius: var(--r-0);
-  color: var(--fg-faint);
+  border-radius: var(--r-2);
+  color: var(--fg-2);
   transition:
     background var(--t-fast),
     color var(--t-fast);
 }
 .appnav nav a:hover {
   color: var(--fg);
-  background: var(--surface-glass);
+  background: var(--bg-2);
 }
 .appnav nav a.active {
-  color: var(--cyan);
-  background: var(--surface-glass);
+  color: var(--fg);
+  background: var(--bg-2);
 }
 .appnav .right {
   display: flex;
@@ -2419,7 +2413,7 @@ pre {
   }
   .appnav nav a {
     padding: 6px 8px;
-    font-size: 10px;
+    font-size: 12px;
   }
   .appnav .right {
     gap: 6px;
@@ -2437,7 +2431,7 @@ pre {
     gap: 10px;
   }
   .appnav .logo span {
-    font-size: 13px;
+    font-size: 14px;
   }
   .card {
     padding: 14px;
