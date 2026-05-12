@@ -644,13 +644,13 @@ export function HeroSwarm() {
                         * pow(max(0.0, 0.95 - u), 0.3);
           bool inBody = abs(v) < profile && u > -0.7 && u < 0.95;
 
-          // Tail spike: thin tapered extension from u=-0.7 to u=-1.0,
-          // half-width grows linearly from 0 at joint to ~0.27 at tip.
-          // Steepness 0.9 — between the original side-view fan (1.45)
-          // and a pure top-down spike (0.5). Reads as a slightly-flared
-          // trailing fin without losing the top-down silhouette.
+          // Tail spike: tapered extension from u=-0.7 to u=-1.0,
+          // half-width grows linearly from 0 at joint to ~0.33 at tip.
+          // Steepness 1.1 — leans closer to a visible flared fin while
+          // still reading as a top-down silhouette (vs original 1.45
+          // pure side-view fan, or 0.5 pure spike).
           float tailU = -0.7 - u;            // 0 at body/tail joint, +0.3 at tip
-          float halfWidth = tailU * 0.9;
+          float halfWidth = tailU * 1.1;
           float vAbs = abs(v);
           bool inTail = u < -0.7 && u > -1.0 && vAbs < halfWidth;
 
