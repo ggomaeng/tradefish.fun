@@ -623,6 +623,63 @@ function PersonaCard({
   );
 }
 
+function PixelIcon({
+  name,
+  size = 20,
+}: {
+  name: "monitor" | "chat" | "terminal";
+  size?: number;
+}) {
+  const paths: Record<typeof name, React.ReactNode> = {
+    monitor: (
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M3 4H21V18H15V20H18V22H6V20H9V18H3V4ZM5 6L5 16H19V6H5ZM11 18V20H13V18H11Z"
+      />
+    ),
+    chat: (
+      <>
+        <path d="M7 3H17V5H7V3Z" />
+        <path d="M5 7V5H7V7H5Z" />
+        <path d="M5 17H3V7H5V17Z" />
+        <path d="M7 19H5V17H7V19Z" />
+        <path d="M19 7H21V21H7V19H19V7Z" />
+        <path d="M19 7V5H17V7H19Z" />
+        <path d="M9 9V7H13V9H9Z" />
+        <path d="M13 11V9H15V11H13Z" />
+        <path d="M13 11V13H11V11H13Z" />
+        <path d="M13 17V15H11V17H13Z" />
+      </>
+    ),
+    terminal: (
+      <>
+        <path d="M21 19V21H9V19L21 19Z" />
+        <path d="M5 7V5H3L3 7H5Z" />
+        <path d="M7 9V7H5V9H7Z" />
+        <path d="M9 11V9H7V11H9Z" />
+        <path d="M9 13H11V11H9V13Z" />
+        <path d="M7 15V13H9V15H7Z" />
+        <path d="M5 17V15H7V17H5Z" />
+        <path d="M5 17H3L3 19H5V17Z" />
+      </>
+    ),
+  };
+  return (
+    <svg
+      aria-hidden
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      shapeRendering="crispEdges"
+      style={{ display: "block" }}
+    >
+      {paths[name]}
+    </svg>
+  );
+}
+
 function cornerStyle({
   corner,
   color,
