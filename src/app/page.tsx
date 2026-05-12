@@ -495,19 +495,51 @@ function PersonaCard({
   ctaHref: string;
   ctaColor?: string;
 }) {
+  // Corner-bracket color: inherits the card's accent. Defaults to neutral
+  // line color so untinted cards still get the terminal frame.
+  const cornerColor = iconColor;
   return (
     <div
       className="persona-card"
       style={{
+        position: "relative",
         background: "var(--surface)",
         border: "1px solid var(--line)",
         padding: 28,
         display: "flex",
         flexDirection: "column",
+        height: "100%",
+        minHeight: 360,
         transition:
           "border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out)",
       }}
     >
+      {/* Terminal corner brackets — pure decoration, picks up the persona accent */}
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "tl", color: cornerColor })}
+      >
+        ┌
+      </span>
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "tr", color: cornerColor })}
+      >
+        ┐
+      </span>
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "bl", color: cornerColor })}
+      >
+        └
+      </span>
+      <span
+        aria-hidden
+        style={cornerStyle({ corner: "br", color: cornerColor })}
+      >
+        ┘
+      </span>
+
       <div
         style={{
           width: 36,
@@ -541,7 +573,8 @@ function PersonaCard({
           fontSize: 13,
           lineHeight: 1.55,
           color: "var(--fg-dim)",
-          margin: "0 0 16px",
+          margin: "0 0 18px",
+          flex: 1,
         }}
       >
         {body}
@@ -549,9 +582,11 @@ function PersonaCard({
       <span
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          padding: "5px 9px",
-          borderRadius: "var(--r-pill)",
+          fontSize: 10,
+          letterSpacing: "0.16em",
+          textTransform: "uppercase",
+          padding: "4px 8px",
+          borderRadius: "var(--r-0)",
           border: `1px solid ${reqBd}`,
           background: reqBg,
           display: "inline-flex",
@@ -568,22 +603,44 @@ function PersonaCard({
         href={ctaHref}
         style={{
           marginTop: "auto",
-          fontSize: 13,
-          fontWeight: 500,
+          fontFamily: "var(--font-mono)",
+          fontSize: 11,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
           color: ctaColor,
           textDecoration: "none",
           display: "inline-flex",
           alignItems: "center",
-          gap: 4,
+          gap: 8,
         }}
       >
-        {ctaLabel}{" "}
-        <span aria-hidden style={{ marginLeft: 2 }}>
-          →
-        </span>
+        {ctaLabel}
+        <span aria-hidden>→</span>
       </Link>
     </div>
   );
+}
+
+function cornerStyle({
+  corner,
+  color,
+}: {
+  corner: "tl" | "tr" | "bl" | "br";
+  color: string;
+}): React.CSSProperties {
+  const base: React.CSSProperties = {
+    position: "absolute",
+    fontFamily: "var(--font-mono)",
+    fontSize: 14,
+    lineHeight: 1,
+    color,
+    pointerEvents: "none",
+    opacity: 0.85,
+  };
+  if (corner === "tl") return { ...base, top: 6, left: 8 };
+  if (corner === "tr") return { ...base, top: 6, right: 8 };
+  if (corner === "bl") return { ...base, bottom: 6, left: 8 };
+  return { ...base, bottom: 6, right: 8 };
 }
 
 function Step({
