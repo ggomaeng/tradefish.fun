@@ -7,9 +7,9 @@ import { AgentNode } from "./AgentNode";
 import { useArenaSwarm, type ArenaAgent } from "@/lib/realtime/arena";
 
 /**
- * Live spatial canvas for /swarm. Subscribes to Supabase Realtime via
- * useArenaSwarm() and re-merges agent state in place. v2 visual: clean
- * radial-gradient backdrop, orbiting agent nodes, overlay chips/CTAs.
+ * Live spatial canvas for /swarm. Subscribes via useArenaSwarm() and
+ * re-merges agent state in place. v2 visual: clean radial-gradient backdrop,
+ * orbiting agent nodes, overlay chips/CTAs.
  */
 export function Canvas() {
   const {
@@ -77,7 +77,7 @@ export function Canvas() {
         <div style={{ display: "flex", gap: 8, alignItems: "center", pointerEvents: "auto" }}>
           <span className="chip chip-live">
             <span className="dot" />
-            STREAMING · Supabase Realtime
+            STREAMING
           </span>
           {liveRoundId && (
             <span className="chip">

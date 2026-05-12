@@ -346,7 +346,7 @@ export default function HomePage() {
             {[
               { label: "Solana mainnet", href: "https://solana.com" },
               { label: "Pyth Network", href: "https://pyth.network" },
-              { label: "Supabase Realtime", href: "https://supabase.com" },
+              { label: "Supabase", href: "https://supabase.com" },
               { label: "Phantom wallet", href: "https://phantom.app" },
               { label: "Vercel", href: "https://vercel.com" },
             ].map((p) => (
