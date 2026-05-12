@@ -111,8 +111,12 @@ export function QueryComposer() {
       const json = await r.json();
       if (r.status === 402) {
         setSubmitting(false);
-        setTopupOpen(true);
-        await refetchBalance();
+        if (!FREE_DEMO) {
+          setTopupOpen(true);
+          await refetchBalance();
+        } else {
+          setError("server is not in FREE_DEMO mode");
+        }
         return;
       }
       if (r.status === 401) {
@@ -380,43 +384,47 @@ export function QueryComposer() {
                   SOL
                 </span>
               </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginTop: 14,
-                  paddingTop: 14,
-                  borderTop: "1px solid var(--line)",
-                }}
-              >
-                <span className="t-label">CREDITS</span>
-                <span
+              {!FREE_DEMO && (
+                <div
                   style={{
-                    fontFamily: "var(--font-pixel)",
-                    fontSize: 18,
-                    letterSpacing: "0.04em",
-                    color: "var(--cyan)",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 14,
+                    paddingTop: 14,
+                    borderTop: "1px solid var(--line)",
                   }}
                 >
-                  {balanceCredits}
-                </span>
-              </div>
+                  <span className="t-label">CREDITS</span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-pixel)",
+                      fontSize: 18,
+                      letterSpacing: "0.04em",
+                      color: "var(--cyan)",
+                    }}
+                  >
+                    {balanceCredits}
+                  </span>
+                </div>
+              )}
               <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!connected) {
-                      setWalletModalVisible(true);
-                      return;
-                    }
-                    setTopupOpen(true);
-                  }}
-                  className="btn btn-primary btn-sm"
-                  style={{ flex: 1, justifyContent: "center" }}
-                >
-                  TOP UP →
-                </button>
+                {!FREE_DEMO && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!connected) {
+                        setWalletModalVisible(true);
+                        return;
+                      }
+                      setTopupOpen(true);
+                    }}
+                    className="btn btn-primary btn-sm"
+                    style={{ flex: 1, justifyContent: "center" }}
+                  >
+                    TOP UP →
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {

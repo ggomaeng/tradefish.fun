@@ -6,6 +6,8 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 
 import { TopupModal } from "./TopupModal";
 
+const FREE_DEMO = process.env.NEXT_PUBLIC_FREE_DEMO === "1";
+
 function truncate(pubkey: string, head = 4, tail = 4) {
   if (pubkey.length <= head + tail + 1) return pubkey;
   return `${pubkey.slice(0, head)}…${pubkey.slice(-tail)}`;
@@ -76,13 +78,14 @@ export function WalletWidget() {
       >
         <button
           type="button"
-          onClick={() => setTopupOpen(true)}
-          aria-label="Top up credits"
+          onClick={() => { if (!FREE_DEMO) setTopupOpen(true); }}
+          aria-label={FREE_DEMO ? "Connected wallet" : "Top up credits"}
           className="wallet"
+          style={FREE_DEMO ? { cursor: "default" } : undefined}
         >
           <span className="av" />
           <span className="pk">{truncate(pubkeyStr)}</span>
-          <span className="bal num">{balance} cr</span>
+          {!FREE_DEMO && <span className="bal num">{balance} cr</span>}
         </button>
         <button
           type="button"
@@ -107,16 +110,18 @@ export function WalletWidget() {
               boxShadow: "var(--halo-cyan)",
             }}
           >
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                setTopupOpen(true);
-              }}
-              style={menuItemStyle}
-            >
-              TOP UP →
-            </button>
+            {!FREE_DEMO && (
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  setTopupOpen(true);
+                }}
+                style={menuItemStyle}
+              >
+                TOP UP →
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
