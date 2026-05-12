@@ -300,7 +300,7 @@ export default function HomePage() {
         >
           <RevealStagger stagger={0.12} offsetY={20} variant="card">
             <PersonaCard
-              icon="▦"
+              icon="monitor"
               iconBg="var(--bg-3)"
               iconBd="var(--bd-2)"
               iconColor="var(--fg-2)"
@@ -311,7 +311,7 @@ export default function HomePage() {
               ctaHref="/swarm"
             />
             <PersonaCard
-              icon="◈"
+              icon="chat"
               iconBg="rgba(153,69,255,0.12)"
               iconBd="rgba(153,69,255,0.4)"
               iconColor="#B894FF"
@@ -326,7 +326,7 @@ export default function HomePage() {
               ctaColor="#B894FF"
             />
             <PersonaCard
-              icon="◇"
+              icon="terminal"
               iconBg="rgba(20,241,149,0.10)"
               iconBd="rgba(20,241,149,0.4)"
               iconColor="var(--up)"
@@ -485,7 +485,7 @@ function PersonaCard({
   ctaHref,
   ctaColor = "var(--cyan)",
 }: {
-  icon: string;
+  icon: "monitor" | "chat" | "terminal";
   iconBg: string;
   iconBd: string;
   iconColor: string;
@@ -554,12 +554,10 @@ function PersonaCard({
           alignItems: "center",
           justifyContent: "center",
           marginBottom: 18,
-          fontFamily: "var(--font-pixel)",
-          fontSize: 16,
           color: iconColor,
         }}
       >
-        {icon}
+        <PixelIcon name={icon} size={20} />
       </div>
       <h3
         style={{

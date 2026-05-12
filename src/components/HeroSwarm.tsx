@@ -967,29 +967,52 @@ export function HeroSwarm() {
     window.addEventListener("swarm:attention-off", onAttentionOff);
     window.addEventListener("swarm:submit-burst", onSubmitBurst);
 
-    // ── Scroll-follow plumbing ─────────────────────────────────────
-    // The orbit center is the WORLD-SPACE projection of the current
-    // viewport center. As the user scrolls, the canvas (absolute inset:0
-    // of a min-h-screen <main>) scrolls with the page; we recompute the
-    // viewport center in canvas-local coords each frame so the school
-    // always sits in view. While the user is actively scrolling we relax
-    // the orbit weight so the fish read as "swimming freely between
-    // sections" rather than rigidly tracking the scroll position.
+    // ── Scroll plumbing ────────────────────────────────────────────
+    // The canvas is now `position: fixed` (see return JSX), so it's
+    // permanently glued to the viewport and the orbit center is simply
+    // the canvas center each frame (computed in renderFrame). The scroll
+    // listener still does two jobs:
+    //   1. Tracks `scrollVel` / `lastScrollAt` so we can RELAX the orbit
+    //      weight while the user is actively scrolling — fish "swim
+    //      free" between sections instead of rigidly clinging.
+    //   2. Drives the wrapper's `opacity` so the swarm fades out past
+    //      the hero zone. Without this, the fixed canvas would render
+    //      fish on top of every below-hero section forever.
     let lastScrollY = typeof window !== "undefined" ? window.scrollY : 0;
     let scrollVel = 0;
     let lastScrollAt = -1e9;
+    let fadeOpacity = 1;
+    let scrollRaf = 0;
+    // Fade band: scrollY < FADE_START_VH * vh → opacity 1.
+    //            scrollY > FADE_END_VH   * vh → opacity 0.
+    const FADE_START_VH = 0.6;
+    const FADE_END_VH = 1.2;
+    const computeFadeOpacity = () => {
+      const vh = window.innerHeight || 1;
+      const start = FADE_START_VH * vh;
+      const end = FADE_END_VH * vh;
+      const t = (window.scrollY - start) / Math.max(1, end - start);
+      return 1 - Math.max(0, Math.min(1, t));
+    };
+    const applyFade = () => {
+      scrollRaf = 0;
+      fadeOpacity = computeFadeOpacity();
+      const node = containerRef.current;
+      if (node) node.style.opacity = String(fadeOpacity);
+    };
     const onScroll = () => {
       scrollVel = Math.abs(window.scrollY - lastScrollY);
       lastScrollY = window.scrollY;
       lastScrollAt = performance.now();
+      if (!scrollRaf) scrollRaf = requestAnimationFrame(applyFade);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
+    // Initial paint: opacity may not be 1 if the page reloads mid-scroll.
+    applyFade();
 
     const orbitCenterWorld = new THREE.Vector3(0, 0, 0);
     const orbitNdc = new THREE.Vector3();
     const orbitCamDir = new THREE.Vector3();
-    const viewportCenterTarget = new THREE.Vector2(0, 0);
-    const viewportCenterSmoothed = new THREE.Vector2(0, 0);
 
     const t0 = performance.now();
     let raf = 0;
@@ -1040,27 +1063,15 @@ export function HeroSwarm() {
       sizeMultUniform.value =
         focusSizeMult + (SIZE_MULT_BURST - focusSizeMult) * burstStrength;
 
-      // ── Orbit center = viewport center, projected into world ─────
-      // Recomputed every frame so the school follows scroll smoothly. We
-      // also decay the scroll velocity so `scrolling` returns to 0 a few
-      // hundred ms after the user stops scrolling.
+      // ── Orbit center = canvas center, projected into world ───────
+      // The wrapper is `position: fixed; inset: 0` so the canvas always
+      // covers the full viewport. Viewport center IS canvas center →
+      // NDC (0, 0). No scroll math, no smoothing, no bounding-rect read
+      // per frame. The orbit center snaps with the camera, which gives
+      // the snappy feel on scroll-down-and-back-up.
       let orbitCenterValid = false;
-      const cRect = container.getBoundingClientRect();
-      if (cRect.width > 0 && cRect.height > 0) {
-        const vpCenterX = window.innerWidth / 2;
-        const vpCenterY = window.innerHeight / 2;
-        const localX = vpCenterX - cRect.left;
-        const localY = vpCenterY - cRect.top;
-        viewportCenterTarget.x = (localX / cRect.width) * 2 - 1;
-        viewportCenterTarget.y = -((localY / cRect.height) * 2 - 1);
-
-        // Frame-rate-independent smoothing toward the new target.
-        const smooth = 1 - Math.exp(-dt * 8);
-        viewportCenterSmoothed.lerp(viewportCenterTarget, smooth);
-
-        orbitNdc
-          .set(viewportCenterSmoothed.x, viewportCenterSmoothed.y, 0.5)
-          .unproject(camera);
+      if (container.clientWidth > 0 && container.clientHeight > 0) {
+        orbitNdc.set(0, 0, 0.5).unproject(camera);
         orbitCamDir.copy(orbitNdc).sub(camera.position).normalize();
         const tParam = -camera.position.z / orbitCamDir.z;
         orbitCenterWorld
@@ -1573,7 +1584,13 @@ export function HeroSwarm() {
         }
       }
 
-      renderer.render(scene, camera);
+      // Skip the GPU composite when fully faded — the simulation keeps
+      // running so fish are in the right place when the user scrolls
+      // back up, but we avoid paying the WebGL submit cost while
+      // invisible. Threshold is generous (~1/255) to dodge float noise.
+      if (fadeOpacity > 0.004) {
+        renderer.render(scene, camera);
+      }
     };
 
     const tick = () => {
@@ -1610,6 +1627,7 @@ export function HeroSwarm() {
       window.removeEventListener("swarm:attention-off", onAttentionOff);
       window.removeEventListener("swarm:submit-burst", onSubmitBurst);
       window.removeEventListener("scroll", onScroll);
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
       if (renderer.domElement.parentNode) {
         renderer.domElement.parentNode.removeChild(renderer.domElement);
       }
