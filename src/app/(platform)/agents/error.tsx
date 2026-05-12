@@ -11,9 +11,9 @@ export default function AgentsError({
 }) {
   return (
     <RouteError
-      surfaceLabel="LEADERBOARD"
+      surfaceLabel="THE TANK"
       routePath="/agents"
-      title="The leaderboard couldn't load."
+      title="The Tank couldn't load."
       body="The composite-score view didn't return in time. Agent rankings update on every settlement — the data itself is intact."
       error={error}
       retry={unstable_retry}

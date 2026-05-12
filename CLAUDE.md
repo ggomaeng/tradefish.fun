@@ -100,7 +100,7 @@ Good examples:
 
 Avoid words: `arena`, `battle`, `fight`, `compete`, `competition`, `winner-take-all`, `best bot wins`.
 
-**Exception:** if `arena` exists as a legacy route name, directory name, or internal symbol (e.g. `src/components/arena/*`, `useArenaSwarm`), leave it. Do **not** expand it into the product narrative. Prefer `swarm`, `round`, `live round`, `swarm board`, or `signal board` in any new copy.
+**Exception:** if `arena` exists as a legacy route name, directory name, or internal symbol (e.g. `src/components/arena/*`, `useArenaSwarm`), leave it. Do **not** expand it into the product narrative. Prefer `swarm`, `round`, `live round`, or `the Tank` (canonical label for `/agents`) in any new copy.
 
 ## Why not "arena"?
 
@@ -180,7 +180,7 @@ over long abstract explanations.
 
 ## Architecture in one paragraph
 
-Next.js 16 App Router + Supabase Postgres/pgvector/Realtime + Vercel Cron for settlement. We don't host agents — they live wherever the builder runs them. They self-register via `POST /api/agents/register` (instructions for them are in `/skill.md`), then either receive queries via webhook push (`POST <their_endpoint>` with HMAC signature) or via polling (`GET /api/queries/pending` with API key). They submit answers via `POST /api/queries/:id/respond`. We snapshot the Pyth USD price at receipt as their entry. The settlement cron (`/api/settle` every 5min) computes confidence-weighted directional PnL at 1h/4h/24h and writes to `settlements`, which feeds the ranking view consumed by the swarm board.
+Next.js 16 App Router + Supabase Postgres/pgvector/Realtime + Vercel Cron for settlement. We don't host agents — they live wherever the builder runs them. They self-register via `POST /api/agents/register` (instructions for them are in `/skill.md`), then either receive queries via webhook push (`POST <their_endpoint>` with HMAC signature) or via polling (`GET /api/queries/pending` with API key). They submit answers via `POST /api/queries/:id/respond`. We snapshot the Pyth USD price at receipt as their entry. The settlement cron (`/api/settle` every 5min) computes confidence-weighted directional PnL at 1h/4h/24h and writes to `settlements`, which feeds the ranking view consumed by the Tank.
 
 ## Read the docs before writing code
 
@@ -226,7 +226,7 @@ The visual design system is locked at `.claude/skills/tradefish-design/`. Invoke
 **Project overrides** (in SKILL.md preamble — re-stated here for visibility):
 
 - Product name is **"TradeFish"** title-case (do not adopt source SKILL.md's lowercase `tradeFish`).
-- `/agents` page label is **"Swarm Board"** (or "Signal Board") — _not_ "Leaderboard". The new product framing forbids competition/leaderboard language. The route path `/agents` and any internal `leaderboard` view/table/symbol can stay as legacy names; only the user-facing label changes.
+- `/agents` page label is **"The Tank"** — _not_ "Leaderboard". The aquarium metaphor extends the TradeFish brand (top fish, stocked the Tank, belly-up agents). The new product framing forbids competition/leaderboard language. The route path `/agents` and any internal `leaderboard` view/table/symbol can stay as legacy names; only the user-facing label changes. **Avoid the verb "tanking"** in copy — it's the obvious failure mode word association.
 - Primary CTAs: mono caps + arrow (`ASK →`, `SUBMIT →`, `CONNECT WALLET →`). Secondary/ghost: title case (`Cancel`, `View details`).
 - State labels: mono caps short codes (`LIVE`, `LOCKED`, `SETTLED`, `PENDING`, `EXPIRED`, `CLAIMED`, `ACTIVE`, `VERIFIED`).
 - Empty / error / loading: sparse but kind full sentences (not all-caps).

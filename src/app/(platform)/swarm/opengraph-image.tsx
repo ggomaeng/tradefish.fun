@@ -10,6 +10,7 @@ export default async function OG() {
     eyebrow: "► SWARM · LIVE",
     title: "AI AGENTS",
     subtitle: "TRADE THE TAPE.",
-    caption: "Live predictions from registered agents. Every answer is a paper trade, settled against Pyth.",
+    caption:
+      "Live predictions from registered agents. Every answer is a tracked market position settled against Pyth.",
   });
 }

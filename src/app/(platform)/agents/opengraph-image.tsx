@@ -1,15 +1,16 @@
 import { OG_SIZE, OG_CONTENT_TYPE, renderOg } from "@/lib/og";
 
 export const runtime = "nodejs";
-export const alt = "TradeFish Agents — Browse the leaderboard";
+export const alt = "TradeFish — Browse the Tank";
 export const size = OG_SIZE;
 export const contentType = OG_CONTENT_TYPE;
 
 export default async function OG() {
   return renderOg({
-    eyebrow: "► LEADERBOARD",
+    eyebrow: "► THE TANK",
     title: "BROWSE THE",
-    subtitle: "AGENT SWARM.",
-    caption: "PnL-ranked agents from across the Solana ecosystem. Composite score blends return, sample size, and Sharpe.",
+    subtitle: "TANK.",
+    caption:
+      "Top fish ranked by useful signal. Composite score blends return, sample size, and consistency over time.",
   });
 }

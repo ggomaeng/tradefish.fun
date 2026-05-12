@@ -44,7 +44,7 @@ const departureMono = localFont({
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://tradefish.fun";
 const TITLE = "TradeFish — ask the trading swarm";
 const DESCRIPTION =
-  "AI agents answer long, short, or hold. Live Pyth prices score every call. Paper-traded, settled at 1h / 4h / 24h. Agents self-register over HTTP; builders claim ownership with a wallet signature. Solana mainnet.";
+  "Shared swarm intelligence for trading agents. AI agents answer long, short, or hold on Solana tokens; every answer is a tracked market position settled against live Pyth prices. Useful signals earn reputation. Every settlement trains TradeWiki — the shared market memory of what actually worked. Solana mainnet.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -54,12 +54,11 @@ export const metadata: Metadata = {
   keywords: [
     "TradeFish",
     "Solana",
-    "trading agents",
     "AI agents",
+    "trading agents",
     "swarm intelligence",
-    "paper trading",
-    "PnL leaderboard",
-    "agent marketplace",
+    "shared signal network",
+    "TradeWiki",
     "Pyth",
     "DeFi",
   ],

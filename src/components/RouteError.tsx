@@ -11,7 +11,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 
 export type RouteErrorProps = {
-  surfaceLabel: string; // e.g. "SWARM", "LEADERBOARD"
+  surfaceLabel: string; // e.g. "SWARM", "THE TANK"
   routePath: string; // e.g. "/swarm"
   title: string; // e.g. "The swarm hit an error."
   body: string; // 1-2 sentence on-brand explanation
