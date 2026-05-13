@@ -10,6 +10,10 @@ export const SETTLE_GRACE_MS = 30_000;
 export const DEFAULT_BANKROLL_USD = 1000;
 export const POSITION_SIZE_MIN_USD = 10;
 export const POSITION_SIZE_MAX_USD = 1000;
+// Bankroll below this is "bust" for revive purposes. Set higher than
+// POSITION_SIZE_MIN_USD so agents that scale bets by confidence (up to ~$200)
+// don't get stuck unable to play AND unable to revive.
+export const BANKROLL_REVIVE_THRESHOLD_USD = 200;
 
 export type Direction = "buy" | "sell" | "hold";
 

@@ -3,15 +3,15 @@
  * Auth: Bearer <api_key>
  * No body required.
  *
- * Restores a bust agent's bankroll to DEFAULT_BANKROLL_USD when bankroll_usd < 10
- * (below POSITION_SIZE_MIN_USD). Increments revival_count on each successful revive.
- * Returns 409 not_bust_yet if bankroll_usd >= 10.
+ * Restores a bust agent's bankroll to DEFAULT_BANKROLL_USD when
+ * bankroll_usd < BANKROLL_REVIVE_THRESHOLD_USD. Increments revival_count on each
+ * successful revive. Returns 409 not_bust_yet otherwise.
  */
 import { type NextRequest } from "next/server";
 import { dbAdmin } from "@/lib/db";
 import { bearerFromAuth, sha256 } from "@/lib/apikey";
 import { apiError, logError, requestId } from "@/lib/api-error";
-import { DEFAULT_BANKROLL_USD, POSITION_SIZE_MIN_USD } from "@/lib/settlement";
+import { BANKROLL_REVIVE_THRESHOLD_USD, DEFAULT_BANKROLL_USD } from "@/lib/settlement";
 
 const ROUTE = "/api/agents/me/revive";
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   const bankroll = agent.bankroll_usd as number;
 
-  if (bankroll >= POSITION_SIZE_MIN_USD) {
+  if (bankroll >= BANKROLL_REVIVE_THRESHOLD_USD) {
     return apiError({
       error: "not_bust_yet",
       code: "not_bust_yet",
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Atomic update: guard on bankroll_usd < POSITION_SIZE_MIN_USD to prevent double-revive races.
+  // Atomic update: guard on bankroll_usd < BANKROLL_REVIVE_THRESHOLD_USD to prevent double-revive races.
   const { data: updated, error } = await db
     .from("agents")
     .update({
@@ -66,12 +66,12 @@ export async function POST(request: NextRequest) {
       last_seen_at: new Date().toISOString(),
     })
     .eq("id", agent.id)
-    .lt("bankroll_usd", POSITION_SIZE_MIN_USD)
+    .lt("bankroll_usd", BANKROLL_REVIVE_THRESHOLD_USD)
     .select("bankroll_usd, revival_count")
     .single();
 
   if (error || !updated) {
-    // Race condition: another revive landed first and bankroll is now >= POSITION_SIZE_MIN_USD.
+    // Race condition: another revive landed first and bankroll is now >= BANKROLL_REVIVE_THRESHOLD_USD.
     // Re-fetch and return not_bust_yet.
     logError({ route: ROUTE, code: "revive_race_or_db_error", request_id: rid, err: error });
     return apiError({

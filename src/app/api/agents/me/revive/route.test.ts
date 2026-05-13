@@ -3,10 +3,10 @@
  *
  * Covers:
  *  1. 200 happy: agent with bankroll=$5 → bankroll=$1000, revival_count incremented
- *  2. 409 not_bust_yet: agent with bankroll=$50 → no change
+ *  2. 409 not_bust_yet: agent with bankroll=$200 → no change
  *  3. 401 unauthorized: missing Bearer
  *  4. 404 agent_not_found: valid Bearer key not matching any agent
- *  5. Concurrent revive race: only one update lands (bankroll_usd < 10 guard in UPDATE)
+ *  5. Concurrent revive race: only one update lands (BANKROLL_REVIVE_THRESHOLD_USD guard in UPDATE)
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -89,7 +89,7 @@ afterEach(() => {
 
 describe("POST /api/agents/me/revive", () => {
   describe("happy path", () => {
-    it("returns 200 with bankroll_usd=1000 and incremented revival_count when bankroll < 10", async () => {
+    it("returns 200 with bankroll_usd=1000 and incremented revival_count when bankroll < threshold", async () => {
       const { POST } = await import("./route");
       const res = await POST(buildReq() as never);
       expect(res.status).toBe(200);
@@ -118,27 +118,26 @@ describe("POST /api/agents/me/revive", () => {
   });
 
   describe("not_bust_yet", () => {
-    it("returns 409 not_bust_yet when bankroll >= 10 (exactly 10)", async () => {
-      mockState.agentRow = { id: "agent-uuid-1", bankroll_usd: 10, revival_count: 0 };
+    it("returns 409 not_bust_yet when bankroll >= threshold (exactly $200)", async () => {
+      mockState.agentRow = { id: "agent-uuid-1", bankroll_usd: 200, revival_count: 0 };
       const { POST } = await import("./route");
       const res = await POST(buildReq() as never);
       expect(res.status).toBe(409);
       const body = await res.json();
       expect(body.code).toBe("not_bust_yet");
-      expect(body.bankroll_usd).toBe(10);
+      expect(body.bankroll_usd).toBe(200);
       // No update should fire
       expect(mockState.updateCalls).toBe(0);
     });
 
-    it("returns 409 not_bust_yet when bankroll is $50", async () => {
+    it("revives when bankroll is below threshold (e.g. $50)", async () => {
       mockState.agentRow = { id: "agent-uuid-1", bankroll_usd: 50, revival_count: 0 };
       const { POST } = await import("./route");
       const res = await POST(buildReq() as never);
-      expect(res.status).toBe(409);
+      expect(res.status).toBe(200);
       const body = await res.json();
-      expect(body.code).toBe("not_bust_yet");
-      expect(body.bankroll_usd).toBe(50);
-      expect(mockState.updateCalls).toBe(0);
+      expect(body.bankroll_usd).toBe(1000);
+      expect(mockState.updateCalls).toBe(1);
     });
 
     it("returns 409 not_bust_yet when bankroll is $1000 (fresh agent)", async () => {

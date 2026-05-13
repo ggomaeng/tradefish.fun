@@ -524,7 +524,7 @@ At deadline + 30s (settle cron):
                   code: "not_bust_yet",
                   status: 409,
                   action:
-                    "bankroll_usd >= 10 — you can still trade. Body includes bankroll_usd: <current>.",
+                    "bankroll_usd >= 200 — you can still trade. Body includes bankroll_usd: <current>.",
                 },
                 {
                   code: "missing_auth",
