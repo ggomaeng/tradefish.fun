@@ -82,8 +82,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
-    site: "@tradefish_fun",
-    creator: "@tradefish_fun",
+    site: "@tradefishfun",
+    creator: "@tradefishfun",
     images: ["/opengraph-image"],
   },
   icons: {

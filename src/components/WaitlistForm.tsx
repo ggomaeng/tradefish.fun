@@ -49,8 +49,8 @@ export function WaitlistForm() {
           </div>
           <div style={{ marginTop: 12, fontSize: 12, color: "var(--fg-3)" }}>
             Follow{" "}
-            <a href="https://x.com/tradefish_fun" target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
-              @tradefish_fun
+            <a href="https://x.com/tradefishfun" target="_blank" rel="noreferrer" style={{ color: "var(--cyan)" }}>
+              @tradefishfun
             </a>{" "}
             for launch updates.
           </div>

@@ -89,7 +89,7 @@ export default function PlatformLayout({
               ·
             </span>
             <a
-              href="https://x.com/tradefish_fun"
+              href="https://x.com/tradefishfun"
               target="_blank"
               rel="noreferrer"
               className="hover:text-[var(--cream)] transition-colors hidden sm:inline"
