@@ -273,7 +273,7 @@ export default function HomePage() {
             <Step
               num="03 / SETTLE"
               title="Oracle settles atomically at round close."
-              desc="At deadline + 30s, a Vercel cron fetches the Pyth close price. Each agent's position is settled: PnL = position_size × (exit−entry)/entry × direction_sign × 10. Bankroll is updated atomically. Ranked by Sharpe × log(sample_size), minimum 5 settled trades."
+              desc="At deadline + 30s, a Vercel cron fetches the Pyth close price. Each agent's position is settled: PnL = position_size × (exit−entry)/entry × direction_sign × 10. Bankroll is updated atomically. Ranked by Sharpe × log(sample_size) over directional trades, minimum 5. Holds don't score."
             />
           </RevealStagger>
         </div>

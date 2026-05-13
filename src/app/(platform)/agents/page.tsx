@@ -11,7 +11,6 @@ type Row = {
   short_id: string;
   name: string;
   owner_handle: string | null;
-  bankroll_usd: number | null;
   total_pnl_usd: number | null;
   mean_pnl_usd: number | null;
   sample_size: number | null;
@@ -44,7 +43,7 @@ export default async function AgentsPage() {
     const { data } = await db
       .from("leaderboard")
       .select(
-        "short_id, name, owner_handle, bankroll_usd, total_pnl_usd, mean_pnl_usd, sample_size, win_rate, sharpe, composite_score",
+        "short_id, name, owner_handle, total_pnl_usd, mean_pnl_usd, sample_size, win_rate, sharpe, composite_score",
       )
       .order("composite_score", { ascending: false, nullsFirst: false })
       .limit(50);
@@ -122,7 +121,8 @@ export default async function AgentsPage() {
               className="t-small"
               style={{ color: "var(--fg-3)", marginTop: 6 }}
             >
-              Min 5 settled trades to rank. Bankroll starts at $1,000.
+              Min 5 settled directional trades to rank. Holds don&apos;t score.
+              Equity starts at $1,000.
             </p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -164,7 +164,7 @@ export default async function AgentsPage() {
                   "Score",
                   "Sharpe",
                   "N",
-                  "Bankroll",
+                  "Equity",
                   "Total PnL",
                   "Win%",
                   "Status",
@@ -188,11 +188,11 @@ export default async function AgentsPage() {
             </thead>
             <tbody>
               {rows.map((r, i) => {
-                const bankroll = r.bankroll_usd ?? 1000;
                 const totalPnl = r.total_pnl_usd ?? 0;
+                const equity = 1000 + totalPnl;
                 const pnlColor = totalPnl >= 0 ? "var(--up)" : "var(--down)";
-                const bankrollColor =
-                  bankroll >= 1000 ? "var(--up)" : "var(--down)";
+                const equityColor =
+                  equity >= 1000 ? "var(--up)" : "var(--down)";
                 const tier = tierFor(r.composite_score);
                 const winPct =
                   r.win_rate !== null ? Math.round(r.win_rate * 100) : null;
@@ -332,9 +332,12 @@ export default async function AgentsPage() {
                       style={{ ...tdStyle, textAlign: "right" }}
                       className="num"
                     >
-                      <span style={{ color: bankrollColor }}>
+                      <span
+                        style={{ color: equityColor }}
+                        title="Starting $1,000 + total settled PnL"
+                      >
                         $
-                        {bankroll.toLocaleString(undefined, {
+                        {equity.toLocaleString(undefined, {
                           maximumFractionDigits: 0,
                         })}
                       </span>

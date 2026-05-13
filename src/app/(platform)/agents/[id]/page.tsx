@@ -168,8 +168,12 @@ export default async function AgentDetailPage({
       : null;
   const meanPnl = Number(stats?.mean_pnl_usd ?? 0);
 
-  const bankrollDelta = bankroll - 1000; // relative to starting $1000
-  const bankrollColor = bankroll >= 1000 ? "var(--up)" : "var(--down)";
+  // Equity = total worth (starting capital + all settled PnL).
+  // Bankroll is the liquid slice; the rest is locked in unsettled positions.
+  const equity = 1000 + totalPnl;
+  const lockedCapital = Math.max(0, equity - bankroll);
+  const equityDelta = totalPnl;
+  const equityColor = equity >= 1000 ? "var(--up)" : "var(--down)";
 
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
@@ -312,13 +316,13 @@ export default async function AgentDetailPage({
           </div>
         </div>
 
-        {/* Bankroll — prominent stat */}
+        {/* Equity — prominent stat */}
         <div
           style={{
             padding: "20px 32px",
             borderBottom: "1px solid var(--line)",
             background:
-              bankroll >= 1000
+              equity >= 1000
                 ? "rgba(76,232,172,0.04)"
                 : "rgba(232,76,201,0.04)",
             display: "flex",
@@ -328,28 +332,37 @@ export default async function AgentDetailPage({
         >
           <div>
             <div className="t-label" style={{ marginBottom: 6 }}>
-              ┌─ BANKROLL
+              ┌─ EQUITY
             </div>
             <div
               style={{
                 fontFamily: "var(--font-pixel)",
                 fontSize: 36,
                 letterSpacing: "0.04em",
-                color: bankrollColor,
+                color: equityColor,
               }}
             >
               $
-              {bankroll.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              {equity.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
             <div
               className="t-label"
               style={{
                 marginTop: 4,
-                color: bankrollDelta >= 0 ? "var(--mint)" : "var(--magenta)",
+                color: equityDelta >= 0 ? "var(--mint)" : "var(--magenta)",
               }}
             >
-              {bankrollDelta >= 0 ? "▲ " : "▼ "}
-              {fmtUsd(bankrollDelta)} FROM $1,000 START
+              {equityDelta >= 0 ? "▲ " : "▼ "}
+              {fmtUsd(equityDelta)} FROM $1,000 START
+            </div>
+            <div
+              className="t-label"
+              style={{ marginTop: 6, color: "var(--fg-faint)" }}
+              title="Free capital is your spendable bankroll; locked capital is tied up in unsettled positions."
+            >
+              FREE ${bankroll.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              {" · "}
+              LOCKED ${lockedCapital.toLocaleString(undefined, { maximumFractionDigits: 0 })}
             </div>
           </div>
           <div style={{ width: 1, height: 52, background: "var(--line)" }} />
@@ -384,7 +397,10 @@ export default async function AgentDetailPage({
             }
             accent={sharpe >= 0 ? "up" : "down"}
           />
-          <Stat label="Trades" v={sampleN ? sampleN.toLocaleString() : "0"} />
+          <Stat
+            label="Scored trades"
+            v={sampleN ? sampleN.toLocaleString() : "0"}
+          />
           <Stat
             label="Win rate"
             v={winRate !== null ? `${winRate}%` : "—"}
@@ -495,7 +511,8 @@ export default async function AgentDetailPage({
                       className="t-small"
                       style={{ marginTop: 4, color: "var(--fg-3)" }}
                     >
-                      <span className="num">{sampleN}</span> trades
+                      <span className="num">{sampleN}</span> directional trades
+                      · holds excluded
                     </div>
                   </>
                 ) : (
