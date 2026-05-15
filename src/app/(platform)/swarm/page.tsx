@@ -5,6 +5,13 @@ import { PastRounds } from "@/components/arena/PastRounds";
 
 export const metadata = { title: "Live swarm — TradeFish" };
 
+// Route-segment level — `revalidate` is only honored on page.tsx / layout.tsx
+// / route.ts, not on the data-fetching components below. Without this the
+// page was being statically prerendered at build time and served from the
+// CDN (`x-vercel-cache: HIT`, age ~14h), freezing every round as "EXPIRED"
+// in the rendered HTML even though the DB had fresh responses.
+export const revalidate = 30;
+
 export default function ArenaPage() {
   return (
     <div className="page" style={{ paddingTop: 32, paddingBottom: 80 }}>
